@@ -1,0 +1,196 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(180deg, #f8fafc 0%, #e0e7ff 100%);
+  @apply text-gray-800 transition-colors duration-500;
+}
+html.dark body {
+  background: linear-gradient(180deg, #181f3a 0%, #232946 100%);
+  @apply text-white transition-colors duration-500;
+}
+
+/* Card styles for both modes */
+.card, .glass-card {
+  background: #fff;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.08), 0 1.5px 4px 0 rgba(99,102,241,0.04);
+  border: 1px solid #e0e7ef;
+}
+html.dark .card, html.dark .glass-card {
+  background: #232946;
+  border: 1px solid #232946;
+  box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.18), 0 1.5px 4px 0 rgba(99,102,241,0.10);
+}
+
+/* Navbar styles */
+.navbar {
+  background: #fff;
+  border-bottom: 1px solid #e0e7ef;
+}
+html.dark .navbar {
+  background: #181f3a;
+  border-bottom: 1px solid #232946;
+}
+
+/* Color palette */
+:root {
+  --color-primary: #6366f1;
+  --color-primary-dark: #4f46e5;
+  --color-secondary: #06b6d4;
+  --color-secondary-dark: #0891b2;
+  --color-success: #22c55e;
+  --color-success-dark: #16a34a;
+  --color-danger: #ef4444;
+  --color-danger-dark: #b91c1c;
+  --color-warning: #f59e42;
+  --color-warning-dark: #d97706;
+}
+html.dark {
+  --color-primary: #818cf8;
+  --color-primary-dark: #6366f1;
+  --color-secondary: #22d3ee;
+  --color-secondary-dark: #06b6d4;
+  --color-success: #4ade80;
+  --color-success-dark: #22c55e;
+  --color-danger: #f87171;
+  --color-danger-dark: #ef4444;
+  --color-warning: #fbbf24;
+  --color-warning-dark: #f59e42;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply font-bold rounded-lg shadow px-6 py-3 text-white flex items-center justify-center gap-2 transition;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  border: none;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background: linear-gradient(90deg, var(--color-primary-dark), var(--color-secondary-dark));
+}
+.btn-secondary {
+  @apply border font-semibold rounded-lg px-6 py-3 flex items-center justify-center gap-2 transition;
+  background: #fff;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.btn-secondary:hover, .btn-secondary:focus {
+  background: var(--color-primary);
+  color: #fff;
+}
+html.dark .btn-secondary {
+  background: #232946;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+html.dark .btn-secondary:hover, html.dark .btn-secondary:focus {
+  background: var(--color-primary);
+  color: #fff;
+}
+.btn-success {
+  @apply font-bold rounded-lg shadow px-6 py-3 flex items-center justify-center gap-2 transition;
+  background: var(--color-success);
+  color: #fff;
+  border: none;
+}
+.btn-success:hover, .btn-success:focus {
+  background: var(--color-success-dark);
+}
+.btn-danger {
+  @apply font-bold rounded-lg shadow px-6 py-3 flex items-center justify-center gap-2 transition;
+  background: var(--color-danger);
+  color: #fff;
+  border: none;
+}
+.btn-danger:hover, .btn-danger:focus {
+  background: var(--color-danger-dark);
+}
+.btn-warning {
+  @apply font-bold rounded-lg shadow px-6 py-3 flex items-center justify-center gap-2 transition;
+  background: var(--color-warning);
+  color: #fff;
+  border: none;
+}
+.btn-warning:hover, .btn-warning:focus {
+  background: var(--color-warning-dark);
+}
+/* Icon spacing utility */
+.btn-icon {
+  @apply inline-flex items-center gap-2;
+}
+
+/* Input styles */
+input, select, textarea {
+  @apply bg-white dark:bg-[#232946] text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200;
+}
+
+/* Custom scrollbar for a more modern look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
+}
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* Avatar gradient ring */
+.avatar-ring {
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  padding: 2px;
+  border-radius: 9999px;
+  display: inline-block;
+}
+
+/* General input/select/textarea styling for consistency */
+input,
+select,
+textarea {
+  @apply bg-white/80 dark:bg-slate-700 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500;
+}
+
+/* General button styling */
+button {
+  @apply transition-colors duration-200;
+}
+
+/* Link styling */
+a {
+  @apply text-blue-600 hover:underline dark:text-blue-400;
+}
+
+/* Ensure `react-vertical-timeline-component` looks good in dark mode */
+.vertical-timeline::before {
+  background: #3b82f6 !important; /* Consistent blue line */
+}
+
+.vertical-timeline-element-icon {
+  box-shadow: 0 0 0 4px #3b82f6, inset 0 2px 0 rgba(0, 0, 0, 0.08), 0 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.vertical-timeline-element-content {
+  background: rgba(59, 130, 246, 0.1) !important; /* Light blue background for content */
+  box-shadow: none !important;
+  color: #1e293b !important; /* Dark text for content */
+}
+
+.dark .vertical-timeline-element-content {
+  background: rgba(30, 41, 59, 0.2) !important; /* Darker background in dark mode */
+  color: #e2e8f0 !important; /* Lighter text in dark mode */
+}
+
+.vertical-timeline-element-content-arrow {
+  border-right-color: #3b82f6 !important;
+}
+
+.dark .vertical-timeline-element-content-arrow {
+  border-right-color: #3b82f6 !important; /* Keep arrow consistent */
+} 
