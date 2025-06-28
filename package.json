@@ -2,13 +2,14 @@
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
-    "ethers": "^6.14.4",
+    "ethers": "^5.8.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
     "mongoose": "^8.16.0",
     "multer": "^2.0.1",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "require": "^2.4.20"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",

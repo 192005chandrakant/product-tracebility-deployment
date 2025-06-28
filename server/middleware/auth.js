@@ -12,7 +12,13 @@ exports.auth = (req, res, next) => {
   }
 };
 
-exports.requireRole = (role) => (req, res, next) => {
-  if (!req.user || req.user.role !== role) return res.status(403).json({ error: 'Forbidden' });
+// Accepts a single role or an array of roles
+exports.requireRole = (roles) => (req, res, next) => {
+  if (!req.user) return res.status(403).json({ error: 'Forbidden' });
+  if (Array.isArray(roles)) {
+    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
+  } else {
+    if (req.user.role !== roles) return res.status(403).json({ error: 'Forbidden' });
+  }
   next();
 }; 

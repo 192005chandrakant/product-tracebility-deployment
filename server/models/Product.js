@@ -6,6 +6,7 @@ const ProductSchema = new mongoose.Schema({
   origin: String,
   manufacturer: String,
   certFile: String, // base64 or URL
+  imageFile: String, // product image URL
   description: String,
   stages: [String],
   blockchainRefHash: String,

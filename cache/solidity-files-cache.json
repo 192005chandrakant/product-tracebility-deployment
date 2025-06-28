@@ -1,0 +1,41 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Users\\Chandrakant\\walmart-sparkthon\\product-tracibility\\contracts\\ProductTraceability.sol": {
+      "lastModificationDate": 1751099645578,
+      "contentHash": "7dc1c53aab3f49e0eec6ec29d9d158a4",
+      "sourceName": "contracts/ProductTraceability.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ProductTraceability"
+      ]
+    }
+  }
+}

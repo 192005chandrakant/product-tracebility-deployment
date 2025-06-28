@@ -6,7 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { FaUserPlus, FaSignInAlt } from 'react-icons/fa';
 
 function AuthRegister() {
-  const [form, setForm] = useState({ email: '', password: '', role: 'customer' });
+  const [form, setForm] = useState({ email: '', password: '', role: 'producer' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -18,7 +18,7 @@ function AuthRegister() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -43,22 +43,20 @@ function AuthRegister() {
         transition={{ duration: 0.5 }}
       >
         <h2 className="text-3xl font-bold mb-6 text-center">Register</h2>
-        <input className="w-full px-4 py-2 rounded-lg bg-white/80 dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
-        <input className="w-full px-4 py-2 rounded-lg bg-white/80 dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required />
-        <select className="w-full px-4 py-2 rounded-lg bg-white/80 dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" name="role" value={form.role} onChange={handleChange}>
-          <option value="customer">Customer</option>
-          <option value="producer">Producer</option>
-        </select>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.97 }}
-          className="btn-primary w-full mb-4 py-3 text-lg btn-icon"
-          type="submit"
-          disabled={loading}
-        >
-          <FaUserPlus />
-          {loading ? 'Registering...' : 'Register'}
-        </motion.button>
+        <form onSubmit={handleSubmit}>
+          <input className="w-full px-4 py-2 rounded-lg bg-white/80 dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
+          <input className="w-full px-4 py-2 rounded-lg bg-white/80 dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required />
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.97 }}
+            className="btn-primary w-full mb-4 py-3 text-lg btn-icon"
+            type="submit"
+            disabled={loading}
+          >
+            <FaUserPlus />
+            {loading ? 'Registering...' : 'Register'}
+          </motion.button>
+        </form>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}

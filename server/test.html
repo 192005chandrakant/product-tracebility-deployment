@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Server Test</title>
+</head>
+<body>
+    <h1>Server Connectivity Test</h1>
+    <button onclick="testServer()">Test Server</button>
+    <button onclick="testSimpleRoute()">Test Simple Route</button>
+    <div id="result"></div>
+
+    <script>
+        async function testServer() {
+            try {
+                const res = await fetch('http://localhost:5000/test');
+                const data = await res.json();
+                document.getElementById('result').innerHTML = `<p>Server test: ${JSON.stringify(data)}</p>`;
+            } catch (err) {
+                document.getElementById('result').innerHTML = `<p>Server test failed: ${err.message}</p>`;
+            }
+        }
+
+        async function testSimpleRoute() {
+            try {
+                const res = await fetch('http://localhost:5000/api/add-product-simple', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test: 'data' })
+                });
+                const data = await res.json();
+                document.getElementById('result').innerHTML = `<p>Simple route test: ${JSON.stringify(data)}</p>`;
+            } catch (err) {
+                document.getElementById('result').innerHTML = `<p>Simple route test failed: ${err.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html> 
