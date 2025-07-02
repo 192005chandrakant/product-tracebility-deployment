@@ -4,7 +4,16 @@ const productController = require('../models/controllers/productController'); //
 
 const { auth, requireRole } = require('../middleware/auth');
 const multer = require('multer');
-const storage = multer.memoryStorage();
+const path = require('path');
+// Use diskStorage to save files to disk
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../../uploads'));
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
 const upload = multer({ storage });
 
 // Test route

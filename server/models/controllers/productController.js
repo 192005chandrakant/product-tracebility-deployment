@@ -1,5 +1,6 @@
 const path = require('path');
 const { ethers } = require('ethers'); // Uncomment and configure for blockchain
+const fs = require('fs');
 
 const Product = require('../Product.js');
 const { generateQRCode } = require('../../qr/generateQR.js');
@@ -12,15 +13,23 @@ exports.addProduct = async (req, res) => {
     console.log('Files:', req.files);
     
     let certFile = null;
-    let imageFile = '';
+    let imageFile = null;
     let blockchainRefHash = req.body.blockchainRefHash || '';
     let txHash = null;
     
     // Handle certificate file
     if (req.files && req.files.certFile && req.files.certFile[0]) {
-      const certBuffer = req.files.certFile[0].buffer;
+      const certFilePath = req.files.certFile[0].path;
+      let certBuffer = null;
+      try {
+        certBuffer = fs.readFileSync(certFilePath);
+      } catch (err) {
+        console.error('Error reading certificate file from disk:', err);
+      }
       certFile = `/uploads/${req.files.certFile[0].filename}`;
-      blockchainRefHash = hashString(certBuffer);
+      if (certBuffer) {
+        blockchainRefHash = hashString(certBuffer);
+      }
       console.log('Certificate file processed:', req.files.certFile[0].originalname);
     }
     
@@ -49,8 +58,8 @@ exports.addProduct = async (req, res) => {
 
     const product = new Product({ 
       ...req.body, 
-      certFile, 
-      imageFile,
+      certFile: certFile || null, 
+      imageFile: imageFile || null,
       blockchainRefHash: txHash || blockchainRefHash || 'mock-hash-' + Date.now(),
       createdByWallet: req.user.email // Use email as wallet for now
     });

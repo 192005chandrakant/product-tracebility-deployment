@@ -17,6 +17,10 @@ const STATUS_OPTIONS = [
   'Sold',
 ];
 
+function getFullUrl(url) {
+  return url && url.startsWith('/uploads') ? `http://localhost:5000${url}` : url;
+}
+
 function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -100,7 +104,7 @@ function ProductDetail() {
         <div className="w-full h-48 sm:h-64 bg-gradient-to-br from-blue-200 to-cyan-200 dark:from-blue-900 dark:to-cyan-900 flex items-center justify-center overflow-hidden">
           {product.imageFile ? (
             <img
-              src={product.imageFile}
+              src={getFullUrl(product.imageFile)}
               alt={product.name}
               className="object-cover w-full h-full"
               onError={e => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
@@ -134,7 +138,7 @@ function ProductDetail() {
               <div className="col-span-1 sm:col-span-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base flex items-center gap-2 mt-1">
                 <strong>Certificate:</strong>
                 <a
-                  href={product.certFile}
+                  href={getFullUrl(product.certFile)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-400 text-blue-500 font-semibold bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-400"

@@ -2,8 +2,7 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
-
-const provider = new ethers.JsonRpcProvider(process.env.INFURA_API_KEY);
+const provider = new ethers.JsonRpcProvider(process.env.INFURA_API_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 const contractAddress = process.env.CONTRACT_ADDRESS;
 const abi = JSON.parse(fs.readFileSync(path.join(__dirname, '../../contracts/ProductTraceability.abi.json')));

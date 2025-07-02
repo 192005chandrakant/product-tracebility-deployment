@@ -52,6 +52,7 @@ const trustBadges = [
 
 function Landing() {
   const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem('token');
   return (
     <div className="min-h-screen flex flex-col bg-transparent">
       {/* Hero Section */}
@@ -73,7 +74,7 @@ function Landing() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
             className="btn-primary px-8 py-4 text-lg mb-4"
-            onClick={() => navigate('/auth/register')}
+            onClick={() => isLoggedIn ? navigate('/home') : navigate('/auth/register')}
           >
             Get Started
           </motion.button>
@@ -161,7 +162,7 @@ function Landing() {
           whileHover={{ scale: 1.07 }}
           whileTap={{ scale: 0.97 }}
           className="btn-primary px-10 py-4 text-lg"
-          onClick={() => navigate('/auth/register')}
+          onClick={() => isLoggedIn ? navigate('/home') : navigate('/auth/register')}
         >
           Get Started Now
         </motion.button>

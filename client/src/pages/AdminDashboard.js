@@ -12,6 +12,10 @@ function isValidImage(url) {
   return url && typeof url === 'string' && (url.startsWith('http') || url.startsWith('/'));
 }
 
+function getFullUrl(url) {
+  return url && url.startsWith('/uploads') ? `http://localhost:5000${url}` : url;
+}
+
 function AdminDashboard() {
   const [products, setProducts] = useState([]);
   const navigate = useNavigate();
@@ -47,7 +51,7 @@ function AdminDashboard() {
               <div className="h-36 sm:h-40 w-full bg-gradient-to-br from-blue-200 to-cyan-200 dark:from-blue-900 dark:to-cyan-900 flex items-center justify-center overflow-hidden">
                 {isValidImage(p.imageFile) ? (
                   <img
-                    src={p.imageFile}
+                    src={getFullUrl(p.imageFile)}
                     alt={p.name}
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                     onError={e => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
@@ -81,7 +85,7 @@ function AdminDashboard() {
                   <div className="mb-2 flex items-center gap-2">
                     <FaFileAlt className="text-blue-500" />
                     <a
-                      href={p.certFile}
+                      href={getFullUrl(p.certFile)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 dark:text-blue-400 underline text-xs hover:text-blue-800"
@@ -108,7 +112,7 @@ function AdminDashboard() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
             className="btn-primary w-full sm:w-auto sm:min-w-[220px] px-8 py-3 text-base sm:text-lg btn-icon"
-            onClick={() => navigate('/add-product')}
+            onClick={() => navigate('/admin/add')}
           >
             <FaPlusCircle />
             Add Product
