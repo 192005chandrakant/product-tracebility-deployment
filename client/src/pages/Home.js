@@ -8,6 +8,7 @@ import { FaQrcode, FaEye, FaPlus, FaHistory, FaShieldAlt, FaGlobe, FaChartLine }
 function Home() {
   const navigate = useNavigate();
   const [productId, setProductId] = useState('');
+  const [certHash, setCertHash] = useState('');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -121,7 +122,7 @@ function Home() {
           transition={{ delay: 0.2 }}
           className="max-w-2xl mx-auto"
         >
-          <div className="p-6 sm:p-8 rounded-2xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/20 dark:border-gray-700/30">
+          <div className="p-6 sm:p-8 rounded-2xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/20 dark:border-gray-700/30 mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6 text-gray-900 dark:text-gray-100">
               Search Product by ID
             </h2>
@@ -142,6 +143,47 @@ function Home() {
                     navigate(`/product/${productId}`);
                   } else {
                     toast.error('Please enter a Product ID');
+                  }
+                }}
+              >
+                <FaEye />
+                View
+              </motion.button>
+            </div>
+          </div>
+          {/* Certification Hash Search */}
+          <div className="p-6 sm:p-8 rounded-2xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/20 dark:border-gray-700/30">
+            <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6 text-gray-900 dark:text-gray-100">
+              Search Product by Certification Hash
+            </h2>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <input
+                className="flex-1 px-4 py-2 sm:py-3 rounded-xl bg-white/80 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
+                type="text"
+                placeholder="Enter Certification Hash"
+                value={certHash}
+                onChange={e => setCertHash(e.target.value)}
+              />
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-200 flex items-center gap-2 text-base"
+                onClick={async () => {
+                  if (!certHash) {
+                    toast.error('Please enter a Certification Hash');
+                    return;
+                  }
+                  try {
+                    const res = await fetch(`/api/product/by-cert-hash/${certHash}`);
+                    if (!res.ok) throw new Error('Product not found');
+                    const data = await res.json();
+                    if (data && data.productId) {
+                      navigate(`/product/${data.productId}`);
+                    } else {
+                      toast.error('Product not found');
+                    }
+                  } catch (err) {
+                    toast.error('Product not found');
                   }
                 }}
               >

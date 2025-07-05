@@ -2,10 +2,25 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
-const provider = new ethers.JsonRpcProvider(process.env.INFURA_API_URL);
+
+// Use ethers v6 syntax
+const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+// Check provider connection at startup
+(async () => {
+  try {
+    const network = await provider.getNetwork();
+    console.log('Connected to network:', network);
+  } catch (err) {
+    console.error('Failed to connect to Ethereum network:', err.message);
+  }
+})();
+
 const contractAddress = process.env.CONTRACT_ADDRESS;
-const abi = JSON.parse(fs.readFileSync(path.join(__dirname, '../../contracts/ProductTraceability.abi.json')));
+const abiPath = path.join(__dirname, '../../contracts/ProductTraceability.abi.json');
+const abi = JSON.parse(fs.readFileSync(abiPath, 'utf-8'));
+
 const contract = new ethers.Contract(contractAddress, abi, wallet);
 
 exports.addProductOnChain = async ({ productId, name, origin, manufacturer, certificationHash }) => {
@@ -22,4 +37,30 @@ exports.updateStageOnChain = async (productId, stage) => {
 
 exports.getProductOnChain = async (productId) => {
   return await contract.getProduct(productId);
-}; 
+};
+
+// Function to search for products by certification hash on blockchain
+// Note: This is a helper function that can be used to verify certification hashes
+exports.searchByCertificationHash = async (certificationHash) => {
+  try {
+    // Since the smart contract doesn't have a reverse mapping, we would need to:
+    // 1. Either add a reverse mapping to the smart contract
+    // 2. Or implement an event-based indexing system
+    // 3. Or search through known product IDs (not efficient for production)
+    
+    // For now, this function can be used to verify if a certification hash exists
+    // by checking against known products
+    console.log('Searching for certification hash on blockchain:', certificationHash);
+    
+    // This is a placeholder implementation
+    // In a production system, you would want to implement proper indexing
+    return null;
+  } catch (error) {
+    console.error('Error searching by certification hash on blockchain:', error);
+    throw error;
+  }
+};
+
+console.log("INFURA:", process.env.INFURA_API_URL);
+console.log("PRIVATE_KEY loaded:", !!process.env.PRIVATE_KEY);
+console.log("Contract Address:", process.env.CONTRACT_ADDRESS);

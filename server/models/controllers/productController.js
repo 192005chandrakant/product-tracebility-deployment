@@ -61,6 +61,7 @@ exports.addProduct = async (req, res) => {
       certFile: certFile || null, 
       imageFile: imageFile || null,
       blockchainRefHash: txHash || blockchainRefHash || 'mock-hash-' + Date.now(),
+      certificationHash: blockchainRefHash, // Store the actual certification hash
       createdByWallet: req.user.email // Use email as wallet for now
     });
     
@@ -128,10 +129,26 @@ exports.getProduct = async (req, res) => {
     let onChain = null;
     try {
       onChain = await blockchain.getProductOnChain(id);
-    } catch (e) {}
+    // Fix: Convert all BigInt values in onChain to strings
+      function bigIntToString(obj) {
+        if (typeof obj === 'bigint') return obj.toString();
+        if (Array.isArray(obj)) return obj.map(bigIntToString);
+        if (obj && typeof obj === 'object') {
+          return Object.fromEntries(
+            Object.entries(obj).map(([k, v]) => [k, bigIntToString(v)])
+          );
+        }
+        return obj;
+      }
+      onChain = bigIntToString(onChain);
+
+    } catch (e) {
+      console.error('Blockchain error in getProduct:', e);
+    }
 
     res.json({ ...product.toObject(), onChain });
   } catch (err) {
+    console.error('Error in getProduct:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -141,6 +158,46 @@ exports.getAllProducts = async (req, res) => {
     const products = await Product.find();
     res.json(products);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getProductByCertHash = async (req, res) => {
+  try {
+    const { certHash } = req.params;
+    
+    // First try to find by certificationHash field
+    let product = await Product.findOne({ certificationHash: certHash });
+    
+    // If not found, try to find by blockchainRefHash (for backward compatibility)
+    if (!product) {
+      product = await Product.findOne({ blockchainRefHash: certHash });
+    }
+    
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    let onChain = null;
+    try {
+      onChain = await blockchain.getProductOnChain(product.productId);
+      // Convert BigInt values to strings
+      function bigIntToString(obj) {
+        if (typeof obj === 'bigint') return obj.toString();
+        if (Array.isArray(obj)) return obj.map(bigIntToString);
+        if (obj && typeof obj === 'object') {
+          return Object.fromEntries(
+            Object.entries(obj).map(([k, v]) => [k, bigIntToString(v)])
+          );
+        }
+        return obj;
+      }
+      onChain = bigIntToString(onChain);
+    } catch (e) {
+      console.error('Blockchain error in getProductByCertHash:', e);
+    }
+
+    res.json({ ...product.toObject(), onChain });
+  } catch (err) {
+    console.error('Error in getProductByCertHash:', err);
     res.status(500).json({ error: err.message });
   }
 };

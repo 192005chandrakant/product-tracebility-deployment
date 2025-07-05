@@ -10,6 +10,7 @@ const ProductSchema = new mongoose.Schema({
   description: String,
   stages: [String],
   blockchainRefHash: String,
+  certificationHash: String, // Store certification hash separately for searching
   createdByWallet: String,
   createdAt: { type: Date, default: Date.now },
 });

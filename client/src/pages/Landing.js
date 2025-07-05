@@ -162,7 +162,7 @@ function Landing() {
           whileHover={{ scale: 1.07 }}
           whileTap={{ scale: 0.97 }}
           className="btn-primary px-10 py-4 text-lg"
-          onClick={() => isLoggedIn ? navigate('/home') : navigate('/auth/register')}
+          onClick={() => isLoggedIn ? navigate('') : navigate('/auth/register')}
         >
           Get Started Now
         </motion.button>

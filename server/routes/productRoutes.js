@@ -78,5 +78,6 @@ router.post('/add-product',
 router.post('/update-product/:id', auth, requireRole(['producer', 'admin']), productController.updateProduct);
 router.get('/product/:id', productController.getProduct);
 router.get('/products', productController.getAllProducts);
+router.get('/product/by-cert-hash/:certHash', productController.getProductByCertHash);
 
 module.exports = router;

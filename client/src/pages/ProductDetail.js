@@ -211,16 +211,16 @@ function ProductDetail() {
           {product.onChain && (
             <div className="mt-4 p-4 bg-gray-100 dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-slate-600">
               <h4 className="font-semibold mb-2 text-lg text-gray-900 dark:text-gray-100">On-Chain Data:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                <div><strong>Product ID:</strong> {product.onChain[0]}</div>
-                <div><strong>Name:</strong> {product.onChain[1]}</div>
-                <div><strong>Origin:</strong> {product.onChain[2]}</div>
-                <div><strong>Manufacturer:</strong> {product.onChain[3]}</div>
-                <div className="col-span-2"><strong>Stages:</strong> {product.onChain[4] && product.onChain[4].join(', ')}</div>
-                <div className="col-span-2"><strong>Cert Hash:</strong> {product.onChain[5]}</div>
-                <div><strong>Timestamp:</strong> {new Date(parseInt(product.onChain[6]) * 1000).toLocaleString()}</div>
-                <div><strong>Creator:</strong> {product.onChain[7]}</div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+  <div className="truncate"><strong>Product ID:</strong> <span className="break-all">{product.onChain[0]}</span></div>
+  <div className="truncate"><strong>Name:</strong> <span className="break-all">{product.onChain[1]}</span></div>
+  <div className="truncate"><strong>Origin:</strong> <span className="break-all">{product.onChain[2]}</span></div>
+  <div className="truncate"><strong>Manufacturer:</strong> <span className="break-all">{product.onChain[3]}</span></div>
+  <div className="col-span-2 truncate"><strong>Stages:</strong> <span className="break-all">{product.onChain[4] && product.onChain[4].join(', ')}</span></div>
+  <div className="col-span-2 truncate"><strong>Cert Hash:</strong> <span className="break-all">{product.onChain[5]}</span></div>
+  <div className="truncate"><strong>Timestamp:</strong> <span className="break-all">{new Date(parseInt(product.onChain[6]) * 1000).toLocaleString()}</span></div>
+  <div className="truncate"><strong>Creator:</strong> <span className="break-all">{product.onChain[7]}</span></div>
+</div>
             </div>
           )}
         </div>

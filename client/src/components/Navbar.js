@@ -43,8 +43,8 @@ function Navbar({ user, onLogout }) {
           transition={{ duration: 0.18 }}
           className="absolute right-0 mt-2 w-48 rounded-xl shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 z-50"
         >
-          <div className="py-2">
-            <div className="px-4 py-2 text-gray-700 dark:text-gray-200 text-sm font-semibold">
+          <div className="py-2 min-w-0">
+            <div className="px-4 py-2 text-gray-700 dark:text-gray-200 text-sm font-semibold break-all whitespace-normal min-w-0">
               {user && user.email}
             </div>
             <div className="border-t border-gray-100 dark:border-gray-800 my-1" />
@@ -199,10 +199,10 @@ function Navbar({ user, onLogout }) {
                         <FaUserAlt className="text-white text-lg" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-gray-900 dark:text-gray-100 font-medium">{user.email}</p>
-                      <p className="text-blue-600 dark:text-blue-400 text-sm capitalize">{user.role}</p>
-                    </div>
+                  <div className="flex-1 min-w-0">
+  <p className="text-gray-900 dark:text-gray-100 font-medium break-all whitespace-normal">{user.email}</p>
+  <p className="text-blue-600 dark:text-blue-400 text-sm capitalize">{user.role}</p>
+</div>
                   </div>
                   
                   {/* Profile Actions */}

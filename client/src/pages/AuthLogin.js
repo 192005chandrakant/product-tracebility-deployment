@@ -45,8 +45,8 @@ function AuthLogin() {
       toast.success('Login successful! Redirecting...');
       
       // Redirect to home dashboard instead of landing page
-      console.log('Navigating to /home');
-      navigate('/home');
+      console.log('Navigating to ');
+      navigate('');
     } catch (err) {
       console.error('Login error:', err);
       toast.error(err.message);
