@@ -41,13 +41,13 @@ function Navbar({ user, onLogout }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.18 }}
-          className="absolute right-0 mt-2 w-48 rounded-xl shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 z-50"
+          className="absolute right-0 mt-2 w-48 rounded-xl shadow-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 z-50 backdrop-blur-lg"
         >
           <div className="py-2 min-w-0">
-            <div className="px-4 py-2 text-gray-700 dark:text-gray-200 text-sm font-semibold break-all whitespace-normal min-w-0">
+            <div className="px-4 py-2 text-gray-700 dark:text-gray-200 text-sm font-semibold break-all whitespace-normal min-w-0 bg-gray-50 dark:bg-slate-700 rounded-t-xl">
               {user && user.email}
             </div>
-            <div className="border-t border-gray-100 dark:border-gray-800 my-1" />
+            <div className="border-t border-gray-200 dark:border-slate-600 my-1" />
             <button
               className="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors"
               onClick={() => {
@@ -76,7 +76,11 @@ function Navbar({ user, onLogout }) {
 
   return (
     <motion.nav
-      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/10 dark:bg-black/20 border-b border-white/20 dark:border-gray-700/30"
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500
+        backdrop-blur-xl shadow-lg
+        bg-white/95 border-b-2 border-gray-200/60 
+        dark:bg-slate-900/95 dark:border-cyan-400/40 
+        dark:shadow-[0_4px_20px_rgba(0,255,255,0.15)]"
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
@@ -87,19 +91,29 @@ function Navbar({ user, onLogout }) {
           <motion.div
             whileHover={{ scale: 1.05, rotate: -2 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center space-x-2 cursor-pointer"
+            className="flex items-center space-x-3 cursor-pointer group"
             onClick={() => navigate('/')}
           >
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">T</span>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg
+              bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 
+              group-hover:shadow-xl group-hover:scale-110
+              dark:bg-gradient-to-br dark:from-cyan-400 dark:via-blue-500 dark:to-purple-500 
+              dark:shadow-[0_0_15px_rgba(0,255,255,0.4)]
+              dark:group-hover:shadow-[0_0_25px_rgba(0,255,255,0.6)]">
+              <span className="text-white font-bold text-xl drop-shadow-lg
+                dark:drop-shadow-[0_0_5px_rgba(0,255,255,0.8)]">T</span>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent transition-all duration-300
+              from-indigo-600 via-purple-600 to-pink-600 
+              dark:from-cyan-300 dark:via-blue-300 dark:to-purple-300
+              dark:drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]
+              group-hover:scale-105">
               TraceChain
             </span>
           </motion.div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden md:flex items-center space-x-2">
             {filteredNavLinks.map((link) => (
               <motion.div
                 key={link.to}
@@ -108,10 +122,15 @@ function Navbar({ user, onLogout }) {
               >
                 <Link
                   to={link.to}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 font-medium"
+                  className="flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 group
+                    text-gray-700 hover:text-indigo-600 hover:bg-indigo-50/80 hover:shadow-lg
+                    dark:text-slate-300 dark:hover:text-cyan-300 dark:hover:bg-slate-700/50 
+                    dark:hover:shadow-[0_4px_15px_rgba(0,255,255,0.15)]
+                    border border-transparent hover:border-indigo-200/50 
+                    dark:hover:border-cyan-400/30"
                 >
-                  <link.icon className="w-4 h-4" />
-                  <span>{link.label}</span>
+                  <link.icon className="w-5 h-5 transition-all duration-300 group-hover:scale-110" />
+                  <span className="tracking-wide">{link.label}</span>
                 </Link>
               </motion.div>
             ))}

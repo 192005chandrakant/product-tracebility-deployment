@@ -1,6 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Scene3D from '../components/3D/Scene3D';
+import AnimatedCard from '../components/UI/AnimatedCard';
+import GlowingButton from '../components/UI/GlowingButton';
+import ParticleBackground from '../components/UI/ParticleBackground';
 
 const features = [
   {
@@ -53,122 +57,195 @@ const trustBadges = [
 function Landing() {
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem('token');
+  
+  const handleGetStarted = () => {
+    console.log('Get Started clicked, isLoggedIn:', isLoggedIn);
+    if (isLoggedIn) {
+      console.log('Navigating to /home');
+      navigate('/home');
+    } else {
+      console.log('Navigating to /auth/login');
+      navigate('/auth/login');
+    }
+  };
+  
   return (
-    <div className="min-h-screen flex flex-col bg-transparent">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      <ParticleBackground count={80} />
+      
       {/* Hero Section */}
-      <section className="flex flex-col md:flex-row items-center justify-between gap-10 px-6 py-16 md:py-24 max-w-7xl mx-auto">
+      <section className="flex flex-col lg:flex-row items-center justify-between gap-10 px-6 py-16 md:py-24 max-w-7xl mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7 }}
           className="flex-1"
         >
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 text-gray-900 dark:text-gray-100 leading-tight">
+          <motion.h1 
+            className="text-4xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-white leading-tight"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
             Trace Every Product.<br />
-            <span className="bg-gradient-to-r from-indigo-500 to-cyan-400 bg-clip-text text-transparent">Trust Every Step.</span>
-          </h1>
-          <p className="text-lg md:text-2xl mb-8 text-gray-700 dark:text-gray-300 max-w-xl">
+            <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+              Trust Every Step.
+            </span>
+          </motion.h1>
+          
+          <motion.p 
+            className="text-lg md:text-2xl mb-8 text-gray-300 max-w-xl leading-relaxed"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+          >
             The next-generation blockchain-based product traceability platform for producers, retailers, and customers.
-          </p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            className="btn-primary px-8 py-4 text-lg mb-4"
-            onClick={() => isLoggedIn ? navigate('/home') : navigate('/auth/register')}
+          </motion.p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="flex flex-wrap gap-4 mb-8"
           >
-            Get Started
-          </motion.button>
-          <button
-            className="ml-4 text-blue-600 dark:text-blue-400 underline font-semibold"
-            onClick={() => navigate('/scan')}
+            <GlowingButton
+              variant="primary"
+              size="lg"
+              onClick={handleGetStarted}
+            >
+              Get Started
+            </GlowingButton>
+            <GlowingButton
+              variant="ghost"
+              size="lg"
+              onClick={() => navigate('/scan')}
+            >
+              Try QR Scan
+            </GlowingButton>
+          </motion.div>
+          
+          <motion.div 
+            className="flex flex-wrap gap-4 mt-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
           >
-            Try QR Scan
-          </button>
-          <div className="flex flex-wrap gap-4 mt-8">
-            {trustBadges.map(badge => (
-              <div key={badge.label} className="flex items-center gap-2 px-4 py-2 card text-sm font-semibold text-gray-800 dark:text-gray-100">
+            {trustBadges.map((badge, index) => (
+              <AnimatedCard
+                key={badge.label}
+                delay={0.1 * index}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-sm font-semibold text-white"
+                hover={false}
+              >
                 <span className="text-xl">{badge.icon}</span> {badge.label}
-              </div>
+              </AnimatedCard>
             ))}
-          </div>
+          </motion.div>
         </motion.div>
+        
         <motion.div
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7 }}
-          className="flex-1 flex justify-center"
+          transition={{ duration: 0.7, delay: 0.3 }}
+          className="flex-1 max-w-lg h-96 lg:h-[500px]"
         >
-          <img
-            src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80"
-            alt="Product Traceability"
-            className="rounded-2xl shadow-xl max-w-xs md:max-w-md card border-2 border-white/30"
-          />
+          <Scene3D variant="hero" />
         </motion.div>
       </section>
-
+      
       {/* Features Section */}
-      <section className="py-12 px-6 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-10 text-gray-900 dark:text-gray-100">Why Choose Us?</h2>
+      <section className="py-16 md:py-24 px-6 max-w-7xl mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
+            Why Choose <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">TraceChain?</span>
+          </h2>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Experience the future of supply chain transparency with cutting-edge blockchain technology
+          </p>
+        </motion.div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map(f => (
-            <motion.div
-              key={f.title}
-              className="card p-6 flex flex-col items-center text-center shadow-lg"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.97 }}
+          {features.map((feature, index) => (
+            <AnimatedCard
+              key={feature.title}
+              delay={0.1 * index}
+              className="p-6 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl hover:bg-white/20 transition-all duration-300"
             >
-              <div className="text-4xl mb-3">{f.icon}</div>
-              <h3 className="font-bold text-lg mb-2">{f.title}</h3>
-              <p className="text-gray-700 dark:text-gray-300 text-sm">{f.desc}</p>
-            </motion.div>
+              <div className="text-4xl mb-4">{feature.icon}</div>
+              <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
+              <p className="text-gray-300">{feature.desc}</p>
+            </AnimatedCard>
           ))}
         </div>
       </section>
-
+      
       {/* Testimonials Section */}
-      <section className="py-12 px-6 max-w-5xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-10 text-gray-900 dark:text-gray-100">What Our Users Say</h2>
+      <section className="py-16 md:py-24 px-6 max-w-7xl mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
+            What Our Users Say
+          </h2>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Join thousands of satisfied users who trust TraceChain
+          </p>
+        </motion.div>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map(t => (
-            <motion.div
-              key={t.name}
-              className="card p-6 flex flex-col items-center text-center shadow-lg"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
+          {testimonials.map((testimonial, index) => (
+            <AnimatedCard
+              key={testimonial.name}
+              delay={0.1 * index}
+              className="p-6 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-center"
             >
-              <div className="avatar-ring mb-3">
-                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-2xl">
-                  {t.avatar}
-                </div>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 flex items-center justify-center text-white font-bold text-xl">
+                {testimonial.avatar}
               </div>
-              <p className="italic text-gray-700 dark:text-gray-300 mb-3">{t.text}</p>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{t.name}</span>
-            </motion.div>
+              <p className="italic text-gray-300 mb-4 text-lg">{testimonial.text}</p>
+              <span className="font-semibold text-white">{testimonial.name}</span>
+            </AnimatedCard>
           ))}
         </div>
       </section>
 
       {/* Call to Action */}
-      <section className="py-12 px-6 max-w-3xl mx-auto text-center">
-        <motion.h3
-          className="text-2xl md:text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100"
-          initial={{ opacity: 0, y: 20 }}
+      <section className="py-16 md:py-24 px-6 max-w-4xl mx-auto text-center relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8 md:p-12"
         >
-          Ready to build trust in your supply chain?
-        </motion.h3>
-        <motion.button
-          whileHover={{ scale: 1.07 }}
-          whileTap={{ scale: 0.97 }}
-          className="btn-primary px-10 py-4 text-lg"
-          onClick={() => isLoggedIn ? navigate('') : navigate('/auth/register')}
-        >
-          Get Started Now
-        </motion.button>
+          <h3 className="text-3xl md:text-5xl font-bold mb-6 text-white">
+            Ready to build trust in your 
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent"> supply chain?</span>
+          </h3>
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            Join the revolution and experience transparent, secure product traceability
+          </p>
+          <GlowingButton
+            variant="primary"
+            size="xl"
+            onClick={handleGetStarted}
+          >
+            Get Started Now
+          </GlowingButton>
+        </motion.div>
       </section>
     </div>
   );
 }
 
-export default Landing; 
+export default Landing;

@@ -1,25 +1,36 @@
 const express = require('express');
 const router = express.Router();
-const productController = require('../models/controllers/productController'); // ✅ Renamed to match usage below
+const productController = require('../models/controllers/productController');
 
-const { auth, requireRole } = require('../middleware/auth');
+// Use enhanced auth middleware instead of basic auth
+const { auth, requireRole, requirePermission } = require('../middleware/enhancedAuth');
 const multer = require('multer');
-const path = require('path');
-// Use diskStorage to save files to disk
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../../uploads'));
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
+
+// Use memory storage for file uploads to Cloudinary
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
   }
 });
-const upload = multer({ storage });
 
 // Test route
 router.get('/test', (req, res) => {
   console.log('Test route hit!');
   res.json({ message: 'Product routes working!', timestamp: new Date().toISOString() });
+});
+
+// Simple test route
+router.post('/add-product-simple', (req, res) => {
+  console.log('Simple add product route hit!');
+  console.log('Body:', req.body);
+  res.status(200).json({ 
+    success: true,
+    message: 'Simple route working', 
+    body: req.body,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Simple test route without files
@@ -65,6 +76,7 @@ const debugRequest = (req, res, next) => {
 router.post('/add-product',
   auth,
   requireRole('producer'),
+  requirePermission('add_product'),
   upload.fields([
     { name: 'certFile', maxCount: 1 },
     { name: 'imageFile', maxCount: 1 }
@@ -75,9 +87,87 @@ router.post('/add-product',
 );
 
 // Original routes
-router.post('/update-product/:id', auth, requireRole(['producer', 'admin']), productController.updateProduct);
+router.post('/update-product/:id', 
+  auth, 
+  requireRole(['producer', 'admin']), 
+  requirePermission('update_product_status'),
+  upload.fields([
+    { name: 'certFile', maxCount: 1 },
+    { name: 'imageFile', maxCount: 1 }
+  ]),
+  handleMulterError,
+  productController.updateProduct
+);
 router.get('/product/:id', productController.getProduct);
 router.get('/products', productController.getAllProducts);
+router.get('/recent-products', productController.getRecentProducts);
 router.get('/product/by-cert-hash/:certHash', productController.getProductByCertHash);
+
+// Add route to generate and download QR code
+router.get('/product/:id/qr', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await require('../models/Product').findOne({ productId: id });
+    
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    // If product already has QR code, return it
+    if (product.qrCode && product.qrCode.publicUrl) {
+      return res.json({
+        success: true,
+        qrCode: product.qrCode
+      });
+    }
+    
+    // Otherwise generate a new QR code
+    const { generateQRCode } = require('../qr/generateQR');
+    
+    // Generate QR code with full product URL for better user experience
+    const productUrl = `${req.protocol}://${req.get('host')}/product/${product.productId}`;
+    console.log('Generating QR code for URL:', productUrl);
+    
+    const qrCodeBuffer = await generateQRCode(productUrl);
+    
+    if (!qrCodeBuffer) {
+      return res.status(500).json({ error: 'Failed to generate QR code' });
+    }
+    
+    // Upload to storage
+    const qrFileName = `qr_${product.productId}_${Date.now()}.png`;
+    const getStorageService = require('../services/storageFactory').getStorageService;
+    const qrUploadResult = await getStorageService().uploadFile(
+      qrCodeBuffer,
+      qrFileName,
+      'image/png',
+      product.productId
+    );
+    
+    if (!qrUploadResult.success) {
+      return res.status(500).json({ error: 'Failed to upload QR code' });
+    }
+    
+    const qrCodeData = {
+      fileId: qrUploadResult.fileId,
+      fileName: qrUploadResult.fileName,
+      publicUrl: qrUploadResult.publicUrl,
+      downloadUrl: qrUploadResult.downloadUrl,
+      qrContent: productUrl // Store what the QR code contains
+    };
+    
+    // Save QR code data to product
+    product.qrCode = qrCodeData;
+    await product.save();
+    
+    res.json({
+      success: true,
+      qrCode: qrCodeData
+    });
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 module.exports = router;

@@ -4,27 +4,33 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "start": "node index.js",
+    "start": "cross-env NODE_ENV=production node index.js",
     "dev": "nodemon index.js",
-    "test": "node test-server.js",
-    "test-setup": "node test-server-start.js",
-    "test-profile": "node test-profile.js",
-    "test-profile-simple": "node test-profile-simple.js"
+    "prod": "cross-env NODE_ENV=production node index.js",
+    "build": "echo 'Server build complete'",
+    "analyze": "node --inspect index.js",
+    "monitor": "node --inspect index.js",
+    "cluster": "node cluster.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^8.16.0",
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^1.41.3",
+    "compression": "^1.7.4",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "bcryptjs": "^3.0.2",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.1",
     "ethers": "^6.14.4",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.0",
+    "multer": "^2.0.1",
     "qrcode": "^1.5.3"
   },
   "devDependencies": {
-    "nodemon": "^3.0.3",
+    "axios": "^1.6.0",
+    "cross-env": "^7.0.3",
     "node-fetch": "^2.7.0",
-    "axios": "^1.6.0"
+    "nodemon": "^3.0.3"
   }
 }

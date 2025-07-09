@@ -30,9 +30,23 @@ exports.addProductOnChain = async ({ productId, name, origin, manufacturer, cert
 };
 
 exports.updateStageOnChain = async (productId, stage) => {
-  const tx = await contract.updateStage(productId, stage);
-  await tx.wait();
-  return tx.hash;
+  try {
+    console.log('Calling blockchain contract to update stage:', { productId, stage });
+    
+    // Attempt to update stage on blockchain
+    const tx = await contract.updateStage(productId, stage);
+    console.log('Transaction sent, waiting for confirmation...');
+    
+    // Wait for transaction to be mined
+    const receipt = await tx.wait();
+    console.log('Transaction confirmed, hash:', receipt.hash);
+    
+    return receipt.hash;
+  } catch (error) {
+    console.error('Blockchain update stage error:', error);
+    // Throw a more user-friendly error that will be caught by the controller
+    throw new Error('Failed to update product stage on blockchain. Please try again.');
+  }
 };
 
 exports.getProductOnChain = async (productId) => {

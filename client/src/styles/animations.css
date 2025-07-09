@@ -1,0 +1,169 @@
+/* Custom animations for enhanced UI */
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-12deg);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.8), 0 0 40px rgba(99, 102, 241, 0.4);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Enhanced focus states */
+.focus-ring-enhanced:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.dark .focus-ring-enhanced:focus {
+  box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.1), 0 0 0 4px rgba(0, 255, 255, 0.2);
+}
+
+/* Glass morphism effect */
+.glass-morphism {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background-color: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(209, 213, 219, 0.3);
+}
+
+.dark .glass-morphism {
+  background-color: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+/* Neon glow effects for dark mode */
+.neon-glow-cyan {
+  box-shadow: 
+    0 0 5px rgba(0, 255, 255, 0.3),
+    0 0 10px rgba(0, 255, 255, 0.3),
+    0 0 15px rgba(0, 255, 255, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+.neon-glow-purple {
+  box-shadow: 
+    0 0 5px rgba(168, 85, 247, 0.3),
+    0 0 10px rgba(168, 85, 247, 0.3),
+    0 0 15px rgba(168, 85, 247, 0.3),
+    0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+.neon-glow-pink {
+  box-shadow: 
+    0 0 5px rgba(236, 72, 153, 0.3),
+    0 0 10px rgba(236, 72, 153, 0.3),
+    0 0 15px rgba(236, 72, 153, 0.3),
+    0 0 20px rgba(236, 72, 153, 0.3);
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.dark .hover-lift:hover {
+  box-shadow: 0 20px 40px rgba(0, 255, 255, 0.1);
+}
+
+/* Button ripple effect */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ripple-effect:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Text glow effects */
+.text-glow-cyan {
+  text-shadow: 
+    0 0 5px rgba(0, 255, 255, 0.3),
+    0 0 10px rgba(0, 255, 255, 0.3),
+    0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.text-glow-purple {
+  text-shadow: 
+    0 0 5px rgba(168, 85, 247, 0.3),
+    0 0 10px rgba(168, 85, 247, 0.3),
+    0 0 15px rgba(168, 85, 247, 0.3);
+}
+
+/* Form input enhancements */
+.input-enhanced {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-enhanced:focus {
+  transform: translateY(-2px);
+}
+
+.input-enhanced:focus::placeholder {
+  transform: translateY(-2px);
+  opacity: 0.7;
+}

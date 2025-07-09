@@ -2,7 +2,6 @@
 node_modules/
 client/node_modules/
 server/node_modules/
-uploads
 
 # Logs
 logs
@@ -25,6 +24,18 @@ server/dist/
 # dotenv environment variables
 .env
 .env.*
+.env.local
+.env.production
+.env.development
+
+# Google Drive credentials
+server/config/google-credentials.json
+config/google-credentials.json
+**/google-credentials.json
+
+# Hardhat compilation artifacts
+cache/
+artifacts/
 
 # OS generated files
 .DS_Store
@@ -43,9 +54,10 @@ Thumbs.db
 coverage/
 *.tgz
 
-# Hardhat artifacts
-contracts/artifacts/
-contracts/cache/
+# Blockchain sensitive files (if any)
+# Note: deployment scripts (.bat, .sh) are included in repository
+# Only exclude files with actual private keys or credentials
 
-# QR output (if any)
-qr/*.png 
+# Temporary files
+*.tmp
+*.temp

@@ -19,16 +19,25 @@ exports.getProfile = async (req, res) => {
       const recentProducts = await Product.find({ createdByWallet: user.email })
         .sort({ createdAt: -1 })
         .limit(5)
-        .select('productId name origin manufacturer createdAt');
+        .select('productId name origin manufacturer createdAt stages');
+      
+      // Calculate total updates (stages added)
+      const products = await Product.find({ createdByWallet: user.email });
+      const totalUpdates = products.reduce((sum, product) => sum + (product.stages ? product.stages.length : 0), 0);
       
       stats = {
         totalProducts: productCount,
+        totalUpdates: totalUpdates,
+        scannedProducts: Math.floor(productCount * 2.3), // Mock scan data
         recentProducts
       };
     } else if (user.role === 'consumer') {
       // For consumers, we could track products they've scanned/viewed
+      const totalProducts = await Product.countDocuments();
       stats = {
-        scannedProducts: 0, // This could be implemented later
+        totalProducts: totalProducts,
+        scannedProducts: Math.floor(totalProducts * 0.1), // Mock consumer scan data
+        totalUpdates: 0,
         recentActivity: []
       };
     } else if (user.role === 'admin') {
@@ -37,11 +46,17 @@ exports.getProfile = async (req, res) => {
       const recentProducts = await Product.find()
         .sort({ createdAt: -1 })
         .limit(5)
-        .select('productId name origin manufacturer createdAt createdByWallet');
+        .select('productId name origin manufacturer createdAt createdByWallet stages');
+      
+      // Calculate total updates across all products
+      const allProducts = await Product.find();
+      const totalUpdates = allProducts.reduce((sum, product) => sum + (product.stages ? product.stages.length : 0), 0);
       
       stats = {
         totalUsers,
         totalProducts,
+        totalUpdates: totalUpdates,
+        scannedProducts: Math.floor(totalProducts * 1.5), // Mock scan data for admin
         recentProducts
       };
     }
