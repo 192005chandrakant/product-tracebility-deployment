@@ -11,7 +11,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://product-traceability-api.onrender.com';
 
 async function validateDeployment() {
   console.log('🔍 Validating Production Deployment...\n');

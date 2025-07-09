@@ -11,6 +11,7 @@ import Scene3D from '../components/3D/Scene3D';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import GlowingButton from '../components/UI/GlowingButton';
 import ParticleBackground from '../components/UI/ParticleBackground';
+import { getAPIBaseURL } from '../utils/apiConfig';
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/600x300?text=No+Image';
 const STATUS_OPTIONS = [
@@ -83,7 +84,7 @@ function getDownloadUrl(fileData) {
   // Legacy format - string URL or path
   if (typeof fileData === 'string' && fileData) {
     console.log('Using string URL/path:', fileData);
-    return fileData.startsWith('/uploads') ? `http://localhost:5000${fileData}` : fileData;
+    return fileData.startsWith('/uploads') ? `${getAPIBaseURL()}${fileData}` : fileData;
   }
   
   console.log('Unknown file data format:', fileData);

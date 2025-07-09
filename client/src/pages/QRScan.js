@@ -1,8 +1,8 @@
 import React from 'react';
-import { QrReader } from 'react-qr-reader';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaArrowLeft, FaUpload, FaQrcode, FaCamera } from 'react-icons/fa';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import jsQR from 'jsqr';
 import ParticleBackground from '../components/UI/ParticleBackground';
 import GlowingButton from '../components/UI/GlowingButton';
@@ -36,7 +36,55 @@ function QRScan() {
   const [scanResult, setScanResult] = React.useState(null);
   const [error, setError] = React.useState(null);
   const [isScanning, setIsScanning] = React.useState(false);
+  const [scanner, setScanner] = React.useState(null);
   const fileInputRef = React.useRef();
+
+  // Initialize QR scanner
+  React.useEffect(() => {
+    if (isScanning) {
+      const html5QrcodeScanner = new Html5QrcodeScanner(
+        "qr-scanner",
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          facingMode: "environment"
+        },
+        false
+      );
+
+      html5QrcodeScanner.render(
+        (decodedText) => {
+          console.log('QR scan result:', decodedText);
+          setScanResult(decodedText);
+          setIsScanning(false);
+          
+          // Stop scanner
+          html5QrcodeScanner.clear().catch(console.error);
+          
+          // Extract product ID and navigate
+          setTimeout(() => {
+            const productId = extractProductId(decodedText);
+            console.log('Extracted product ID:', productId);
+            navigate(`/product/${productId}`);
+          }, 1000);
+        },
+        (error) => {
+          // Only log meaningful errors
+          if (!error.toString().includes('NotFoundException')) {
+            console.log("QR scan error:", error);
+          }
+        }
+      );
+
+      setScanner(html5QrcodeScanner);
+
+      return () => {
+        html5QrcodeScanner.clear().catch(error => {
+          console.error("Failed to clear scanner:", error);
+        });
+      };
+    }
+  }, [isScanning, navigate]);
 
   // Handle image upload and QR extraction
   const handleImageUpload = (e) => {
@@ -79,25 +127,6 @@ function QRScan() {
     reader.readAsDataURL(file);
   };
 
-  const handleScanResult = (result, error) => {
-    if (!!result) {
-      setScanResult(result?.text);
-      setIsScanning(false);
-      // Add a small delay for better UX
-      setTimeout(() => {
-        // Extract product ID from URL if it's a full URL
-        const productId = extractProductId(result?.text);
-        console.log('Camera QR scan result. Original data:', result?.text);
-        console.log('Extracted product ID:', productId);
-        console.log('Navigating to:', `/product/${productId}`);
-        navigate(`/product/${productId}`);
-      }, 1000);
-    }
-    if (!!error) {
-      setError(error.message);
-    }
-  };
-
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* 3D Background */}
@@ -136,22 +165,16 @@ function QRScan() {
             <div className="space-y-6">
               <div className="relative">
                 <div className="w-full h-72 rounded-2xl overflow-hidden border-2 border-blue-200 dark:border-blue-800 shadow-lg bg-gray-900">
-                  <QrReader
-                    constraints={{ facingMode: 'environment' }}
-                    onResult={handleScanResult}
-                    scanDelay={500}
-                    style={{ width: '100%', height: '100%' }}
-                    ViewFinder={() => (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-48 h-48 border-2 border-blue-400 rounded-lg bg-transparent">
-                          <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-blue-400"></div>
-                          <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-blue-400"></div>
-                          <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-blue-400"></div>
-                          <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-blue-400"></div>
-                        </div>
+                  {isScanning ? (
+                    <div id="qr-scanner" className="w-full h-full"></div>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                      <div className="text-center">
+                        <FaCamera className="mx-auto text-4xl text-gray-500 mb-4" />
+                        <p className="text-gray-400">Camera will appear here when scanning</p>
                       </div>
-                    )}
-                  />
+                    </div>
+                  )}
                 </div>
                 
                 {/* Scanning overlay */}

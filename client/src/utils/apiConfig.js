@@ -15,8 +15,7 @@ const getAPIBaseURL = () => {
   // Second priority: check if we're in production
   if (process.env.NODE_ENV === 'production') {
     // For Netlify deployment with Render backend
-    // You can update this URL when you have your Render URL
-    return 'https://your-render-app-name.onrender.com';
+    return 'https://product-traceability-api.onrender.com';
   }
   
   // Fallback for development
@@ -54,3 +53,6 @@ export default {
   buildURL: buildAPIURL,
   resolveFileURL: resolveFileURL
 };
+
+// Named exports for direct access
+export { getAPIBaseURL, buildAPIURL, resolveFileURL };
