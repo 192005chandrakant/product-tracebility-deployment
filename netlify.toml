@@ -1,45 +1,51 @@
 [build]
   base = "client"
   publish = "build"
-  command = "rm -rf node_modules build && npm install --legacy-peer-deps && CI=false npm run build"
+  command = "rm -rf node_modules build .cache && npm cache clean --force && npm install --legacy-peer-deps && npm run build && echo 'Build completed, listing assets:' && find build/static -name '*.js' -o -name '*.css' | head -10 || dir build\\static\\js\\*.js & dir build\\static\\css\\*.css"
 
 [build.environment]
   REACT_APP_API_URL = "https://product-traceability-api.onrender.com"
   GENERATE_SOURCEMAP = "false"
   DISABLE_ESLINT_PLUGIN = "true"
   CI = "false"
+  NODE_ENV = "production"
+  PUBLIC_URL = "https://blockchain-product-traceability.netlify.app"
 
-# Static asset headers for caching and security
+# Force correct MIME types for all JS files
 [[headers]]
-  for = "/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# JavaScript MIME type headers
-[[headers]]
-  for = "/*.js"
+  for = "*.js"
   [headers.values]
     Content-Type = "application/javascript; charset=utf-8"
+    Cache-Control = "public, max-age=31536000, immutable"
     X-Content-Type-Options = "nosniff"
 
 [[headers]]
   for = "/static/js/*.js"
   [headers.values]
     Content-Type = "application/javascript; charset=utf-8"
+    Cache-Control = "public, max-age=31536000, immutable"
     X-Content-Type-Options = "nosniff"
 
-# CSS MIME type headers
+# Force correct MIME types for all CSS files
 [[headers]]
-  for = "/*.css"
+  for = "*.css"
   [headers.values]
     Content-Type = "text/css; charset=utf-8"
+    Cache-Control = "public, max-age=31536000, immutable"
     X-Content-Type-Options = "nosniff"
 
 [[headers]]
   for = "/static/css/*.css"
   [headers.values]
     Content-Type = "text/css; charset=utf-8"
+    Cache-Control = "public, max-age=31536000, immutable"
     X-Content-Type-Options = "nosniff"
+
+# Generic static assets
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 # Security headers
 [[headers]]
@@ -50,7 +56,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# Direct static asset redirects
+# CRITICAL: Direct static asset serving (highest priority)
 [[redirects]]
   from = "/static/js/*"
   to = "/static/js/:splat"
@@ -69,7 +75,7 @@
   status = 200
   force = true
 
-# Handle nested static asset paths (critical for deep routing)
+# Handle nested static asset paths
 [[redirects]]
   from = "/*/static/js/*"
   to = "/static/js/:splat"
@@ -101,12 +107,6 @@
   status = 200
   force = true
 
-[[redirects]]
-  from = "/*/*/static/media/*"
-  to = "/static/media/:splat"
-  status = 200
-  force = true
-
 # Root assets
 [[redirects]]
   from = "/manifest.json"
@@ -117,12 +117,6 @@
 [[redirects]]
   from = "/favicon.ico"
   to = "/favicon.ico"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/sw.js"
-  to = "/sw.js"
   status = 200
   force = true
 
