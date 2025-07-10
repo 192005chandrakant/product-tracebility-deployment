@@ -4,17 +4,18 @@
   command = "rm -rf node_modules build && npm install --legacy-peer-deps && CI=false npm run build"
 
 [build.environment]
+  REACT_APP_API_URL = "https://product-traceability-api.onrender.com"
   GENERATE_SOURCEMAP = "false"
+  DISABLE_ESLINT_PLUGIN = "true"
   CI = "false"
 
-# Headers for better caching and security
+# Static asset headers for caching and security
 [[headers]]
   for = "/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss: ws:;"
 
-# CRITICAL: Ensure correct MIME types for JavaScript files
+# JavaScript MIME type headers
 [[headers]]
   for = "/*.js"
   [headers.values]
@@ -27,7 +28,7 @@
     Content-Type = "application/javascript; charset=utf-8"
     X-Content-Type-Options = "nosniff"
 
-# CRITICAL: Ensure correct MIME types for CSS files
+# CSS MIME type headers
 [[headers]]
   for = "/*.css"
   [headers.values]
@@ -40,41 +41,35 @@
     Content-Type = "text/css; charset=utf-8"
     X-Content-Type-Options = "nosniff"
 
-# Explicit static asset rules - MUST come before SPA routing
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Direct static asset redirects
 [[redirects]]
   from = "/static/js/*"
   to = "/static/js/:splat"
   status = 200
   force = true
-  conditions = {Role = ["public"]}
 
 [[redirects]]
   from = "/static/css/*"
   to = "/static/css/:splat"
   status = 200
   force = true
-  conditions = {Role = ["public"]}
 
 [[redirects]]
   from = "/static/media/*"
   to = "/static/media/:splat"
   status = 200
   force = true
-  conditions = {Role = ["public"]}
 
-# Handle nested static asset paths - CRITICAL for fixing 404s
-[[redirects]]
-  from = "/auth/static/js/*"
-  to = "/static/js/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/auth/static/css/*"
-  to = "/static/css/:splat"
-  status = 200
-  force = true
-
+# Handle nested static asset paths (critical for deep routing)
 [[redirects]]
   from = "/*/static/js/*"
   to = "/static/js/:splat"
@@ -93,7 +88,26 @@
   status = 200
   force = true
 
-# Other assets
+# Handle double-nested paths
+[[redirects]]
+  from = "/*/*/static/js/*"
+  to = "/static/js/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*/*/static/css/*"
+  to = "/static/css/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*/*/static/media/*"
+  to = "/static/media/:splat"
+  status = 200
+  force = true
+
+# Root assets
 [[redirects]]
   from = "/manifest.json"
   to = "/manifest.json"
@@ -112,38 +126,20 @@
   status = 200
   force = true
 
-# Asset-manifest and other build files
 [[redirects]]
   from = "/asset-manifest.json"
   to = "/asset-manifest.json"
   status = 200
   force = true
 
-# API routes should proxy to backend (before SPA routing)
+# API proxy to backend
 [[redirects]]
   from = "/api/*"
   to = "https://product-traceability-api.onrender.com/api/:splat"
   status = 200
-  force = false
-  headers = {X-From = "Netlify"}
 
-# SPA routing - redirect all non-static routes to index.html (MUST be last)
+# SPA routing - must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Additional security headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-
-[build.environment]
-  REACT_APP_API_URL = "https://product-traceability-api.onrender.com"
-  GENERATE_SOURCEMAP = "false"
-  DISABLE_ESLINT_PLUGIN = "true"
-  CI = "false"

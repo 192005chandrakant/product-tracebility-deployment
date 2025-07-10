@@ -156,6 +156,32 @@ When users directly visit routes like `/auth/login`, the browser treats `/auth/`
 2. Verify database connection
 3. Monitor Render logs for errors
 
+### Issue 6: Netlify Build Fails - "Could not" Parse Configuration
+**Symptoms**: 
+- Build fails during configuration parsing stage
+- Error message: "Could not" or similar truncated message
+- Build fails before npm install phase
+
+**Root Cause**: 
+Corrupted or invalid `netlify.toml` file with syntax errors, often caused by:
+- Duplicate sections (e.g., multiple `[build.environment]` blocks)
+- Invalid TOML syntax
+- Non-printable characters
+- Incomplete file content
+
+**Solutions Applied**:
+1. ✅ **Fixed Duplicate Sections**: Merged duplicate `[build.environment]` sections
+2. ✅ **Validated TOML Syntax**: Ensured proper formatting and structure
+3. ✅ **Consolidated Environment Variables**: Single environment configuration block
+4. ✅ **Verified File Integrity**: Checked for corruption or truncation
+
+**Validation Script**: Run `validate-netlify-toml.bat` to check file integrity before deployment.
+
+**Prevention**:
+- Always validate TOML syntax before committing
+- Use single sections for each configuration type
+- Avoid manual editing of environment blocks
+
 ## Deployment Checklist
 
 ### Before Deployment
