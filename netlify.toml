@@ -4,21 +4,14 @@
   command = "rm -rf node_modules build && npm install --legacy-peer-deps && npm run build"
 
 # Static assets should be served as-is (exclude from SPA routing)
-# Handle direct static asset requests
+# This catches any static files regardless of URL path
+[[redirects]]
+  from = "*/static/*"
+  to = "/static/:splat"
+  status = 200
+
 [[redirects]]
   from = "/static/*"
-  to = "/static/:splat"
-  status = 200
-
-# Handle static assets from any nested path (e.g., /auth/static/*)
-[[redirects]]
-  from = "/*/static/*"
-  to = "/static/:splat"
-  status = 200
-
-# Handle deeply nested static assets (e.g., /auth/login/static/*)
-[[redirects]]
-  from = "/*/*/static/*"
   to = "/static/:splat"
   status = 200
 
@@ -29,27 +22,12 @@
   status = 200
 
 [[redirects]]
-  from = "/*/manifest.json"
-  to = "/manifest.json"
-  status = 200
-
-[[redirects]]
   from = "/favicon.ico"
   to = "/favicon.ico"
   status = 200
 
 [[redirects]]
-  from = "/*/favicon.ico"
-  to = "/favicon.ico"
-  status = 200
-
-[[redirects]]
   from = "/sw.js"
-  to = "/sw.js"
-  status = 200
-
-[[redirects]]
-  from = "/*/sw.js"
   to = "/sw.js"
   status = 200
 

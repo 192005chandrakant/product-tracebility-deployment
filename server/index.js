@@ -34,15 +34,25 @@ app.use(cors({
       'http://localhost:3001',
       
       // Production origins - Netlify domains
+      'https://blockchain-product-traceability.netlify.app',
       'https://walmart-sparkthon.netlify.app',
       'https://walmart-sparkthon-product-traceability.netlify.app',
       'https://main--walmart-sparkthon.netlify.app',
       'https://deploy-preview--walmart-sparkthon.netlify.app',
+      'https://main--blockchain-product-traceability.netlify.app',
+      'https://deploy-preview--blockchain-product-traceability.netlify.app',
     ];
     
     // In production, also allow any netlify.app domain for deployment previews
     if (origin && origin.includes('.netlify.app')) {
       console.log('CORS allowing netlify.app origin:', origin);
+      return callback(null, true);
+    }
+    
+    // Special handling for blockchain-product-traceability.netlify.app and its variants
+    if (origin && (origin.includes('blockchain-product-traceability.netlify.app') || 
+                   origin.includes('--blockchain-product-traceability.netlify.app'))) {
+      console.log('CORS allowing blockchain-product-traceability origin:', origin);
       return callback(null, true);
     }
     
