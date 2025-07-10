@@ -1,7 +1,7 @@
 [build]
   base = "client"
   publish = "build"
-  command = "rm -rf node_modules build .cache && npm cache clean --force && npm install --legacy-peer-deps && npm run build && echo 'Build completed, listing assets:' && find build/static -name '*.js' -o -name '*.css' | head -10 || dir build\\static\\js\\*.js & dir build\\static\\css\\*.css"
+  command = "rm -rf node_modules build .cache && npm cache clean --force && npm install --legacy-peer-deps && npm run build"
 
 [build.environment]
   REACT_APP_API_URL = "https://product-traceability-api.onrender.com"
