@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
+import { buildAPIURL } from '../utils/apiConfig';
 
 const APIStatusIndicator = () => {
   const [status, setStatus] = useState('checking');
@@ -11,7 +12,7 @@ const APIStatusIndicator = () => {
         setStatus('checking');
         setDetails('Checking API connection...');
         
-        const response = await fetch('/api/recent-products?limit=1');
+        const response = await fetch(buildAPIURL('/api/recent-products?limit=1'));
         
         if (response.ok) {
           const data = await response.json();

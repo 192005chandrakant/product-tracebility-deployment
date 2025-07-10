@@ -28,6 +28,7 @@ import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
+import { buildAPIURL } from '../utils/apiConfig';
 
 const STAGE_OPTIONS = [
   { value: 'Harvested', label: 'Harvested', color: 'from-green-500 to-green-600', icon: FaBox },
@@ -113,7 +114,7 @@ function UpdateProduct() {
     setStatsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/profile', {
+      const response = await fetch(buildAPIURL('/api/profile'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -140,7 +141,7 @@ function UpdateProduct() {
     setSearchLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/products', {
+      const response = await fetch(buildAPIURL('/api/products'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       

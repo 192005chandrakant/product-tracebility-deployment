@@ -36,6 +36,7 @@ import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
+import { buildAPIURL } from '../utils/apiConfig';
 
 function UserProfile() {
   const navigate = useNavigate();
@@ -85,7 +86,7 @@ function UserProfile() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/products');
+      const res = await fetch(buildAPIURL('/api/products'));
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
@@ -101,7 +102,7 @@ function UserProfile() {
 
   const fetchUserStats = async () => {
     try {
-      const res = await fetch('/api/statistics');
+      const res = await fetch(buildAPIURL('/api/statistics'));
       if (res.ok) {
         const stats = await res.json();
         setUser(prev => ({

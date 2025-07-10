@@ -8,6 +8,7 @@ import ParticleBackground from '../components/UI/ParticleBackground';
 import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
+import { buildAPIURL } from '../utils/apiConfig';
 
 function AuthRegister() {
   const [form, setForm] = useState({ email: '', password: '', role: 'producer' });
@@ -23,7 +24,7 @@ function AuthRegister() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch(buildAPIURL('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

@@ -23,6 +23,7 @@ import ParticleBackground from '../components/UI/ParticleBackground';
 import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
+import { buildAPIURL } from '../utils/apiConfig';
 
 function AddProduct() {
   const [form, setForm] = useState({
@@ -49,7 +50,7 @@ function AddProduct() {
     const testServer = async () => {
       try {
         console.log('Testing server connectivity...');
-        const res = await fetch('/api/test');
+        const res = await fetch(buildAPIURL('/api/test'));
         console.log('Server test response:', res.status);
         if (res.ok) {
           const data = await res.json();
@@ -60,7 +61,7 @@ function AddProduct() {
         
         // Test the simple route
         console.log('Testing simple route...');
-        const simpleRes = await fetch('/api/add-product-simple', {
+        const simpleRes = await fetch(buildAPIURL('/api/add-product-simple'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ test: 'data' })
@@ -143,8 +144,8 @@ function AddProduct() {
       const token = localStorage.getItem('token');
       console.log('Token:', token ? 'exists' : 'not found');
       
-      console.log('Making request to: /api/add-product');
-      const res = await fetch('/api/add-product', {
+      console.log('Making request to:', buildAPIURL('/api/add-product'));
+      const res = await fetch(buildAPIURL('/api/add-product'), {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`

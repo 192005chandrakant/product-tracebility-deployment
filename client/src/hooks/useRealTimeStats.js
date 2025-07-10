@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { buildAPIURL } from '../utils/apiConfig';
 
 const useRealTimeStats = (refreshInterval = 10000) => {
   const [statistics, setStatistics] = useState({
@@ -24,7 +25,7 @@ const useRealTimeStats = (refreshInterval = 10000) => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('/api/statistics/stats', {
+      const response = await fetch(buildAPIURL('/api/statistics/stats'), {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

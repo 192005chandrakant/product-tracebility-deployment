@@ -7,6 +7,10 @@ module.exports = function override(config, env) {
       module: /node_modules\/@mediapipe\/tasks-vision/,
       message: /Failed to parse source map/,
     },
+    {
+      module: /node_modules\/html5-qrcode/,
+      message: /Failed to parse source map/,
+    },
     /DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE/,
     /DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE/,
     /DEP0060/,
@@ -18,7 +22,8 @@ module.exports = function override(config, env) {
       rule.oneOf.forEach((oneOfRule) => {
         if (oneOfRule.use && oneOfRule.use.some && oneOfRule.use.some(use => use.loader && use.loader.includes('source-map-loader'))) {
           oneOfRule.exclude = [
-            /node_modules\/@mediapipe/
+            /node_modules\/@mediapipe/,
+            /node_modules\/html5-qrcode/
           ];
         }
       });

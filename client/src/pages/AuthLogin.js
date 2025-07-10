@@ -9,6 +9,7 @@ import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import { optimizedAnimations } from '../utils/performanceOptimizations';
+import { buildAPIURL } from '../utils/apiConfig';
 
 function AuthLogin() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -48,7 +49,7 @@ function AuthLogin() {
     try {
       console.log('Attempting login with:', form.email);
       
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(buildAPIURL('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

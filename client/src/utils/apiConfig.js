@@ -23,7 +23,7 @@ const getAPIBaseURL = () => {
 };
 
 // Helper to build full API URLs
-export const buildAPIURL = (path) => {
+const buildAPIURL = (path) => {
   const baseURL = getAPIBaseURL();
   // Ensure path starts with a slash if not already
   const formattedPath = path.startsWith('/') ? path : `/${path}`;
@@ -31,7 +31,7 @@ export const buildAPIURL = (path) => {
 };
 
 // Helper to resolve file URLs that might be relative or absolute
-export const resolveFileURL = (fileUrl) => {
+const resolveFileURL = (fileUrl) => {
   if (!fileUrl) return '';
   
   // Already an absolute URL (starts with http/https)

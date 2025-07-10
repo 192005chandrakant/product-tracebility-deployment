@@ -20,6 +20,7 @@ import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
 import useRealTimeStats from '../hooks/useRealTimeStats';
+import { buildAPIURL } from '../utils/apiConfig';
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/400x200?text=No+Image';
 
@@ -71,7 +72,7 @@ function AdminDashboard() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products');
+      const res = await fetch(buildAPIURL('/api/products'));
       const data = await res.json();
       setProducts(data);
     } catch (error) {
