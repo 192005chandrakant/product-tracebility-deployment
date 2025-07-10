@@ -1,8 +1,13 @@
 # Static assets should be served as-is
 /static/* /static/:splat 200
+/*/static/* /static/:splat 200
+/*/*/static/* /static/:splat 200
 /manifest.json /manifest.json 200
+/*/manifest.json /manifest.json 200
 /favicon.ico /favicon.ico 200
+/*/favicon.ico /favicon.ico 200
 /sw.js /sw.js 200
+/*/sw.js /sw.js 200
 
 # API routes should not be redirected (if any)
 /api/*  https://product-traceability-api.onrender.com/api/:splat  200
