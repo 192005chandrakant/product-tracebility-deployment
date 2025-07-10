@@ -1,17 +1,29 @@
-# Static assets should be served as-is
-# Handle nested static asset paths by redirecting to the correct location
-/*/static/js/* /static/js/:splat 200
-/*/static/css/* /static/css/:splat 200
-/*/static/media/* /static/media/:splat 200
+# Static assets should be served as-is - CRITICAL for fixing chunk loading
+# These must be first and use force = true to override SPA routing
 
-# Traditional static folder routing
-/static/* /static/:splat 200
-/manifest.json /manifest.json 200
-/favicon.ico /favicon.ico 200
-/sw.js /sw.js 200
+# Explicit static asset rules
+/static/js/* /static/js/:splat 200!
+/static/css/* /static/css/:splat 200!
+/static/media/* /static/media/:splat 200!
 
-# API routes should not be redirected (if any)
+# Handle nested static asset paths - CRITICAL for fixing 404s on /auth routes
+/auth/static/js/* /static/js/:splat 200!
+/auth/static/css/* /static/css/:splat 200!
+/auth/static/media/* /static/media/:splat 200!
+
+# Generic nested path handling
+/*/static/js/* /static/js/:splat 200!
+/*/static/css/* /static/css/:splat 200!
+/*/static/media/* /static/media/:splat 200!
+
+# Other assets
+/manifest.json /manifest.json 200!
+/favicon.ico /favicon.ico 200!
+/sw.js /sw.js 200!
+/asset-manifest.json /asset-manifest.json 200!
+
+# API routes should proxy to backend
 /api/*  https://product-traceability-api.onrender.com/api/:splat  200
 
-# SPA routing - redirect all other routes to index.html
+# SPA routing - redirect all other routes to index.html (MUST be last)
 /*    /index.html   200

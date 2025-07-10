@@ -1,48 +1,117 @@
 [build]
   base = "client"
   publish = "build"
-  command = "rm -rf node_modules build && npm install --legacy-peer-deps && npm run build"
+  command = "rm -rf node_modules build && npm install --legacy-peer-deps && CI=false npm run build"
 
-# Static assets should be served as-is (exclude from SPA routing)
-# Handle nested static asset paths by redirecting to the correct location
+[build.environment]
+  GENERATE_SOURCEMAP = "false"
+  CI = "false"
+
+# Headers for better caching and security
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss: ws:;"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Content-Type = "text/css; charset=utf-8"
+
+# Explicit static asset rules - MUST come before SPA routing
+[[redirects]]
+  from = "/static/js/*"
+  to = "/static/js/:splat"
+  status = 200
+  force = true
+  conditions = {Role = ["public"]}
+
+[[redirects]]
+  from = "/static/css/*"
+  to = "/static/css/:splat"
+  status = 200
+  force = true
+  conditions = {Role = ["public"]}
+
+[[redirects]]
+  from = "/static/media/*"
+  to = "/static/media/:splat"
+  status = 200
+  force = true
+  conditions = {Role = ["public"]}
+
+# Handle nested static asset paths - CRITICAL for fixing 404s
+[[redirects]]
+  from = "/auth/static/js/*"
+  to = "/static/js/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/auth/static/css/*"
+  to = "/static/css/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*/static/js/*"
   to = "/static/js/:splat"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/*/static/css/*"
   to = "/static/css/:splat"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/*/static/media/*"
   to = "/static/media/:splat"
   status = 200
+  force = true
 
-# Traditional static folder routing
-[[redirects]]
-  from = "/static/*"
-  to = "/static/:splat"
-  status = 200
-
-# Manifest and other assets
+# Other assets
 [[redirects]]
   from = "/manifest.json"
   to = "/manifest.json"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/favicon.ico"
   to = "/favicon.ico"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/sw.js"
   to = "/sw.js"
   status = 200
+  force = true
 
-# SPA routing - redirect all non-static routes to index.html
+# Asset-manifest and other build files
+[[redirects]]
+  from = "/asset-manifest.json"
+  to = "/asset-manifest.json"
+  status = 200
+  force = true
+
+# API routes should proxy to backend (before SPA routing)
+[[redirects]]
+  from = "/api/*"
+  to = "https://product-traceability-api.onrender.com/api/:splat"
+  status = 200
+  force = false
+  headers = {X-From = "Netlify"}
+
+# SPA routing - redirect all non-static routes to index.html (MUST be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -61,3 +130,4 @@
   REACT_APP_API_URL = "https://product-traceability-api.onrender.com"
   GENERATE_SOURCEMAP = "false"
   DISABLE_ESLINT_PLUGIN = "true"
+  CI = "false"

@@ -42,47 +42,75 @@ module.exports = function override(config, env) {
 
   // Performance optimizations for production
   if (env === 'production') {
-    // Optimize bundle splitting
+    // Set public path to ensure proper asset loading
+    config.output.publicPath = '/';
+    
+    // Optimize bundle splitting with more reliable chunking
     config.optimization = {
       ...config.optimization,
       splitChunks: {
         chunks: 'all',
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
-            maxSize: 244000, // 244KB chunks
+            priority: -10,
+            maxSize: 244000,
           },
-          common: {
-            name: 'common',
-            minChunks: 2,
+          // Separate chunk for React libraries
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/,
+            name: 'react',
             chunks: 'all',
-            enforce: true,
+            priority: 10,
           },
-          // Separate chunk for large libraries
+          // Separate chunk for large libraries that might cause issues
           three: {
             test: /[\\/]node_modules[\\/](three|@react-three)[\\/]/,
             name: 'three',
             chunks: 'all',
+            priority: 5,
           },
-          react: {
-            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-            name: 'react',
+          // Common components
+          common: {
+            name: 'common',
+            minChunks: 2,
             chunks: 'all',
+            priority: -5,
+            reuseExistingChunk: true,
           },
         },
       },
+      // Stable runtime chunk
       runtimeChunk: {
         name: 'runtime',
       },
+      // Ensure stable module IDs
+      moduleIds: 'deterministic',
+      chunkIds: 'deterministic',
     };
 
-    // Add performance hints
+    // Add performance hints but don't break the build
     config.performance = {
       hints: 'warning',
       maxEntrypointSize: 512000, // 512KB
       maxAssetSize: 512000, // 512KB
+    };
+    
+    // Ensure proper asset loading with absolute paths
+    config.output = {
+      ...config.output,
+      publicPath: '/',
+      filename: 'static/js/[name].[contenthash:8].js',
+      chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
     };
   }
 

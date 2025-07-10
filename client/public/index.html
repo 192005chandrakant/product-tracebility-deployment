@@ -11,6 +11,67 @@
     />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <title>Product Traceability</title>
+    
+    <!-- Chunk loading error handler -->
+    <script>
+      // Global error handler for chunk loading failures
+      window.addEventListener('error', function(event) {
+        const isChunkError = event.message && (
+          event.message.includes('Loading chunk') ||
+          event.message.includes('ChunkLoadError') ||
+          event.message.includes('Loading CSS chunk') ||
+          (event.filename && event.filename.includes('.chunk.js'))
+        );
+        
+        if (isChunkError) {
+          console.log('🔄 Chunk loading error detected, reloading page...');
+          console.error('Chunk loading error:', event.message, event.filename);
+          
+          // Store the current path to restore after reload
+          sessionStorage.setItem('reloadPath', window.location.pathname + window.location.search);
+          
+          // Reload the page to recover from chunk loading errors
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      });
+
+      // Handle unhandled promise rejections (for dynamic imports)
+      window.addEventListener('unhandledrejection', function(event) {
+        const isChunkError = event.reason && (
+          event.reason.name === 'ChunkLoadError' ||
+          (event.reason.message && event.reason.message.includes('Loading chunk'))
+        );
+        
+        if (isChunkError) {
+          console.log('🔄 Chunk loading promise rejection detected, reloading page...');
+          console.error('Chunk loading promise rejection:', event.reason);
+          
+          // Prevent the error from appearing in console
+          event.preventDefault();
+          
+          // Store the current path to restore after reload
+          sessionStorage.setItem('reloadPath', window.location.pathname + window.location.search);
+          
+          // Reload the page to recover from chunk loading errors
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      });
+
+      // Restore path after reload if needed
+      window.addEventListener('load', function() {
+        const reloadPath = sessionStorage.getItem('reloadPath');
+        if (reloadPath && reloadPath !== window.location.pathname + window.location.search) {
+          sessionStorage.removeItem('reloadPath');
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', reloadPath);
+          }
+        }
+      });
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

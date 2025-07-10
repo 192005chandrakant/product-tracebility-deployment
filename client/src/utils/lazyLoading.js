@@ -1,16 +1,59 @@
 import { lazy, Suspense } from 'react';
 
-// Lazy load components to reduce initial bundle size
-export const LazyHome = lazy(() => import('../pages/Home'));
-export const LazyAuthLogin = lazy(() => import('../pages/AuthLogin'));
-export const LazyAuthRegister = lazy(() => import('../pages/AuthRegister'));
-export const LazyQRScan = lazy(() => import('../pages/QRScan'));
-export const LazyProductDetail = lazy(() => import('../pages/ProductDetail'));
-// UserProfile is imported directly in App.js to avoid chunk loading issues
-export const LazyAdminDashboard = lazy(() => import('../pages/AdminDashboard'));
-export const LazyAddProduct = lazy(() => import('../pages/AddProduct'));
-export const LazyUpdateProduct = lazy(() => import('../pages/UpdateProduct'));
-export const LazyLanding = lazy(() => import('../pages/Landing'));
+// Enhanced lazy loading with error boundaries and retry logic
+const createLazyComponent = (importFunc, componentName) => {
+  return lazy(async () => {
+    try {
+      const module = await importFunc();
+      return module;
+    } catch (error) {
+      console.error(`Failed to load ${componentName}:`, error);
+      
+      // Retry once after a delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        const module = await importFunc();
+        console.log(`✅ Retry successful for ${componentName}`);
+        return module;
+      } catch (retryError) {
+        console.error(`Retry failed for ${componentName}:`, retryError);
+        
+        // Return a fallback component
+        return {
+          default: () => (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900 dark:to-red-800">
+              <div className="text-center p-8 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
+                <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
+                  Component Failed to Load
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  {componentName} could not be loaded. Please refresh the page.
+                </p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Refresh Page
+                </button>
+              </div>
+            </div>
+          )
+        };
+      }
+    }
+  });
+};
+
+// Lazy load components with enhanced error handling
+export const LazyHome = createLazyComponent(() => import('../pages/Home'), 'Home');
+export const LazyAuthLogin = createLazyComponent(() => import('../pages/AuthLogin'), 'AuthLogin');
+export const LazyAuthRegister = createLazyComponent(() => import('../pages/AuthRegister'), 'AuthRegister');
+export const LazyQRScan = createLazyComponent(() => import('../pages/QRScan'), 'QRScan');
+export const LazyProductDetail = createLazyComponent(() => import('../pages/ProductDetail'), 'ProductDetail');
+export const LazyAdminDashboard = createLazyComponent(() => import('../pages/AdminDashboard'), 'AdminDashboard');
+export const LazyAddProduct = createLazyComponent(() => import('../pages/AddProduct'), 'AddProduct');
+export const LazyUpdateProduct = createLazyComponent(() => import('../pages/UpdateProduct'), 'UpdateProduct');
+export const LazyLanding = createLazyComponent(() => import('../pages/Landing'), 'Landing');
 
 // Loading fallback component
 export const LoadingFallback = () => (

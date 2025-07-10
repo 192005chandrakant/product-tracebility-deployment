@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaCheckCircle, FaExclamationTriangle, FaSpinner, FaCog } from 'react-icons/fa';
+import { FaCheckCircle, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
 import { buildAPIURL } from '../utils/apiConfig';
 
-const APIStatusIndicator = ({ showDetails = false }) => {
+const BackendConnectionStatus = ({ showDetails = false }) => {
   const [status, setStatus] = useState({
     state: 'checking',
     backend: null,
@@ -20,7 +20,8 @@ const APIStatusIndicator = ({ showDetails = false }) => {
       // Test basic connectivity
       const response = await fetch(buildAPIURL('/test'), {
         method: 'GET',
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Accept': 'application/json' },
+        timeout: 10000
       });
       
       let productCount = 0;
@@ -100,13 +101,11 @@ const APIStatusIndicator = ({ showDetails = false }) => {
   const getStatusColor = () => {
     switch (status.state) {
       case 'connected':
-        return status.authentication ? 
-          'bg-green-50 border-green-200 text-green-800' : 
-          'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return status.authentication ? 'text-green-600' : 'text-yellow-600';
       case 'disconnected':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'text-red-600';
       default:
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'text-blue-600';
     }
   };
 
@@ -121,57 +120,65 @@ const APIStatusIndicator = ({ showDetails = false }) => {
     }
   };
 
-  const getStatusTextColor = () => {
-    switch (status.state) {
-      case 'connected':
-        return status.authentication ? 'text-green-600' : 'text-yellow-600';
-      case 'disconnected':
-        return 'text-red-600';
-      default:
-        return 'text-blue-600';
-    }
-  };
-
-  // Simple view (showDetails = false)
   if (!showDetails) {
     return (
       <div className="flex items-center space-x-2">
         {getStatusIcon()}
-        <span className={`text-sm font-medium ${getStatusTextColor()}`}>
+        <span className={`text-sm font-medium ${getStatusColor()}`}>
           {getStatusText()}
         </span>
       </div>
     );
   }
 
-  // Detailed view (showDetails = true)
   return (
-    <div className={`p-3 rounded-lg border text-sm flex items-center gap-2 ${getStatusColor()}`}>
-      {getStatusIcon()}
-      <div className="flex-1">
-        <div className="font-medium">{getStatusText()}</div>
-        <div className="text-xs opacity-75 mt-1">
-          {status.message}
-          {status.lastChecked && (
-            <span className="ml-2">Last checked: {status.lastChecked}</span>
-          )}
-        </div>
-        {status.state === 'connected' && status.productCount > 0 && (
-          <div className="text-xs opacity-75">
-            {status.productCount} products available
-          </div>
-        )}
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Backend Connection Status
+        </h3>
+        <button
+          onClick={checkAPIStatus}
+          disabled={status.loading}
+          className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        >
+          {status.loading ? 'Checking...' : 'Refresh'}
+        </button>
       </div>
-      <button
-        onClick={checkAPIStatus}
-        disabled={status.loading}
-        className="p-1 hover:bg-black hover:bg-opacity-10 rounded"
-        title="Refresh status"
-      >
-        <FaCog className={status.loading ? 'animate-spin' : ''} />
-      </button>
+      
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600 dark:text-gray-300">Backend Server:</span>
+          <div className={`flex items-center space-x-2 ${status.backend ? 'text-green-600' : 'text-red-600'}`}>
+            <span>{status.backend ? '✅' : '❌'}</span>
+            <span className="font-medium">{status.backend ? 'Online' : 'Offline'}</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600 dark:text-gray-300">Authentication:</span>
+          <div className={`flex items-center space-x-2 ${status.authentication ? 'text-green-600' : 'text-red-600'}`}>
+            <span>{status.authentication ? '✅' : '❌'}</span>
+            <span className="font-medium">{status.authentication ? 'Working' : 'Failed'}</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600 dark:text-gray-300">Products Found:</span>
+          <span className="font-medium text-blue-600">{status.productCount}</span>
+        </div>
+        
+        <div className="pt-3 border-t border-gray-200 dark:border-slate-600">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div>Status: {status.message}</div>
+            {status.lastChecked && (
+              <div>Last checked: {status.lastChecked}</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default APIStatusIndicator;
+export default BackendConnectionStatus;

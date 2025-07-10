@@ -2,6 +2,7 @@ import React, { Suspense, useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import { 
   LazyHome, 
@@ -31,21 +32,35 @@ const OptimizedLoadingFallback = React.memo(() => (
   </div>
 ));
 
-// Preload critical components after initial load
+// Preload critical components after initial load with better error handling
 const useComponentPreloader = () => {
   useEffect(() => {
     const preloadComponents = async () => {
       try {
-        // Preload most commonly used components
-        const promises = [
-          LazyHome(),
-          LazyQRScan(),
-          LazyProductDetail()
+        // Preload most commonly used components with timeout
+        const timeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Preload timeout')), 10000)
+        );
+        
+        const preloadPromises = [
+          Promise.race([LazyHome.preload ? LazyHome.preload() : Promise.resolve(), timeout]),
+          Promise.race([LazyQRScan.preload ? LazyQRScan.preload() : Promise.resolve(), timeout]),
+          Promise.race([LazyProductDetail.preload ? LazyProductDetail.preload() : Promise.resolve(), timeout])
         ];
-        await Promise.all(promises);
-        console.log('✅ Critical components preloaded');
+        
+        const results = await Promise.allSettled(preloadPromises);
+        
+        const successful = results.filter(result => result.status === 'fulfilled').length;
+        const failed = results.filter(result => result.status === 'rejected').length;
+        
+        console.log(`✅ Component preload completed: ${successful} successful, ${failed} failed`);
+        
+        if (failed > 0) {
+          console.log('⚠️ Some components failed to preload, but this is non-critical');
+        }
       } catch (error) {
-        console.log('⚠️ Component preload failed:', error);
+        console.log('⚠️ Component preload failed:', error.message || error);
+        // Don't throw error as this is non-critical
       }
     };
 
@@ -112,26 +127,30 @@ function App() {
   useComponentPreloader();
   
   return (
-    <Layout>
-      <Suspense fallback={<OptimizedLoadingFallback />}>
-        <Routes>
-          <Route path="/" element={<LazyLanding />} />
-          <Route path="/home" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer']}><LazyHome /></PrivateRoute>} />
-          <Route path="/scan" element={<LazyQRScan />} />
-          <Route path="/product/:id" element={<LazyProductDetail />} />
-          <Route path="/profile" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer', 'customer', 'user']}><UserProfile /></PrivateRoute>} />
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="/admin/dashboard" element={<PrivateRoute allowedRoles={['admin','producer']}><LazyAdminDashboard /></PrivateRoute>} />
-          <Route path="/admin/add" element={<PrivateRoute allowedRoles={['producer']}><LazyAddProduct /></PrivateRoute>} />
-          <Route path="/admin/update" element={<PrivateRoute allowedRoles={['producer']}><LazyUpdateProduct /></PrivateRoute>} />
-          <Route path="/admin/update/:id" element={<PrivateRoute allowedRoles={['producer']}><LazyUpdateProduct /></PrivateRoute>} />
-          <Route path="/auth/login" element={<LazyAuthLogin />} />
-          <Route path="/auth/register" element={<LazyAuthRegister />} />
-          <Route path="/debug/pdf/:productId" element={<PrivateRoute allowedRoles={['admin', 'producer']}><PdfTestPage /></PrivateRoute>} /> {/* PDF debug page */}
-        </Routes>
-      </Suspense>
-      <PerformanceMonitor />
-    </Layout>
+    <ErrorBoundary>
+      <Layout>
+        <Suspense fallback={<OptimizedLoadingFallback />}>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<LazyLanding />} />
+              <Route path="/home" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer']}><LazyHome /></PrivateRoute>} />
+              <Route path="/scan" element={<LazyQRScan />} />
+              <Route path="/product/:id" element={<LazyProductDetail />} />
+              <Route path="/profile" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer', 'customer', 'user']}><UserProfile /></PrivateRoute>} />
+              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="/admin/dashboard" element={<PrivateRoute allowedRoles={['admin','producer']}><LazyAdminDashboard /></PrivateRoute>} />
+              <Route path="/admin/add" element={<PrivateRoute allowedRoles={['producer']}><LazyAddProduct /></PrivateRoute>} />
+              <Route path="/admin/update" element={<PrivateRoute allowedRoles={['producer']}><LazyUpdateProduct /></PrivateRoute>} />
+              <Route path="/admin/update/:id" element={<PrivateRoute allowedRoles={['producer']}><LazyUpdateProduct /></PrivateRoute>} />
+              <Route path="/auth/login" element={<LazyAuthLogin />} />
+              <Route path="/auth/register" element={<LazyAuthRegister />} />
+              <Route path="/debug/pdf/:productId" element={<PrivateRoute allowedRoles={['admin', 'producer']}><PdfTestPage /></PrivateRoute>} /> {/* PDF debug page */}
+            </Routes>
+          </ErrorBoundary>
+        </Suspense>
+        <PerformanceMonitor />
+      </Layout>
+    </ErrorBoundary>
   );
 }
 
