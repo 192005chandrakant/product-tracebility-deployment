@@ -163,7 +163,7 @@ DISABLE_ESLINT_PLUGIN=true
 
 2. **Update your backend environment variables** to include your Netlify URL:
    ```
-   ALLOWED_ORIGINS = https://amazing-app-123456.netlify.app
+   ALLOWED_ORIGINS = https://blockchain-product-traceability.netlify.app
    ```
 
 3. **Update `server/index.js` CORS:**
@@ -172,7 +172,7 @@ DISABLE_ESLINT_PLUGIN=true
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://amazing-app-123456.netlify.app', // Your actual Netlify URL
+    'https://blockchain-product-traceability.netlify.app', // Your actual Netlify URL
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   credentials: true
@@ -260,5 +260,5 @@ Just push your changes and both will update automatically!
 
 **Your app is now live!** 🚀
 
-Frontend: `https://your-app.netlify.app`
-Backend: `https://your-api.onrender.com`
+Frontend: `https://blockchain-product-traceability.netlify.app/`
+Backend: `https://product-traceability-api.onrender.com`
