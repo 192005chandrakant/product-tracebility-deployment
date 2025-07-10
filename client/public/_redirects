@@ -1,6 +1,10 @@
 # Static assets should be served as-is
-# This catches any static files regardless of URL path
-*/static/* /static/:splat 200
+# Handle nested static asset paths by redirecting to the correct location
+/*/static/js/* /static/js/:splat 200
+/*/static/css/* /static/css/:splat 200
+/*/static/media/* /static/media/:splat 200
+
+# Traditional static folder routing
 /static/* /static/:splat 200
 /manifest.json /manifest.json 200
 /favicon.ico /favicon.ico 200
