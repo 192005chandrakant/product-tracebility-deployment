@@ -42,8 +42,8 @@ module.exports = function override(config, env) {
 
   // Performance optimizations for production
   if (env === 'production') {
-    // Set public path to ensure proper asset loading
-    config.output.publicPath = '/';
+    // CRITICAL: Set absolute public path to prevent relative path issues
+    config.output.publicPath = 'https://blockchain-product-traceability.netlify.app/';
     
     // Optimize bundle splitting with more reliable chunking
     config.optimization = {
@@ -108,7 +108,7 @@ module.exports = function override(config, env) {
     // Ensure proper asset loading with absolute paths
     config.output = {
       ...config.output,
-      publicPath: '/',
+      publicPath: 'https://blockchain-product-traceability.netlify.app/',
       filename: 'static/js/[name].[contenthash:8].js',
       chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
     };

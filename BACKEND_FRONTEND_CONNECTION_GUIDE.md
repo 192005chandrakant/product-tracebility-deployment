@@ -93,7 +93,30 @@ You can test the connection by:
 
 ## Common Issues and Solutions
 
-### Issue 1: CORS Errors
+### Issue 1: Chunk Loading 404 Errors (CRITICAL)
+**Symptoms**: 
+- Console errors like "Failed to load resource: 404" for chunk files
+- "Refused to apply style... MIME type ('text/html') is not a supported stylesheet MIME type"
+- "Refused to execute script... MIME type ('text/html') is not executable"
+- Assets loading from wrong paths like `/auth/static/css/...` instead of `/static/css/...`
+
+**Root Cause**: 
+When users directly visit routes like `/auth/login`, the browser treats `/auth/` as the base path and tries to load static assets relative to that path instead of the root.
+
+**Solutions Applied**:
+1. ✅ **Absolute PublicPath**: Set `config.output.publicPath` to full domain URL
+2. ✅ **Base HTML Tag**: Added `<base href="https://blockchain-product-traceability.netlify.app/" />` to index.html
+3. ✅ **Enhanced _redirects**: Comprehensive redirect rules for nested paths
+4. ✅ **MIME Type Headers**: Explicit Content-Type headers in netlify.toml
+5. ✅ **Multiple Redirect Patterns**: Handle single and double-nested static asset paths
+
+**Fixed Files**:
+- `client/config-overrides.js` - Absolute publicPath
+- `client/public/index.html` - Base href tag
+- `client/public/_redirects` - Enhanced redirect rules
+- `netlify.toml` - MIME type headers
+
+### Issue 2: CORS Errors
 **Symptoms**: 
 - Console errors like "CORS policy" or "Access-Control-Allow-Origin"
 - API requests failing with status 0
@@ -103,7 +126,7 @@ You can test the connection by:
 2. Check if Netlify proxy rules are working
 3. Ensure API requests use the correct URL format
 
-### Issue 2: 404 on API Calls
+### Issue 3: 404 on API Calls
 **Symptoms**:
 - API calls returning 404 Not Found
 - Network tab shows wrong URLs
@@ -113,7 +136,7 @@ You can test the connection by:
 2. Verify API endpoints exist on backend
 3. Test backend endpoints directly
 
-### Issue 3: Authentication Issues
+### Issue 4: Authentication Issues
 **Symptoms**:
 - Login fails even with correct credentials
 - Token-related errors
@@ -123,7 +146,7 @@ You can test the connection by:
 2. Verify token storage in localStorage
 3. Check token expiration settings
 
-### Issue 4: Slow API Responses
+### Issue 5: Slow API Responses
 **Symptoms**:
 - Long loading times
 - Timeout errors
