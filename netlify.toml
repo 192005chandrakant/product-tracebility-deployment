@@ -1,14 +1,65 @@
-[build]
-  base = "client"
+[buil# Static assets should be served as-is (exclude from SPA routing)
+[[redirects]]
+  from = "/static/*"
+  to = "/static/:splat"
+  status = 200
+
+# Manifest and other assets
+[[redirects]]
+  from = "/manifest.json"
+  to = "/manifest.json"
+  status = 200
+
+[[redirects]]
+  from = "/favicon.ico"
+  to = "/favicon.ico"
+  status = 200
+
+[[redirects]]
+  from = "/sw.js"
+  to = "/sw.js"
+  status = 200
+
+# SPA routing - redirect all non-static routes to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200base = "client"
   publish = "build"
   command = "npm install --legacy-peer-deps && npm run build"
 
-# SPA routing - redirect all routes to index.html (FORCE ENABLED)
+# SPA routing - redirect all routes to index.html (EXCLUDE STATIC FILES)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
   force = true
+  conditions = {Role = ["admin"]}
+  
+# Better SPA routing - exclude static assets
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["!admin"]}
+  headers = {X-Robots-Tag = "noindex"}
+  
+# Static assets should be served normally
+[[redirects]]
+  from = "/static/*"
+  to = "/static/:splat"
+  status = 200
+  
+# Manifest and service worker
+[[redirects]]
+  from = "/manifest.json"
+  to = "/manifest.json"
+  status = 200
+  
+[[redirects]]
+  from = "/sw.js"
+  to = "/sw.js"
+  status = 200
 
 # Additional security headers
 [[headers]]
