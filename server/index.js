@@ -225,7 +225,19 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}`);
   console.log(`🧪 Test endpoint: http://localhost:${PORT}/test`);
-  console.log(`🌐 CORS enabled for: http://localhost:3000`);
+  console.log('🌐 CORS enabled for:', [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'https://blockchain-product-traceability.netlify.app',
+    'https://walmart-sparkthon.netlify.app',
+    'https://walmart-sparkthon-product-traceability.netlify.app',
+    'https://main--walmart-sparkthon.netlify.app',
+    'https://deploy-preview--walmart-sparkthon.netlify.app',
+    'https://main--blockchain-product-traceability.netlify.app',
+    'https://deploy-preview--blockchain-product-traceability.netlify.app',
+    'Any *.netlify.app deployment preview'
+  ]);
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ Port ${PORT} is already in use. Please:\n1. Use a different port, or\n2. Run 'npx kill-port ${PORT}' to free it up`);
