@@ -51,6 +51,7 @@ app.use(cors({
       'https://product-tracebility-deployment.vercel.app/api/profile',
       'https://product-tracebility-deployment.vercel.app/api/statistics',
       'https://product-tracebility-deployment.vercel.app/api/statistics/test',
+      'https://product-tracebility-deployment.vercel.app/product/2025100704'
     ];
     
     // In development mode, be more permissive
