@@ -44,6 +44,13 @@ app.use(cors({
       'https://deploy-preview--walmart-sparkthon.netlify.app',
       'https://main--blockchain-product-traceability.netlify.app',
       'https://deploy-preview--blockchain-product-traceability.netlify.app',
+      'https://product-tracebility-deployment.vercel.app',
+      'https://product-tracebility-deployment.vercel.app/',
+      'https://product-tracebility-deployment.vercel.app/api',
+      'https://product-tracebility-deployment.vercel.app/api/auth',
+      'https://product-tracebility-deployment.vercel.app/api/profile',
+      'https://product-tracebility-deployment.vercel.app/api/statistics',
+      'https://product-tracebility-deployment.vercel.app/api/statistics/test',
     ];
     
     // In development mode, be more permissive
