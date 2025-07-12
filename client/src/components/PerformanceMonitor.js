@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const formatBytes = (bytes) => {
@@ -18,6 +18,10 @@ const PerformanceMonitor = () => {
     cls: 0,
     isVisible: false
   });
+  
+  const lastCLSLogRef = useRef(0);
+  const clsValueRef = useRef(0);
+  const LOG_THROTTLE = 5000; // Increased to 5 seconds to reduce noise
 
   useEffect(() => {
     const startTime = performance.now();
@@ -60,8 +64,6 @@ const PerformanceMonitor = () => {
       let fidObserver = null;
       let clsObserver = null;
       let lastLCPLog = 0;
-      let lastCLSLog = 0;
-      const LOG_THROTTLE = 2000; // Only log every 2 seconds
       
       if ('PerformanceObserver' in window) {
         // Largest Contentful Paint
@@ -91,8 +93,8 @@ const PerformanceMonitor = () => {
           entries.forEach(entry => {
             const fidValue = entry.processingStart - entry.startTime;
             setMetrics(prev => ({ ...prev, fid: fidValue }));
-            // Only log significant FID values (> 10ms)
-            if (fidValue > 10) {
+            // Only log significant FID values (> 100ms)
+            if (fidValue > 100) {
               console.log(`⚠️ High FID detected: ${fidValue.toFixed(2)}ms`);
             }
           });
@@ -104,19 +106,18 @@ const PerformanceMonitor = () => {
           console.warn('FID observer not supported');
         }
 
-        // Cumulative Layout Shift
-        let clsValue = 0;
+        // Cumulative Layout Shift with improved throttling
         clsObserver = new PerformanceObserver((entryList) => {
           for (const entry of entryList.getEntries()) {
             if (!entry.hadRecentInput) {
-              clsValue += entry.value;
-              setMetrics(prev => ({ ...prev, cls: clsValue }));
+              clsValueRef.current += entry.value;
+              setMetrics(prev => ({ ...prev, cls: clsValueRef.current }));
               
-              // Throttle CLS logging and only log significant shifts
+              // Only log significant layout shifts (> 0.25) and throttle logging
               const now = Date.now();
-              if (clsValue > 0.1 && now - lastCLSLog > LOG_THROTTLE) {
-                console.log(`⚠️ Layout Shift detected: ${clsValue.toFixed(4)}`);
-                lastCLSLog = now;
+              if (clsValueRef.current > 0.25 && now - lastCLSLogRef.current > LOG_THROTTLE) {
+                console.log(`⚠️ Significant Layout Shift detected: ${clsValueRef.current.toFixed(4)}`);
+                lastCLSLogRef.current = now;
               }
             }
           }
@@ -137,7 +138,6 @@ const PerformanceMonitor = () => {
     let lcpObserver;
     let fidObserver;
     let clsObserver;
-    let memoryInterval;
     
     // Monitor after component mount
     setTimeout(measurePerformance, 100);
@@ -148,15 +148,12 @@ const PerformanceMonitor = () => {
     fidObserver = observersSetup.fidObserver;
     clsObserver = observersSetup.clsObserver;
     
-    // Memory usage monitoring removed as requested
-    
     // Return proper cleanup function
     return () => {
-      // Clean up all observers and intervals
+      // Clean up all observers
       if (lcpObserver) lcpObserver.disconnect();
       if (fidObserver) fidObserver.disconnect();
       if (clsObserver) clsObserver.disconnect();
-      if (memoryInterval) clearInterval(memoryInterval);
     };
   }, []);
 
@@ -177,7 +174,6 @@ const PerformanceMonitor = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Memory usage display removed as requested */}
     </>
   );
 };

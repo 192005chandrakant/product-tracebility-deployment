@@ -19,7 +19,11 @@ app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps, curl requests, proxy)
     if (!origin) {
-      console.log('CORS allowing no origin (proxy/mobile)');
+      // Reduce logging - only log once per session
+      if (!global.corsLogged) {
+        console.log('CORS allowing no origin (proxy/mobile)');
+        global.corsLogged = true;
+      }
       return callback(null, true);
     }
     
@@ -44,25 +48,42 @@ app.use(cors({
     
     // In development mode, be more permissive
     if (process.env.NODE_ENV === 'development' || process.env.CORS_ALLOW_ALL === 'true') {
-      console.log('CORS allowing origin (dev mode):', origin);
+      // Reduce logging - only log once per origin
+      if (!global.allowedOrigins) global.allowedOrigins = new Set();
+      if (!global.allowedOrigins.has(origin)) {
+        console.log('CORS allowing origin (dev mode):', origin);
+        global.allowedOrigins.add(origin);
+      }
       return callback(null, true);
     }
     
     // Check localhost patterns for development
     if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
-      console.log('CORS allowing localhost origin:', origin);
+      if (!global.allowedOrigins) global.allowedOrigins = new Set();
+      if (!global.allowedOrigins.has(origin)) {
+        console.log('CORS allowing localhost origin:', origin);
+        global.allowedOrigins.add(origin);
+      }
       return callback(null, true);
     }
     
     // Check Netlify preview patterns
     if (origin && (origin.includes('netlify.app') || origin.includes('deploy-preview'))) {
-      console.log('CORS allowing Netlify deployment:', origin);
+      if (!global.allowedOrigins) global.allowedOrigins = new Set();
+      if (!global.allowedOrigins.has(origin)) {
+        console.log('CORS allowing Netlify deployment:', origin);
+        global.allowedOrigins.add(origin);
+      }
       return callback(null, true);
     }
     
     // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
-      console.log('CORS allowing listed origin:', origin);
+      if (!global.allowedOrigins) global.allowedOrigins = new Set();
+      if (!global.allowedOrigins.has(origin)) {
+        console.log('CORS allowing listed origin:', origin);
+        global.allowedOrigins.add(origin);
+      }
       return callback(null, true);
     }
     
@@ -86,17 +107,22 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// Compression middleware for better performance
-app.use(compression({
-  filter: (req, res) => {
-    if (req.headers['x-no-compression']) {
-      return false;
-    }
-    return compression.filter(req, res);
-  },
-  level: 6, // Compression level (1-9)
-  threshold: 1024 // Only compress responses > 1KB
-}));
+// Disable compression in development to fix content decoding errors
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔧 Development mode - compression disabled to fix proxy issues');
+} else {
+  // Compression middleware for better performance (production only)
+  app.use(compression({
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+    level: 6, // Compression level (1-9)
+    threshold: 1024 // Only compress responses > 1KB
+  }));
+}
 
 // Trust first proxy for rate limiting
 app.set('trust proxy', 1);
@@ -112,6 +138,8 @@ if (process.env.NODE_ENV === 'production') {
     trustProxy: true
   });
   app.use('/api/', limiter);
+} else {
+  console.log('🔧 Development mode - rate limiting disabled');
 }
 
 // Body parsers with optimized limits
@@ -130,6 +158,31 @@ app.use(express.urlencoded({
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/product-traceability';
 
+// Function to find available port
+const findAvailablePort = async (startPort) => {
+  const net = require('net');
+  
+  const isPortAvailable = (port) => {
+    return new Promise((resolve) => {
+      const server = net.createServer();
+      server.listen(port, () => {
+        server.once('close', () => resolve(true));
+        server.close();
+      });
+      server.on('error', () => resolve(false));
+    });
+  };
+  
+  let port = startPort;
+  while (!(await isPortAvailable(port))) {
+    port++;
+    if (port > startPort + 10) {
+      throw new Error(`No available ports found between ${startPort} and ${startPort + 10}`);
+    }
+  }
+  return port;
+};
+
 // Test Routes
 app.get('/test', (req, res) => {
   res.json({ message: 'Server is running!', timestamp: new Date().toISOString() });
@@ -144,17 +197,111 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// MongoDB connection test endpoint
+app.get('/api/db-test', async (req, res) => {
+  try {
+    const connectionStatus = {
+      mongooseReadyState: mongoose.connection.readyState,
+      globalMongoConnected: global.mongoConnected,
+      connectionString: MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'), // Hide credentials
+      timestamp: new Date().toISOString()
+    };
+    
+    // Test database connection
+    if (global.mongoConnected && mongoose.connection.readyState === 1) {
+      try {
+        const User = require('./models/User');
+        const userCount = await User.countDocuments();
+        connectionStatus.testQuery = 'success';
+        connectionStatus.userCount = userCount;
+        connectionStatus.status = 'connected';
+      } catch (err) {
+        connectionStatus.testQuery = 'failed';
+        connectionStatus.error = err.message;
+        connectionStatus.status = 'error';
+      }
+    } else {
+      connectionStatus.status = 'disconnected';
+      connectionStatus.error = 'MongoDB not connected';
+    }
+    
+    res.json(connectionStatus);
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Database test failed', 
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send('Product Traceability API');
 });
 
-// MongoDB Connection
-mongoose.connect(MONGODB_URI)
-.then(() => console.log('✅ MongoDB connected successfully'))
+// MongoDB Connection with proper options and error handling
+let mongoConnected = false;
+
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000, // 5 seconds timeout
+  socketTimeoutMS: 45000, // 45 seconds socket timeout
+  maxPoolSize: 10, // Maximum number of connections in the pool
+  serverApi: {
+    version: '1',
+    strict: true,
+    deprecationErrors: true,
+  }
+})
+.then(() => {
+  mongoConnected = true;
+  console.log('✅ MongoDB connected successfully');
+  console.log(`   Database: ${MONGODB_URI.split('/').pop()}`);
+})
 .catch((err) => {
+  mongoConnected = false;
   console.error('❌ MongoDB connection error:', err.message);
   console.log('⚠️ Server will continue without database connection');
+  console.log('💡 To fix this:');
+  console.log('   1. Make sure MongoDB is running locally: mongod');
+  console.log('   2. Or set MONGODB_URI environment variable to a valid MongoDB connection string');
+  console.log('   3. For development, you can use MongoDB Atlas (cloud)');
 });
+
+// Monitor MongoDB connection status
+mongoose.connection.on('connected', () => {
+  mongoConnected = true;
+  console.log('✅ MongoDB connection established');
+});
+
+mongoose.connection.on('error', (err) => {
+  mongoConnected = false;
+  console.error('❌ MongoDB connection error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  mongoConnected = false;
+  console.log('⚠️ MongoDB connection disconnected');
+});
+
+// Export connection status for use in other modules
+global.mongoConnected = mongoConnected;
+
+// Disable compression in development to fix content decoding errors
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔧 Development mode - compression disabled to fix proxy issues');
+} else {
+  // Compression middleware for better performance (production only)
+  app.use(compression({
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+    level: 6, // Compression level (1-9)
+    threshold: 1024 // Only compress responses > 1KB
+  }));
+}
 
 // Register Routes
 app.use('/api', productRoutes);
@@ -173,10 +320,28 @@ app.get('/api/statistics/stats', async (req, res) => {
     
     // Get real product count
     let productCount = 0;
-    try {
-      productCount = await Product.countDocuments();
-    } catch (err) {
-      console.log('Using mock product count due to DB error');
+    let dbError = false;
+    
+    // Check if MongoDB is connected
+    if (global.mongoConnected && mongoose.connection.readyState === 1) {
+      try {
+        productCount = await Product.countDocuments();
+      } catch (err) {
+        dbError = true;
+        // Only log once per session to reduce noise
+        if (!global.dbErrorLogged) {
+          console.log('Using mock product count due to DB error:', err.message);
+          global.dbErrorLogged = true;
+        }
+        productCount = 15; // fallback
+      }
+    } else {
+      dbError = true;
+      // Only log once per session to reduce noise
+      if (!global.dbErrorLogged) {
+        console.log('Using mock product count - MongoDB not connected');
+        global.dbErrorLogged = true;
+      }
       productCount = 15; // fallback
     }
     
@@ -189,7 +354,8 @@ app.get('/api/statistics/stats', async (req, res) => {
       totalScans: totalScans,
       totalUpdates: totalUpdates,
       // Remove dummy products - these should come from the database
-      recentProducts: []
+      recentProducts: [],
+      dbConnected: !dbError
     };
     
     res.json({ 
@@ -237,31 +403,50 @@ app.use('*', (req, res) => {
 });
 
 // Start Server with error handling
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}`);
-  console.log(`🧪 Test endpoint: http://localhost:${PORT}/test`);
-  // Dynamically log allowed CORS origins
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'https://blockchain-product-traceability.netlify.app',
-    'https://walmart-sparkthon.netlify.app',
-    'https://walmart-sparkthon-product-traceability.netlify.app',
-    'https://main--walmart-sparkthon.netlify.app',
-    'https://deploy-preview--walmart-sparkthon.netlify.app',
-    'https://main--blockchain-product-traceability.netlify.app',
-    'https://deploy-preview--blockchain-product-traceability.netlify.app',
-    'Any *.netlify.app deployment preview'
-  ];
-  console.log('🌐 CORS enabled for:', allowedOrigins);
-}).on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use. Please:\n1. Use a different port, or\n2. Run 'npx kill-port ${PORT}' to free it up`);
-    process.exit(1);
-  } else {
-    console.error('❌ Server error:', err);
+const startServer = async () => {
+  try {
+    const availablePort = await findAvailablePort(PORT);
+    
+    const server = app.listen(availablePort, () => {
+      console.log(`🚀 Server running on port ${availablePort}`);
+      console.log(`📡 API available at http://localhost:${availablePort}`);
+      console.log(`🧪 Test endpoint: http://localhost:${availablePort}/test`);
+      // Dynamically log allowed CORS origins
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'https://blockchain-product-traceability.netlify.app',
+        'https://walmart-sparkthon.netlify.app',
+        'https://walmart-sparkthon-product-traceability.netlify.app',
+        'https://main--walmart-sparkthon.netlify.app',
+        'https://deploy-preview--walmart-sparkthon.netlify.app',
+        'https://main--blockchain-product-traceability.netlify.app',
+        'https://deploy-preview--blockchain-product-traceability.netlify.app',
+        'Any *.netlify.app deployment preview'
+      ];
+      console.log('🌐 CORS enabled for:', allowedOrigins);
+      
+      // If port changed, log it
+      if (availablePort !== PORT) {
+        console.log(`⚠️ Port ${PORT} was in use, using port ${availablePort} instead`);
+      }
+    }).on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${availablePort} is already in use. Please:\n1. Use a different port, or\n2. Run 'npx kill-port ${availablePort}' to free it up`);
+        process.exit(1);
+      } else {
+        console.error('❌ Server error:', err);
+        process.exit(1);
+      }
+    });
+    
+    return server;
+  } catch (error) {
+    console.error('❌ Failed to start server:', error.message);
     process.exit(1);
   }
-});
+};
+
+// Start the server
+startServer();

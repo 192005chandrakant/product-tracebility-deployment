@@ -27,7 +27,9 @@ module.exports = function(app) {
           method: req.method,
           headers: {
             ...req.headers,
-            host: 'localhost:5000'
+            host: 'localhost:5000',
+            'accept-encoding': 'identity', // Disable compression to fix decoding issues
+            'x-no-compression': 'true' // Tell server not to compress
           }
         };
         
@@ -39,10 +41,19 @@ module.exports = function(app) {
           // Forward status code
           res.status(proxyRes.statusCode);
           
-          // Forward headers
+          // Forward headers but exclude problematic ones
           Object.keys(proxyRes.headers).forEach(key => {
-            res.set(key, proxyRes.headers[key]);
+            const lowerKey = key.toLowerCase();
+            // Skip content-encoding and transfer-encoding to avoid decoding issues
+            if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(lowerKey)) {
+              res.set(key, proxyRes.headers[key]);
+            }
           });
+          
+          // Set content type if not present
+          if (!res.get('content-type')) {
+            res.set('Content-Type', 'application/json');
+          }
           
           // Forward response body
           let responseBody = '';
@@ -51,7 +62,7 @@ module.exports = function(app) {
           });
           
           proxyRes.on('end', () => {
-            console.log(`📦 Response body:`, responseBody);
+            console.log(`📦 Response body length: ${responseBody.length} characters`);
             res.send(responseBody);
           });
         });
@@ -67,7 +78,7 @@ module.exports = function(app) {
         
         // Send the body if it exists
         if (body) {
-          console.log(`📤 Sending body:`, body);
+          console.log(`📤 Sending body: ${body.length} characters`);
           proxyReq.write(body);
         }
         
@@ -87,14 +98,26 @@ module.exports = function(app) {
         port: 5000,
         path: '/test',
         method: req.method,
-        headers: { ...req.headers, host: 'localhost:5000' }
+        headers: { 
+          ...req.headers, 
+          host: 'localhost:5000',
+          'accept-encoding': 'identity',
+          'x-no-compression': 'true'
+        }
       };
       
       const proxyReq = http.request(options, (proxyRes) => {
         res.status(proxyRes.statusCode);
+        
+        // Forward headers but exclude problematic ones
         Object.keys(proxyRes.headers).forEach(key => {
-          res.set(key, proxyRes.headers[key]);
+          const lowerKey = key.toLowerCase();
+          if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(lowerKey)) {
+            res.set(key, proxyRes.headers[key]);
+          }
         });
+        
+        // Stream the response directly
         proxyRes.pipe(res);
       });
       
@@ -112,5 +135,5 @@ module.exports = function(app) {
   console.log('✅ Manual proxy setup complete!');
   console.log('   /api/* -> http://localhost:5000/api/* (manual forwarding)');
   console.log('   /test -> http://localhost:5000/test');
-  console.log('   This completely bypasses http-proxy-middleware path stripping!');
+  console.log('   Compression disabled to fix content decoding issues');
 };

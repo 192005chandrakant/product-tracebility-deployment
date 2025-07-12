@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Stars } from '@react-three/drei';
 import FloatingCube from './FloatingCube';
@@ -33,18 +33,35 @@ const Scene3D = ({ variant = "hero" }) => {
   const [webGLAvailable, setWebGLAvailable] = useState(true);
   const [contextLostCount, setContextLostCount] = useState(0);
   const [renderQuality, setRenderQuality] = useState('high');
+  const canvasRef = useRef(null);
+  const contextLostTimeoutRef = useRef(null);
   
   // Check WebGL availability with improved detection
   useEffect(() => {
     const checkWebGL = () => {
       try {
+        // Check if we're in a browser environment
+        if (typeof window === 'undefined' || typeof document === 'undefined') {
+          console.warn('WebGL detection skipped - not in browser environment');
+          setWebGLAvailable(false);
+          return;
+        }
+        
         const canvas = document.createElement('canvas');
         // Try to get WebGL2 context first (better performance)
-        let gl = canvas.getContext('webgl2');
+        let gl = canvas.getContext('webgl2', {
+          powerPreference: 'default',
+          failIfMajorPerformanceCaveat: false,
+          antialias: false
+        });
         
         // Fall back to WebGL1
         if (!gl) {
-          gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+          gl = canvas.getContext('webgl', {
+            powerPreference: 'default',
+            failIfMajorPerformanceCaveat: false,
+            antialias: false
+          }) || canvas.getContext('experimental-webgl');
         }
         
         const available = !!gl;
@@ -55,8 +72,9 @@ const Scene3D = ({ variant = "hero" }) => {
           // Check if device is likely mobile or low-power
           const isMobileBrowser = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
           const isLowMemoryDevice = navigator.deviceMemory && navigator.deviceMemory < 4;
+          const isLowPowerDevice = navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4;
           
-          if (isMobileBrowser || isLowMemoryDevice) {
+          if (isMobileBrowser || isLowMemoryDevice || isLowPowerDevice) {
             setRenderQuality('low');
             console.log('Setting lower render quality for mobile/low-power device');
           }
@@ -76,33 +94,56 @@ const Scene3D = ({ variant = "hero" }) => {
     
     checkWebGL();
     
-    // Add listener for context lost events
+    // Add listener for context lost events with debouncing
     const handleContextLost = (e) => {
       e.preventDefault(); // This allows the context to be restored
-      setContextLostCount(prev => prev + 1);
-      console.warn('WebGL context lost, attempting to recover');
       
-      // Only fall back to 2D if we've lost context multiple times
-      if (contextLostCount > 1) {
-        console.warn('Multiple WebGL context losses detected, falling back to 2D version');
-        setWebGLAvailable(false);
-      } else {
-        // Try reducing quality first before giving up
-        setRenderQuality('low');
+      // Clear any existing timeout
+      if (contextLostTimeoutRef.current) {
+        clearTimeout(contextLostTimeoutRef.current);
       }
+      
+      // Debounce context lost events to prevent rapid firing
+      contextLostTimeoutRef.current = setTimeout(() => {
+        setContextLostCount(prev => prev + 1);
+        console.warn('WebGL context lost, attempting to recover');
+        
+        // Only fall back to 2D if we've lost context multiple times
+        if (contextLostCount > 2) {
+          console.warn('Multiple WebGL context losses detected, falling back to 2D version');
+          setWebGLAvailable(false);
+        } else {
+          // Try reducing quality first before giving up
+          setRenderQuality('low');
+        }
+      }, 1000); // 1 second debounce
     };
     
     // Add listener for context restored events
     const handleContextRestored = () => {
       console.log('WebGL context restored successfully');
+      // Reset context lost count on successful restore
+      setContextLostCount(0);
+      // Gradually increase quality back
+      setTimeout(() => {
+        setRenderQuality('high');
+      }, 5000);
     };
     
-    window.addEventListener('webglcontextlost', handleContextLost, false);
-    window.addEventListener('webglcontextrestored', handleContextRestored, false);
+    // Add event listeners with null checks
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('webglcontextlost', handleContextLost, false);
+      window.addEventListener('webglcontextrestored', handleContextRestored, false);
+    }
     
     return () => {
-      window.removeEventListener('webglcontextlost', handleContextLost);
-      window.removeEventListener('webglcontextrestored', handleContextRestored);
+      if (typeof window !== 'undefined' && window.removeEventListener) {
+        window.removeEventListener('webglcontextlost', handleContextLost);
+        window.removeEventListener('webglcontextrestored', handleContextRestored);
+      }
+      if (contextLostTimeoutRef.current) {
+        clearTimeout(contextLostTimeoutRef.current);
+      }
     };
   }, [contextLostCount]);
   
@@ -111,9 +152,14 @@ const Scene3D = ({ variant = "hero" }) => {
     return <FallbackScene3D variant={variant} />;
   }
   
+  // Additional safety check for browser environment
+  if (typeof window === 'undefined') {
+    return <FallbackScene3D variant={variant} />;
+  }
+  
   // Adjust rendering settings based on quality
   const renderSettings = {
-    dpr: renderQuality === 'low' ? 1 : Math.min(window.devicePixelRatio, 2),
+    dpr: renderQuality === 'low' ? 0.75 : Math.min(window.devicePixelRatio, 2),
     frameloop: renderQuality === 'low' ? 'demand' : 'always',
     shadows: renderQuality !== 'low',
     performance: { min: renderQuality === 'low' ? 0.1 : 0.5 }
@@ -124,7 +170,7 @@ const Scene3D = ({ variant = "hero" }) => {
       case "hero":
         return (
           <>
-            <Stars radius={50} depth={50} count={1000} factor={4} saturation={0} fade />
+            <Stars radius={50} depth={50} count={renderQuality === 'low' ? 500 : 1000} factor={4} saturation={0} fade />
             <BlockchainCube position={[0, 0, 0]} />
             <FloatingCube position={[-3, 1, -2]} color="#10B981" scale={0.7} />
             <FloatingCube position={[3, -1, -2]} color="#F59E0B" scale={0.8} />
@@ -152,38 +198,49 @@ const Scene3D = ({ variant = "hero" }) => {
       <div className="w-full h-full">
         <Suspense fallback={<FallbackScene3D variant={variant} />}>
           <Canvas
+            ref={canvasRef}
             camera={{ position: [0, 0, 8], fov: 75 }}
             style={{ background: 'transparent' }}
             {...renderSettings}
             gl={{ 
-              antialias: webGLAvailable,
+              antialias: renderQuality !== 'low',
               alpha: true,
               preserveDrawingBuffer: false,
-              powerPreference: "high-performance"
+              powerPreference: "default",
+              failIfMajorPerformanceCaveat: false,
+              depth: true,
+              stencil: false
             }}
             onCreated={(state) => {
               // Setup WebGL context loss handling
               if (state && state.gl && state.gl.domElement) {
                 const canvas = state.gl.domElement;
                 
-                canvas.addEventListener('webglcontextlost', (e) => {
-                  e.preventDefault(); // Important: This allows the context to be restored
-                  console.warn('WebGL context lost in Canvas, attempting to recover');
+                // Add null checks before adding event listeners
+                if (canvas && typeof canvas.addEventListener === 'function') {
+                  canvas.addEventListener('webglcontextlost', (e) => {
+                    e.preventDefault(); // Important: This allows the context to be restored
+                    console.warn('WebGL context lost in Canvas, attempting to recover');
+                    
+                    // Only fall back to 2D after multiple failures
+                    if (contextLostCount > 2) {
+                      console.warn('Multiple WebGL context losses, falling back to 2D version');
+                      setWebGLAvailable(false);
+                    } else {
+                      setContextLostCount(prev => prev + 1);
+                    }
+                  });
                   
-                  // Only fall back to 2D after multiple failures
-                  if (contextLostCount > 2) {
-                    console.warn('Multiple WebGL context losses, falling back to 2D version');
-                    setWebGLAvailable(false);
-                  } else {
-                    setContextLostCount(prev => prev + 1);
-                  }
-                });
-                
-                canvas.addEventListener('webglcontextrestored', () => {
-                  console.log('WebGL context restored in Canvas');
-                  // Reset context lost count on successful restore
-                  setContextLostCount(0);
-                });
+                  canvas.addEventListener('webglcontextrestored', () => {
+                    console.log('WebGL context restored in Canvas');
+                    // Reset context lost count on successful restore
+                    setContextLostCount(0);
+                  });
+                } else {
+                  console.warn('Canvas element not available for event listeners');
+                }
+              } else {
+                console.warn('WebGL state not available for event listeners');
               }
             }}
           >
@@ -198,7 +255,9 @@ const Scene3D = ({ variant = "hero" }) => {
               enableZoom={false} 
               enablePan={false}
               autoRotate
-              autoRotateSpeed={0.5}
+              autoRotateSpeed={renderQuality === 'low' ? 0.5 : 1}
+              maxPolarAngle={Math.PI / 2}
+              minPolarAngle={Math.PI / 2}
             />
           </Canvas>
         </Suspense>

@@ -1,10 +1,25 @@
 const User = require('../User'); // ✅ Fixed path
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+
+// Helper function to check if MongoDB is connected
+const isMongoConnected = () => {
+  return mongoose.connection.readyState === 1;
+};
 
 exports.register = async (req, res) => {
   try {
     console.log('📝 Registration attempt:', { email: req.body.email, role: req.body.role });
+    
+    // Check MongoDB connection
+    if (!isMongoConnected()) {
+      console.error('❌ MongoDB not connected for registration');
+      return res.status(503).json({ 
+        error: 'Database service unavailable. Please try again later.',
+        details: 'MongoDB connection is not established'
+      });
+    }
     
     const { email, password, role } = req.body;
     
@@ -27,6 +42,15 @@ exports.register = async (req, res) => {
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
     console.error('❌ Registration error:', err.message);
+    
+    // Handle specific MongoDB errors
+    if (err.name === 'MongoNetworkError' || err.name === 'MongoTimeoutError') {
+      return res.status(503).json({ 
+        error: 'Database service unavailable. Please try again later.',
+        details: err.message
+      });
+    }
+    
     res.status(500).json({ error: err.message });
   }
 };
@@ -34,6 +58,15 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     console.log('🔐 Login attempt:', { email: req.body.email });
+    
+    // Check MongoDB connection
+    if (!isMongoConnected()) {
+      console.error('❌ MongoDB not connected for login');
+      return res.status(503).json({ 
+        error: 'Database service unavailable. Please try again later.',
+        details: 'MongoDB connection is not established'
+      });
+    }
     
     const { email, password } = req.body;
     
@@ -66,6 +99,15 @@ exports.login = async (req, res) => {
     res.json({ token, role: user.role, email: user.email });
   } catch (err) {
     console.error('❌ Login error:', err.message);
+    
+    // Handle specific MongoDB errors
+    if (err.name === 'MongoNetworkError' || err.name === 'MongoTimeoutError') {
+      return res.status(503).json({ 
+        error: 'Database service unavailable. Please try again later.',
+        details: err.message
+      });
+    }
+    
     res.status(500).json({ error: err.message });
   }
 };
