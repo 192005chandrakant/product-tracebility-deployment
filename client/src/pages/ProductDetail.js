@@ -11,7 +11,7 @@ import Scene3D from '../components/3D/Scene3D';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import GlowingButton from '../components/UI/GlowingButton';
 import ParticleBackground from '../components/UI/ParticleBackground';
-import { getAPIBaseURL } from '../utils/apiConfig';
+import { getAPIBaseURL, buildAPIURL } from '../utils/apiConfig';
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/600x300?text=No+Image';
 const STATUS_OPTIONS = [
@@ -149,7 +149,7 @@ function ProductDetail() {
       if (!product || !product.productId) return;
       
       setLoadingQR(true);
-      const res = await fetch(`/api/product/${product.productId}/qr`);
+      const res = await fetch(buildAPIURL(`/api/product/${product.productId}/qr`));
       
       if (!res.ok) {
         throw new Error('Failed to fetch QR code');
@@ -257,7 +257,7 @@ function ProductDetail() {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/product/${id}`)
+    fetch(buildAPIURL(`/api/product/${id}`))
       .then(res => {
         if (!res.ok) {
           throw new Error('Product not found or API error');
@@ -278,7 +278,7 @@ function ProductDetail() {
     if (!newStatus) return;
     setStatusUpdating(true);
     try {
-      const res = await fetch(`/api/update-product/${product.productId}`, {
+      const res = await fetch(buildAPIURL(`/api/update-product/${product.productId}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -8,6 +8,7 @@ import Scene3D from '../components/3D/Scene3D';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import GlowingButton from '../components/UI/GlowingButton';
 import ParticleBackground from '../components/UI/ParticleBackground';
+import { buildAPIURL } from '../utils/apiConfig';
 
 function Home() {
   const navigate = useNavigate();
@@ -180,7 +181,7 @@ function Home() {
                       return;
                     }
                     try {
-                      const res = await fetch(`/api/product/by-cert-hash/${certHash}`);
+                      const res = await fetch(buildAPIURL(`/api/product/by-cert-hash/${certHash}`));
                       if (!res.ok) throw new Error('Product not found');
                       const data = await res.json();
                       if (data && data.productId) {

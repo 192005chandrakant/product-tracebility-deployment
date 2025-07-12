@@ -143,7 +143,7 @@ POST   /api/products           # Create new product (Admin/Manufacturer)
 GET    /api/product/:id        # Get product by ID
 PUT    /api/product/:id        # Update product (Admin/Manufacturer)
 DELETE /api/product/:id        # Delete product (Admin only)
-PUT    /api/product/:id/status # Update product status
+PUT    /status # Update product status
 GET    /api/product/:id/qr     # Generate/get QR code
 ```
 

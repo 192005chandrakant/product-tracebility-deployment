@@ -220,7 +220,7 @@ function UpdateProduct() {
         formData.append('imageFile', uploadFiles.image);
       }
       
-      const response = await fetch(`/api/update-product/${productId}`, {
+      const response = await fetch(buildAPIURL(`/api/update-product/${productId}`), {
         method: 'POST',
         headers: { 
           Authorization: `Bearer ${token}`
@@ -285,16 +285,12 @@ function UpdateProduct() {
       <div className="absolute inset-0 z-0">
         <Scene3D />
       </div>
-      
       {/* Particle Background */}
       <ParticleBackground />
-      
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20 z-10"></div>
-      
       <div className="relative z-20 min-h-screen p-4">
         <ToastContainer position="top-center" />
-        
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8 pt-8">
@@ -318,7 +314,6 @@ function UpdateProduct() {
               Search for products, update stages, upload files, and track your progress with real-time statistics
             </p>
           </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Statistics Panel */}
             <div className="lg:col-span-1">
@@ -336,7 +331,6 @@ function UpdateProduct() {
                       <FaRefresh className={statsLoading ? 'animate-spin' : ''} />
                     </button>
                   </div>
-                  
                   <div className="space-y-4">
                     <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-lg text-white">
                       <div className="flex items-center justify-between">
@@ -347,7 +341,6 @@ function UpdateProduct() {
                         <FaBox className="text-3xl text-blue-200" />
                       </div>
                     </div>
-                    
                     <div className="bg-gradient-to-r from-green-500 to-green-600 p-4 rounded-lg text-white">
                       <div className="flex items-center justify-between">
                         <div>
@@ -357,7 +350,6 @@ function UpdateProduct() {
                         <FaEye className="text-3xl text-green-200" />
                       </div>
                     </div>
-                    
                     <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-4 rounded-lg text-white">
                       <div className="flex items-center justify-between">
                         <div>
@@ -368,7 +360,6 @@ function UpdateProduct() {
                       </div>
                     </div>
                   </div>
-
                   {/* Recent Updates */}
                   {statistics.recentUpdates.length > 0 && (
                     <div className="mt-6">
@@ -400,7 +391,6 @@ function UpdateProduct() {
                 </div>
               </AnimatedCard>
             </div>
-
             {/* Main Update Form */}
             <div className="lg:col-span-2">
               <AnimatedCard>
@@ -428,7 +418,6 @@ function UpdateProduct() {
                           </div>
                         )}
                       </div>
-
                       {/* Search Results */}
                       <AnimatePresence>
                         {searchResults.length > 0 && (
@@ -469,7 +458,6 @@ function UpdateProduct() {
                         )}
                       </AnimatePresence>
                     </div>
-
                     {/* Selected Product Details */}
                     {selectedProduct && (
                       <motion.div
@@ -494,7 +482,6 @@ function UpdateProduct() {
                             <FaTimes />
                           </button>
                         </div>
-                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <div>
                             <p className="text-gray-600 dark:text-gray-400">Name:</p>
@@ -513,7 +500,6 @@ function UpdateProduct() {
                             <p className="font-medium text-gray-800 dark:text-gray-200">{selectedProduct.manufacturer}</p>
                           </div>
                         </div>
-
                         {/* Stage History */}
                         {stageHistory.length > 0 && (
                           <div className="mt-4">
@@ -536,7 +522,6 @@ function UpdateProduct() {
                         )}
                       </motion.div>
                     )}
-
                     {/* Manual Product ID Input */}
                     {!selectedProduct && (
                       <div className="space-y-2">
@@ -558,7 +543,6 @@ function UpdateProduct() {
                         </div>
                       </div>
                     )}
-
                     {/* Stage Selection */}
                     <div className="space-y-4">
                       <label className="block text-lg font-semibold text-gray-700 dark:text-gray-300">
@@ -589,7 +573,6 @@ function UpdateProduct() {
                         })}
                       </div>
                     </div>
-
                     {/* Stage Preview */}
                     {selectedStage && (
                       <motion.div
@@ -610,7 +593,6 @@ function UpdateProduct() {
                         </div>
                       </motion.div>
                     )}
-
                     {/* Success/Error Messages */}
                     <AnimatePresence>
                       {message && (
@@ -641,7 +623,6 @@ function UpdateProduct() {
                         </motion.div>
                       )}
                     </AnimatePresence>
-
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 pt-6">
                       <GlowingButton
@@ -662,7 +643,6 @@ function UpdateProduct() {
                           </>
                         )}
                       </GlowingButton>
-                      
                       <GlowingButton
                         type="button"
                         onClick={() => navigate(-1)}
