@@ -4,11 +4,23 @@ import { useFrame } from '@react-three/fiber';
 const BlockchainCube = ({ position }) => {
   const meshRef = useRef();
   
+  // Use try-catch in animation frame to prevent crashes
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.x += 0.005;
-      meshRef.current.rotation.y += 0.005;
-      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
+      try {
+        // Reduce animation frequency for better performance
+        const time = state.clock.elapsedTime * 0.3;
+        meshRef.current.rotation.x += 0.003;
+        meshRef.current.rotation.y += 0.003;
+        
+        // Simpler position animation with less computation
+        if (position && position.length === 3) {
+          meshRef.current.position.y = position[1] + Math.sin(time) * 0.1;
+        }
+      } catch (error) {
+        // Silently handle any animation errors
+        console.warn('Animation error in BlockchainCube:', error.message);
+      }
     }
   });
 
@@ -35,4 +47,4 @@ const BlockchainCube = ({ position }) => {
   );
 };
 
-export default BlockchainCube;
+export default React.memo(BlockchainCube);

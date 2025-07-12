@@ -4,21 +4,17 @@ import { lazy, Suspense } from 'react';
 const createLazyComponent = (importFunc, componentName) => {
   return lazy(async () => {
     try {
-      const module = await importFunc();
-      return module;
+      // Attempt to load the component
+      return await importFunc();
     } catch (error) {
-      console.error(`Failed to load ${componentName}:`, error);
+      console.error(`Error loading component ${componentName}:`, error);
       
-      // Retry once after a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
       try {
-        const module = await importFunc();
-        console.log(`✅ Retry successful for ${componentName}`);
-        return module;
+        // Wait a moment and retry once
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return await importFunc();
       } catch (retryError) {
-        console.error(`Retry failed for ${componentName}:`, retryError);
-        
-        // Return a fallback component
+        console.error(`Failed to load component ${componentName} after retry:`, retryError);
         return {
           default: () => (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900 dark:to-red-800">
@@ -44,8 +40,19 @@ const createLazyComponent = (importFunc, componentName) => {
   });
 };
 
+// Simple loading fallback component
+export const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-cyan-400 mx-auto mb-4"></div>
+      <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+    </div>
+  </div>
+);
+
 // Lazy load components with enhanced error handling
 export const LazyHome = createLazyComponent(() => import('../pages/Home'), 'Home');
+export const LazyLanding = createLazyComponent(() => import('../pages/Landing'), 'Landing');
 export const LazyAuthLogin = createLazyComponent(() => import('../pages/AuthLogin'), 'AuthLogin');
 export const LazyAuthRegister = createLazyComponent(() => import('../pages/AuthRegister'), 'AuthRegister');
 export const LazyQRScan = createLazyComponent(() => import('../pages/QRScan'), 'QRScan');
@@ -53,20 +60,17 @@ export const LazyProductDetail = createLazyComponent(() => import('../pages/Prod
 export const LazyAdminDashboard = createLazyComponent(() => import('../pages/AdminDashboard'), 'AdminDashboard');
 export const LazyAddProduct = createLazyComponent(() => import('../pages/AddProduct'), 'AddProduct');
 export const LazyUpdateProduct = createLazyComponent(() => import('../pages/UpdateProduct'), 'UpdateProduct');
-export const LazyLanding = createLazyComponent(() => import('../pages/Landing'), 'Landing');
 
-// Loading fallback component
-export const LoadingFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950">
-    <div className="text-center">
-      {/* Enhanced loading spinner */}
+// Enhanced loading fallback component with better UX
+export const EnhancedLoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
+    <div className="text-center p-8">
+      {/* Main loading spinner with glow effect */}
       <div className="relative mb-8">
-        <div className="w-16 h-16 mx-auto">
-          <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-slate-700"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-indigo-500 dark:border-t-cyan-400 animate-spin"></div>
-          <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-purple-500 dark:border-t-blue-400 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+        <div className="w-16 h-16 mx-auto relative">
+          <div className="absolute inset-0 w-16 h-16 border-4 border-indigo-200 dark:border-slate-700 rounded-full animate-pulse"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-indigo-500 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
         </div>
-        {/* Pulsing glow effect */}
         <div className="absolute inset-0 w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 dark:from-cyan-400/20 dark:to-blue-400/20 animate-pulse blur-xl"></div>
       </div>
       
@@ -96,7 +100,7 @@ export const LoadingFallback = () => (
 
 // HOC for lazy loading with Suspense
 export const withLazyLoading = (Component) => (props) => (
-  <Suspense fallback={<LoadingFallback />}>
+  <Suspense fallback={<EnhancedLoadingFallback />}>
     <Component {...props} />
   </Suspense>
 );

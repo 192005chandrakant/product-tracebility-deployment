@@ -9,7 +9,7 @@ import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import { optimizedAnimations } from '../utils/performanceOptimizations';
-import { buildAPIURL } from '../utils/apiConfig';
+import { buildAPIURL, apiRequest } from '../utils/apiConfig';
 
 function AuthLogin() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -49,19 +49,13 @@ function AuthLogin() {
     try {
       console.log('Attempting login with:', form.email);
       
-      const res = await fetch(buildAPIURL('/api/auth/login'), {
+      // Use the enhanced API request function
+      const data = await apiRequest('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       
-      console.log('Response status:', res.status);
-      const data = await res.json();
-      console.log('Response data:', data);
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
+      console.log('Login response data:', data);
       
       if (!data.token) {
         throw new Error('No token received from server');
@@ -79,7 +73,7 @@ function AuthLogin() {
       navigate('/home', { replace: true });
     } catch (err) {
       console.error('Login error:', err);
-      toast.error(err.message);
+      toast.error(err.message || 'Login failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);
     }

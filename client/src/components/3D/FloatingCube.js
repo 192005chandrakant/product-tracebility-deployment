@@ -19,13 +19,23 @@ const FloatingCube = ({
     hoverColor: "#06B6D4"
   }), [color]);
 
+  // Use lower frequency animation to improve performance
   useFrame((state) => {
     if (meshRef.current && enableAnimation) {
-      // Reduced animation frequency for better performance
-      const time = state.clock.elapsedTime;
-      meshRef.current.rotation.x = time * 0.5;
-      meshRef.current.rotation.y = time * 0.5;
-      meshRef.current.position.y = position[1] + Math.sin(time * 2) * 0.05;
+      try {
+        // Use a simpler animation pattern for better performance
+        const time = state.clock.elapsedTime * 0.3; // Reduced animation speed
+        meshRef.current.rotation.x = time * 0.5;
+        meshRef.current.rotation.y = time * 0.5;
+        
+        // Simpler position animation with less computation
+        if (position && position.length === 3) {
+          meshRef.current.position.y = position[1] + Math.sin(time) * 0.05;
+        }
+      } catch (error) {
+        // Silently handle any animation errors to prevent crashes
+        console.warn('Animation error in FloatingCube:', error.message);
+      }
     }
   });
 
@@ -33,7 +43,7 @@ const FloatingCube = ({
     <mesh
       ref={meshRef}
       position={position}
-      scale={hovered ? scale * 1.1 : scale} // Reduced scale change for smoother animation
+      scale={hovered ? scale * 1.05 : scale} // Reduced scale change for smoother animation
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >

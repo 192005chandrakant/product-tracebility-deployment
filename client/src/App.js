@@ -4,6 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import PerformanceMonitor from './components/PerformanceMonitor';
+import { testApiConnection } from './utils/apiConfig';
 import { 
   LazyHome, 
   LazyAuthLogin, 
@@ -125,6 +126,43 @@ function App() {
   
   // Preload components for better UX
   useComponentPreloader();
+  
+  // Enhanced API connection test with better error handling
+  useEffect(() => {
+    // Skip API test if explicitly disabled
+    if (process.env.REACT_APP_DISABLE_API_WARNINGS === 'true') {
+      console.log('ℹ️ API connection test disabled via environment variable');
+      return;
+    }
+
+    testApiConnection().then(result => {
+      if (result.success) {
+        if (result.fallback) {
+          console.log('🔄 API connection established with fallback:', result.message);
+          console.log('   Using:', result.baseURL);
+        } else {
+          console.log('🎉 API connection established successfully!');
+          console.log('   Connected to:', result.baseURL);
+        }
+      } else {
+        // Handle different types of failures more gracefully
+        if (result.cors) {
+          console.log('ℹ️ CORS detected - proxy may need restart or backend may be down');
+          console.log('ℹ️ If local backend is running, try restarting the development server');
+        } else if (result.rateLimit) {
+          console.warn('⚠️ API temporarily rate limited - features will work when limit resets');
+        } else if (result.timeout) {
+          console.warn('⚠️ API connection timed out - check if backend server is running');
+        } else {
+          console.warn('⚠️ API connection failed:', result.error);
+          console.warn('ℹ️ App will continue to work, but some features may be limited');
+        }
+      }
+    }).catch(err => {
+      // Silent catch to prevent unhandled promise rejection
+      console.log('ℹ️ API test error handled:', err.message);
+    });
+  }, []);
   
   return (
     <ErrorBoundary>

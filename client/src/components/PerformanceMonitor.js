@@ -59,6 +59,9 @@ const PerformanceMonitor = () => {
       let lcpObserver = null;
       let fidObserver = null;
       let clsObserver = null;
+      let lastLCPLog = 0;
+      let lastCLSLog = 0;
+      const LOG_THROTTLE = 2000; // Only log every 2 seconds
       
       if ('PerformanceObserver' in window) {
         // Largest Contentful Paint
@@ -66,7 +69,14 @@ const PerformanceMonitor = () => {
           const entries = entryList.getEntries();
           const lastEntry = entries[entries.length - 1];
           setMetrics(prev => ({ ...prev, lcp: lastEntry.startTime }));
-          console.log(`LCP: ${lastEntry.startTime.toFixed(2)}ms`);
+          
+          // Throttle LCP logging
+          const now = Date.now();
+          if (now - lastLCPLog > LOG_THROTTLE) {
+            console.log(`🚀 Performance Metrics:`);
+            console.log(`Page Load: ${lastEntry.startTime.toFixed(2)}ms`);
+            lastLCPLog = now;
+          }
         });
         
         try {
@@ -79,8 +89,12 @@ const PerformanceMonitor = () => {
         fidObserver = new PerformanceObserver((entryList) => {
           const entries = entryList.getEntries();
           entries.forEach(entry => {
-            setMetrics(prev => ({ ...prev, fid: entry.processingStart - entry.startTime }));
-            console.log(`FID: ${(entry.processingStart - entry.startTime).toFixed(2)}ms`);
+            const fidValue = entry.processingStart - entry.startTime;
+            setMetrics(prev => ({ ...prev, fid: fidValue }));
+            // Only log significant FID values (> 10ms)
+            if (fidValue > 10) {
+              console.log(`⚠️ High FID detected: ${fidValue.toFixed(2)}ms`);
+            }
           });
         });
         
@@ -97,7 +111,13 @@ const PerformanceMonitor = () => {
             if (!entry.hadRecentInput) {
               clsValue += entry.value;
               setMetrics(prev => ({ ...prev, cls: clsValue }));
-              console.log(`CLS: ${clsValue.toFixed(4)}`);
+              
+              // Throttle CLS logging and only log significant shifts
+              const now = Date.now();
+              if (clsValue > 0.1 && now - lastCLSLog > LOG_THROTTLE) {
+                console.log(`⚠️ Layout Shift detected: ${clsValue.toFixed(4)}`);
+                lastCLSLog = now;
+              }
             }
           }
         });

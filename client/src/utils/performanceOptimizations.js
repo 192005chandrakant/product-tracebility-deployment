@@ -1,4 +1,4 @@
-import React, { Suspense, memo } from 'react';
+import React, { Suspense, memo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 // Higher-order component for performance optimization
@@ -31,8 +31,14 @@ export const withPerformanceOptimization = (Component) => {
 
 // Optimized image component with lazy loading
 export const OptimizedImage = memo(({ src, alt, className, ...props }) => {
-  const [isLoaded, setIsLoaded] = React.useState(false);
-  const [isError, setIsError] = React.useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isError, setIsError] = useState(false);
+
+  // Reset states when src changes
+  useEffect(() => {
+    setIsLoaded(false);
+    setIsError(false);
+  }, [src]);
 
   return (
     <div className={`relative ${className}`}>
@@ -59,59 +65,19 @@ export const OptimizedImage = memo(({ src, alt, className, ...props }) => {
 
 // Debounce hook for search inputs
 export const useDebounce = (value, delay) => {
-  const [debouncedValue, setDebouncedValue] = React.useState(value);
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
-
+    
     return () => {
       clearTimeout(handler);
     };
   }, [value, delay]);
-
+  
   return debouncedValue;
-};
-
-// Virtual scroll hook for large lists
-export const useVirtualScroll = (items, itemHeight, containerHeight) => {
-  const [scrollTop, setScrollTop] = React.useState(0);
-  
-  const visibleStart = Math.floor(scrollTop / itemHeight);
-  const visibleEnd = Math.min(
-    visibleStart + Math.ceil(containerHeight / itemHeight) + 1,
-    items.length
-  );
-  
-  const visibleItems = items.slice(visibleStart, visibleEnd);
-  
-  return {
-    visibleItems,
-    totalHeight: items.length * itemHeight,
-    offsetY: visibleStart * itemHeight,
-    onScroll: (e) => setScrollTop(e.target.scrollTop),
-  };
-};
-
-// Intersection Observer hook for lazy loading
-export const useIntersectionObserver = (options = {}) => {
-  const [ref, setRef] = React.useState(null);
-  const [isIntersecting, setIsIntersecting] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!ref) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsIntersecting(entry.isIntersecting),
-      options
-    );
-
-    observer.observe(ref);
-    return () => observer.disconnect();
-  }, [ref, options]);
-
-  return [setRef, isIntersecting];
 };
 
 // Optimized animation variants for better performance
@@ -154,27 +120,35 @@ export const optimizedAnimations = {
   }
 };
 
-// Performance monitoring hook
+// Performance monitoring hook with reduced logging
 export const usePerformanceMonitor = () => {
-  React.useEffect(() => {
-    if ('performance' in window) {
-      // Monitor page load time
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const perfData = performance.getEntriesByType('navigation')[0];
-          console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
-          console.log('DOMContentLoaded:', perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart, 'ms');
-        }, 0);
-      });
-
-      // Monitor largest contentful paint
-      if ('PerformanceObserver' in window) {
-        const observer = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            console.log('LCP:', entry.startTime, 'ms');
+  useEffect(() => {
+    // Record page load performance
+    window.addEventListener('load', () => {
+      const pageLoadTime = performance.now();
+      const navigationTiming = performance.getEntriesByType('navigation')[0];
+      const dcl = navigationTiming?.domContentLoadedEventEnd || 0;
+      
+      // Only log if debug is enabled
+      if (process.env.REACT_APP_DEBUG === 'true') {
+        console.log(`📊 Page load time: ${pageLoadTime.toFixed(2)} ms`);
+        console.log(`📊 DOMContentLoaded: ${dcl.toFixed(2)} ms`);
+      }
+    });
+    
+    // LCP observer with reduced logging
+    if ('PerformanceObserver' in window) {
+      try {
+        new PerformanceObserver((entryList) => {
+          const entries = entryList.getEntries();
+          const lastEntry = entries[entries.length - 1];
+          // Only log LCP in debug mode and if it's significant
+          if (process.env.REACT_APP_DEBUG === 'true' && lastEntry.startTime > 1000) {
+            console.log(`📊 LCP: ${lastEntry.startTime.toFixed(0)} ms`);
           }
-        });
-        observer.observe({ entryTypes: ['largest-contentful-paint'] });
+        }).observe({ entryTypes: ['largest-contentful-paint'] });
+      } catch (e) {
+        // Silent error - LCP observer not supported
       }
     }
   }, []);

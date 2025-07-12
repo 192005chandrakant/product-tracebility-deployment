@@ -20,13 +20,33 @@ class ErrorBoundary extends React.Component {
       errorInfo: errorInfo
     });
 
-    // Check if it's a chunk loading error
-    if (error.name === 'ChunkLoadError' || error.message?.includes('chunk') || error.message?.includes('Loading CSS chunk')) {
+    // Check for specific error types
+    const isChunkError = error.name === 'ChunkLoadError' || 
+                         error.message?.includes('chunk') || 
+                         error.message?.includes('Loading CSS chunk');
+                         
+    const isWebGLError = error.message?.includes('WebGL') || 
+                         error.message?.includes('webgl') || 
+                         error.message?.includes('context lost') ||
+                         error.message?.includes('INVALID_OPERATION');
+    
+    if (isChunkError) {
       console.log('🔄 Chunk loading error detected, attempting page reload...');
       // Reload the page after a short delay to recover from chunk loading errors
       setTimeout(() => {
         window.location.reload();
       }, 1000);
+    } else if (isWebGLError) {
+      console.log('🔄 WebGL error detected, attempting recovery...');
+      // For WebGL errors, we can try to recover without a full page reload
+      // by setting state and letting components fall back to 2D versions
+      this.setState({ 
+        hasError: true,
+        error: {
+          ...error,
+          isWebGLError: true
+        }
+      });
     }
   }
 
@@ -39,6 +59,11 @@ class ErrorBoundary extends React.Component {
       const isChunkError = this.state.error?.name === 'ChunkLoadError' || 
                           this.state.error?.message?.includes('chunk') ||
                           this.state.error?.message?.includes('Loading CSS chunk');
+                          
+      const isWebGLError = this.state.error?.isWebGLError ||
+                          this.state.error?.message?.includes('WebGL') ||
+                          this.state.error?.message?.includes('webgl') ||
+                          this.state.error?.message?.includes('context lost');
 
       if (isChunkError) {
         return (
@@ -56,6 +81,32 @@ class ErrorBoundary extends React.Component {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 This page will refresh automatically in a moment.
               </p>
+            </div>
+          </div>
+        );
+      }
+      
+      if (isWebGLError) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800">
+            <div className="text-center p-8 bg-white dark:bg-slate-800 rounded-lg shadow-lg max-w-md">
+              <div className="w-16 h-16 mx-auto mb-4 text-blue-500">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+                  <path d="M11 9h2V7h-2m1 13c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8m0-18A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2m-1 15h2v-6h-2v6z"/>
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+                Graphics Error Detected
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Your browser encountered an issue with 3D graphics. We've switched to a simplified view.
+              </p>
+              <button 
+                onClick={this.handleReload}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Refresh Page
+              </button>
             </div>
           </div>
         );

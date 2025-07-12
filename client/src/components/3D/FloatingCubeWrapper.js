@@ -18,6 +18,7 @@ const FloatingCubeWrapper = memo(({
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       setWebGLFailed(!gl);
     } catch (e) {
+      console.warn('WebGL not available:', e.message);
       setWebGLFailed(true);
     }
   }, []);
@@ -43,12 +44,21 @@ const FloatingCubeWrapper = memo(({
         const canvas = state.gl.domElement;
         canvas.addEventListener('webglcontextlost', (e) => {
           e.preventDefault();
-          console.warn('WebGL context lost in FloatingCubeWrapper');
-          setWebGLFailed(true);
+          console.warn('WebGL context lost, switching to fallback rendering');
+          // Prevent console flooding with warnings
+          if (!webGLFailed) {
+            setWebGLFailed(true);
+          }
+        });
+        
+        // Try to restore context when possible
+        canvas.addEventListener('webglcontextrestored', (e) => {
+          console.log('WebGL context restored');
+          setWebGLFailed(false);
         });
       }
     }
-  }), [cameraConfig, enableAnimation]);
+  }), [cameraConfig, enableAnimation, webGLFailed]);
 
   // Error boundary fallback
   const ErrorFallback = useCallback(() => (

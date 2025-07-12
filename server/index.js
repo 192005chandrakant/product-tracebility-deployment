@@ -17,12 +17,9 @@ const app = express();
 // Enhanced CORS setup for both development and production
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl requests)
-    if (!origin) return callback(null, true);
-    
-    // For development, allow all origins if explicitly set
-    if (process.env.NODE_ENV === 'development' || process.env.CORS_ALLOW_ALL === 'true') {
-      console.log('CORS allowing origin (dev mode):', origin);
+    // Allow requests with no origin (like mobile apps, curl requests, proxy)
+    if (!origin) {
+      console.log('CORS allowing no origin (proxy/mobile)');
       return callback(null, true);
     }
     
@@ -32,9 +29,11 @@ app.use(cors({
       'http://localhost:3000',
       'http://127.0.0.1:3000',
       'http://localhost:3001',
+      'http://localhost:5000',
       
       // Production origins - Netlify domains
       'https://blockchain-product-traceability.netlify.app',
+      'https://blockchain-product-traceability.netlify.app/',
       'https://walmart-sparkthon.netlify.app',
       'https://walmart-sparkthon-product-traceability.netlify.app',
       'https://main--walmart-sparkthon.netlify.app',
@@ -43,35 +42,43 @@ app.use(cors({
       'https://deploy-preview--blockchain-product-traceability.netlify.app',
     ];
     
-    // In production, also allow any netlify.app domain for deployment previews
-    if (origin && origin.includes('.netlify.app')) {
-      console.log('CORS allowing netlify.app origin:', origin);
+    // In development mode, be more permissive
+    if (process.env.NODE_ENV === 'development' || process.env.CORS_ALLOW_ALL === 'true') {
+      console.log('CORS allowing origin (dev mode):', origin);
       return callback(null, true);
     }
     
-    // Special handling for blockchain-product-traceability.netlify.app and its variants
-    if (origin && (origin.includes('blockchain-product-traceability.netlify.app') || 
-                   origin.includes('--blockchain-product-traceability.netlify.app'))) {
-      console.log('CORS allowing blockchain-product-traceability origin:', origin);
+    // Check localhost patterns for development
+    if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+      console.log('CORS allowing localhost origin:', origin);
       return callback(null, true);
     }
     
-    // Check if the origin is allowed
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.log('CORS blocked origin:', origin);
-      console.log('Allowed origins:', allowedOrigins);
-      return callback(new Error(`CORS policy violation. Origin ${origin} not allowed.`), false);
+    // Check Netlify preview patterns
+    if (origin && (origin.includes('netlify.app') || origin.includes('deploy-preview'))) {
+      console.log('CORS allowing Netlify deployment:', origin);
+      return callback(null, true);
     }
     
-    console.log('CORS allowing origin:', origin);
-    return callback(null, true);
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      console.log('CORS allowing listed origin:', origin);
+      return callback(null, true);
+    }
+    
+    // Default fallback - deny access
+    console.log('CORS blocking origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
   },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With', 
     'Access-Control-Request-Method', 'Access-Control-Request-Headers'],
-  credentials: true,
-  maxAge: 86400 // 24 hours
+  maxAge: 86400
 }));
+
+// Add OPTIONS pre-flight response for all routes
+app.options('*', cors());
 
 // Security middleware
 app.use(helmet({
@@ -126,6 +133,15 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/produc
 // Test Routes
 app.get('/test', (req, res) => {
   res.json({ message: 'Server is running!', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    message: 'API is running!', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 app.get('/', (req, res) => {
@@ -225,7 +241,8 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}`);
   console.log(`🧪 Test endpoint: http://localhost:${PORT}/test`);
-  console.log('🌐 CORS enabled for:', [
+  // Dynamically log allowed CORS origins
+  const allowedOrigins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:3001',
@@ -237,7 +254,8 @@ const server = app.listen(PORT, () => {
     'https://main--blockchain-product-traceability.netlify.app',
     'https://deploy-preview--blockchain-product-traceability.netlify.app',
     'Any *.netlify.app deployment preview'
-  ]);
+  ];
+  console.log('🌐 CORS enabled for:', allowedOrigins);
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ Port ${PORT} is already in use. Please:\n1. Use a different port, or\n2. Run 'npx kill-port ${PORT}' to free it up`);
