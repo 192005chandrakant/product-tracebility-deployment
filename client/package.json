@@ -2,7 +2,7 @@
   "name": "product-traceability-client",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://blockchain-product-traceability.netlify.app",
+  "homepage": "/",
   "dependencies": {
     "@react-three/drei": "^9.88.0",
     "@react-three/fiber": "^8.15.0",
