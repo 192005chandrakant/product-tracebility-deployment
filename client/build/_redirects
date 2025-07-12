@@ -1,0 +1,29 @@
+# CRITICAL: Handle static assets from any nested path
+# These MUST come first with ! to override SPA routing
+
+# Handle any depth of nested static assets
+/*/static/js/* /static/js/:splat 200!
+/*/static/css/* /static/css/:splat 200!
+/*/static/media/* /static/media/:splat 200!
+
+# Handle double-nested paths (like /auth/login/static/...)
+/*/*/static/js/* /static/js/:splat 200!
+/*/*/static/css/* /static/css/:splat 200!
+/*/*/static/media/* /static/media/:splat 200!
+
+# Direct static asset access
+/static/js/* /static/js/:splat 200!
+/static/css/* /static/css/:splat 200!
+/static/media/* /static/media/:splat 200!
+
+# Root level assets
+/manifest.json /manifest.json 200!
+/favicon.ico /favicon.ico 200!
+/sw.js /sw.js 200!
+/asset-manifest.json /asset-manifest.json 200!
+
+# API routes should proxy to backend
+/api/* https://product-traceability-api.onrender.com/api/:splat 200
+
+# SPA routing - redirect all other routes to index.html (MUST be last)
+/* /index.html 200
