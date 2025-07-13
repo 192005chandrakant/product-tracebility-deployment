@@ -452,7 +452,7 @@ For support and questions:
 - **Frontend**: React.js, Framer Motion, Three.js, Tailwind CSS
 - **Backend**: Node.js, Express.js, MongoDB, Mongoose
 - **Blockchain**: Ethereum, Hardhat, Ethers.js
-- **Storage**: Google Drive API, OAuth 2.0
+- **Storage**: Cloudinary
 - **Authentication**: JWT, bcrypt
 - **File Processing**: Multer, QR Code generation
 
