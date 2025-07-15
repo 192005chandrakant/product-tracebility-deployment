@@ -15,34 +15,7 @@ const upload = multer({
   }
 });
 
-// Test route
-router.get('/test', (req, res) => {
-  console.log('Test route hit!');
-  res.json({ message: 'Product routes working!', timestamp: new Date().toISOString() });
-});
 
-// Simple test route
-router.post('/add-product-simple', (req, res) => {
-  console.log('Simple add product route hit!');
-  console.log('Body:', req.body);
-  res.status(200).json({ 
-    success: true,
-    message: 'Simple route working', 
-    body: req.body,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Simple test route without files
-router.post('/add-product-test', auth, requireRole('producer'), (req, res) => {
-  console.log('Add product test route hit!');
-  console.log('Body:', req.body);
-  res.json({ 
-    message: 'Test route working', 
-    body: req.body,
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Error handling for Multer
 const handleMulterError = (err, req, res, next) => {
@@ -57,20 +30,7 @@ const handleMulterError = (err, req, res, next) => {
   next(err);
 };
 
-// Debug middleware to log request details
-const debugRequest = (req, res, next) => {
-  console.log('=== REQUEST DEBUG ===');
-  console.log('Headers:', req.headers);
-  console.log('Body fields:', Object.keys(req.body));
-  console.log('Files received:', req.files ? Object.keys(req.files) : 'No files');
-  if (req.files) {
-    Object.keys(req.files).forEach(key => {
-      console.log(`File ${key}:`, req.files[key][0]?.originalname);
-    });
-  }
-  console.log('=== END DEBUG ===');
-  next();
-};
+
 
 // Main add product route with file handling
 router.post('/add-product',
@@ -82,7 +42,6 @@ router.post('/add-product',
     { name: 'imageFile', maxCount: 1 }
   ]),
   handleMulterError,
-  debugRequest,
   productController.addProduct
 );
 

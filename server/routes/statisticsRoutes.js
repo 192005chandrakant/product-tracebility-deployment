@@ -5,10 +5,7 @@ const { auth } = require('../middleware/auth');
 
 console.log('📊 Statistics routes loaded');
 
-// Get user statistics - add a test route without auth for debugging
-router.get('/test', (req, res) => {
-  res.json({ message: 'Statistics route working', timestamp: new Date().toISOString() });
-});
+
 
 // Get user statistics
 router.get('/stats', auth, statisticsController.getStatistics);
@@ -20,7 +17,6 @@ router.get('/dashboard', auth, statisticsController.getDashboardData);
 router.post('/scan/:productId', auth, statisticsController.incrementScanCounter);
 
 console.log('📊 Statistics routes registered:', {
-  '/test': 'GET (no auth)',
   '/stats': 'GET',
   '/dashboard': 'GET', 
   '/scan/:productId': 'POST'

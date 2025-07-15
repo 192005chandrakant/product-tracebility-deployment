@@ -191,10 +191,7 @@ const findAvailablePort = async (startPort) => {
   return port;
 };
 
-// Test Routes
-app.get('/test', (req, res) => {
-  res.json({ message: 'Server is running!', timestamp: new Date().toISOString() });
-});
+
 
 app.get('/api/health', (req, res) => {
   res.json({ 

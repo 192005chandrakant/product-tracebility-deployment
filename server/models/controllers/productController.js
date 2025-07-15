@@ -362,19 +362,6 @@ exports.getMyProducts = async (req, res) => {
     
     console.log('🔍 getMyProducts called for user:', req.user.email);
     
-    // First, let's see all products to debug
-    const allProducts = await Product.find({});
-    console.log('🔍 Total products in database:', allProducts.length);
-    
-    if (allProducts.length > 0) {
-      console.log('🔍 Sample product createdByWallet fields:', 
-        allProducts.slice(0, 3).map(p => ({ 
-          id: p.productId, 
-          createdByWallet: p.createdByWallet 
-        }))
-      );
-    }
-    
     const products = await Product.find({ createdByWallet: req.user.email });
     console.log('🔍 My products found for', req.user.email, ':', products.length);
     

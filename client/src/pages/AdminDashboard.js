@@ -440,9 +440,6 @@ function AdminDashboard() {
                    `You have ${myProducts.length} products but they don't match the current filters` : 
                    'Start by adding your first product'}
                 </p>
-                <div className="text-xs text-gray-500 mt-2">
-                  Debug: Active tab: {activeTab}, My products: {myProducts.length}, All products: {allProducts.length}, Filtered: {filteredProducts.length}
-                </div>
                 <GlowingButton
                   onClick={() => navigate('/admin/add')}
                   className="w-full sm:w-auto px-6 py-3 font-semibold text-base sm:text-lg"
