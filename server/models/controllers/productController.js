@@ -247,6 +247,17 @@ exports.updateProduct = async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
+    // Check if user owns this product
+    if (existingProduct.createdByWallet !== req.user.email) {
+      console.log('❌ User does not own this product:', { 
+        productOwner: existingProduct.createdByWallet, 
+        currentUser: req.user.email 
+      });
+      return res.status(403).json({ 
+        error: 'Access denied. You can only update your own products.' 
+      });
+    }
+
     // Validate stage value
     const validStages = ['Harvested', 'Processed', 'Packaged', 'Shipped', 'Delivered', 'Sold'];
     if (!validStages.includes(stage)) {
@@ -337,6 +348,39 @@ exports.getAllProducts = async (req, res) => {
     const products = await Product.find();
     res.json(products);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// New endpoint to get products by specific user
+exports.getMyProducts = async (req, res) => {
+  try {
+    // Check for authenticated user
+    if (!req.user || !req.user.email) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    console.log('🔍 getMyProducts called for user:', req.user.email);
+    
+    // First, let's see all products to debug
+    const allProducts = await Product.find({});
+    console.log('🔍 Total products in database:', allProducts.length);
+    
+    if (allProducts.length > 0) {
+      console.log('🔍 Sample product createdByWallet fields:', 
+        allProducts.slice(0, 3).map(p => ({ 
+          id: p.productId, 
+          createdByWallet: p.createdByWallet 
+        }))
+      );
+    }
+    
+    const products = await Product.find({ createdByWallet: req.user.email });
+    console.log('🔍 My products found for', req.user.email, ':', products.length);
+    
+    res.json(products);
+  } catch (err) {
+    console.error('❌ Error in getMyProducts:', err);
     res.status(500).json({ error: err.message });
   }
 };

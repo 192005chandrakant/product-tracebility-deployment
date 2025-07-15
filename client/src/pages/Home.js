@@ -10,6 +10,7 @@ import GlowingButton from '../components/UI/GlowingButton';
 import ParticleBackground from '../components/UI/ParticleBackground';
 import StatisticsPanel from '../components/UI/StatisticsPanel';
 import ProductSearch from '../components/ProductSearch';
+import SkeletonLoader from '../components/UI/SkeletonLoader';
 
 function Home() {
   const navigate = useNavigate();
@@ -116,13 +117,17 @@ function Home() {
     }
   };
 
-  // Show loading state
+  // Show loading state with consistent background
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-cyan-400 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+      <div className="min-h-screen transition-all duration-300
+        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
+        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+          </div>
         </div>
       </div>
     );
@@ -132,69 +137,47 @@ function Home() {
   if (user) {
     return (
       <div className="min-h-screen relative overflow-hidden
-        bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 
-        dark:bg-gradient-to-br dark:from-indigo-950 dark:via-purple-950 dark:to-slate-900
-        transition-all duration-1000">
+        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
+        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900
+        transition-all duration-500">
         
-        {/* Dynamic Background Effects */}
-        <div className="absolute inset-0 opacity-30 dark:opacity-80">
-          <ParticleBackground count={60} />
+        {/* Subtle Background Effects - Professional */}
+        <div className="absolute inset-0 opacity-20 dark:opacity-30">
+          <ParticleBackground count={30} />
         </div>
         
-        {/* Light Mode: Subtle geometric patterns */}
-        <div className="absolute inset-0 opacity-20 dark:opacity-0 transition-opacity duration-1000">
-          <div className="absolute top-20 left-20 w-32 h-32 rounded-full bg-gradient-to-r from-blue-300 to-cyan-300 animate-pulse"></div>
-          <div className="absolute bottom-32 right-32 w-24 h-24 rounded-full bg-gradient-to-r from-purple-300 to-pink-300 animate-bounce"></div>
-          <div className="absolute top-1/2 left-1/3 w-16 h-16 rounded-full bg-gradient-to-r from-green-300 to-emerald-300 animate-pulse delay-1000"></div>
-        </div>
-        
-        {/* Dark Mode: Cyberpunk neon grid */}
-        <div className="absolute inset-0 opacity-0 dark:opacity-30 transition-opacity duration-1000">
+        {/* Professional grid background */}
+        <div className="absolute inset-0 opacity-5 dark:opacity-10">
           <div className="absolute inset-0" style={{
             backgroundImage: `
-              linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
-              linear-gradient(rgba(255, 0, 255, 0.05) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255, 0, 255, 0.05) 1px, transparent 1px)
+              linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
             `,
-            backgroundSize: '50px 50px, 50px 50px, 10px 10px, 10px 10px'
+            backgroundSize: '60px 60px'
           }}></div>
-          <div className="absolute top-10 left-10 w-40 h-1 bg-gradient-to-r from-cyan-400 to-transparent animate-pulse"></div>
-          <div className="absolute top-20 right-20 w-1 h-40 bg-gradient-to-b from-purple-400 to-transparent animate-pulse delay-500"></div>
-          <div className="absolute bottom-20 left-1/3 w-60 h-1 bg-gradient-to-r from-transparent via-pink-400 to-transparent animate-pulse delay-1000"></div>
-          <div className="absolute top-1/3 right-10 w-1 h-60 bg-gradient-to-b from-transparent via-blue-400 to-transparent animate-pulse delay-1500"></div>
         </div>
         
         <ToastContainer position="top-center" theme="auto" />
         
         <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
-          {/* Welcome Section */}
+          {/* Welcome Section - Professional */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 leading-tight
-              text-gray-800 dark:text-transparent 
-              dark:bg-gradient-to-r dark:from-cyan-300 dark:via-purple-300 dark:to-pink-300 
-              dark:bg-clip-text dark:animate-pulse">
+              text-gray-900 dark:text-white">
               Welcome back, 
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 
-                dark:from-cyan-400 dark:via-purple-400 dark:to-pink-400 
-                bg-clip-text text-transparent block mt-2
-                dark:drop-shadow-[0_0_20px_rgba(0,255,255,0.5)]">
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 
+                dark:from-blue-400 dark:to-indigo-400 
+                bg-clip-text text-transparent block mt-2">
                 {user.email ? user.email.split('@')[0] : 'User'}!
               </span>
             </h1>
-            <p className="text-xl max-w-2xl mx-auto
-              text-gray-600 dark:text-cyan-100 
-              dark:drop-shadow-[0_0_10px_rgba(0,255,255,0.3)]">
-              Ready to manage your product traceability with blockchain technology?
+            <p className="text-xl max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
+              Manage your product traceability with enterprise-grade blockchain technology
             </p>
-            
-            {/* Dark mode exclusive glow effect */}
-            <div className="hidden dark:block absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-              w-96 h-96 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
           </motion.div>
 
           {/* 3D Scene */}
@@ -209,22 +192,18 @@ function Home() {
               className="group cursor-pointer"
               onClick={() => navigate('/scan')}
             >
-              <div className="p-6 rounded-2xl transition-all duration-300 shadow-lg 
-                bg-white/80 hover:bg-white/90 border border-gray-200/50
-                dark:bg-slate-800/30 dark:hover:bg-slate-800/50 dark:border-cyan-500/30
-                dark:backdrop-blur-xl dark:shadow-cyan-500/20
-                dark:hover:shadow-cyan-400/40 dark:hover:border-cyan-400/50
-                dark:hover:shadow-2xl dark:hover:scale-105">
-                <div className="w-12 h-12 rounded-xl mb-4 flex items-center justify-center 
-                  bg-gradient-to-r from-blue-500 to-cyan-500 
-                  group-hover:scale-110 transition-transform duration-300
-                  dark:shadow-[0_0_20px_rgba(0,255,255,0.4)]
-                  dark:group-hover:shadow-[0_0_30px_rgba(0,255,255,0.6)]">
+              <div className="p-6 rounded-xl transition-all duration-300 shadow-lg 
+                bg-white hover:bg-gray-50 border border-gray-200
+                dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-600
+                hover:shadow-xl transform hover:-translate-y-1">
+                <div className="w-12 h-12 rounded-lg mb-4 flex items-center justify-center 
+                  bg-gradient-to-r from-blue-500 to-indigo-500 
+                  group-hover:scale-105 transition-transform duration-300">
                   <FaQrcode className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2
-                  text-gray-800 dark:text-cyan-100">Scan QR Code</h3>
-                <p className="text-gray-600 dark:text-cyan-200/80">Quickly verify product authenticity</p>
+                  text-gray-800 dark:text-white">Scan QR Code</h3>
+                <p className="text-gray-600 dark:text-gray-300">Quickly verify product authenticity</p>
               </div>
             </AnimatedCard>
 
@@ -234,22 +213,18 @@ function Home() {
                 className="group cursor-pointer"
                 onClick={() => navigate('/admin/add')}
               >
-                <div className="p-6 rounded-2xl transition-all duration-300 shadow-lg
-                  bg-white/80 hover:bg-white/90 border border-gray-200/50
-                  dark:bg-slate-800/30 dark:hover:bg-slate-800/50 dark:border-emerald-500/30
-                  dark:backdrop-blur-xl dark:shadow-emerald-500/20
-                  dark:hover:shadow-emerald-400/40 dark:hover:border-emerald-400/50
-                  dark:hover:shadow-2xl dark:hover:scale-105">
-                  <div className="w-12 h-12 rounded-xl mb-4 flex items-center justify-center
+                <div className="p-6 rounded-xl transition-all duration-300 shadow-lg
+                  bg-white hover:bg-gray-50 border border-gray-200
+                  dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-600
+                  hover:shadow-xl transform hover:-translate-y-1">
+                  <div className="w-12 h-12 rounded-lg mb-4 flex items-center justify-center
                     bg-gradient-to-r from-green-500 to-emerald-500
-                    group-hover:scale-110 transition-transform duration-300
-                    dark:shadow-[0_0_20px_rgba(16,185,129,0.4)]
-                    dark:group-hover:shadow-[0_0_30px_rgba(16,185,129,0.6)]">
+                    group-hover:scale-105 transition-transform duration-300">
                     <FaPlus className="text-white text-xl" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2
-                    text-gray-800 dark:text-emerald-100">Add Product</h3>
-                  <p className="text-gray-600 dark:text-emerald-200/80">Register new products on blockchain</p>
+                    text-gray-800 dark:text-white">Add Product</h3>
+                  <p className="text-gray-600 dark:text-gray-300">Register new products on blockchain</p>
                 </div>
               </AnimatedCard>
             )}
@@ -259,22 +234,18 @@ function Home() {
               className="group cursor-pointer"
               onClick={() => navigate('/admin/dashboard')}
             >
-              <div className="p-6 rounded-2xl transition-all duration-300 shadow-lg
-                bg-white/80 hover:bg-white/90 border border-gray-200/50
-                dark:bg-slate-800/30 dark:hover:bg-slate-800/50 dark:border-purple-500/30
-                dark:backdrop-blur-xl dark:shadow-purple-500/20
-                dark:hover:shadow-purple-400/40 dark:hover:border-purple-400/50
-                dark:hover:shadow-2xl dark:hover:scale-105">
-                <div className="w-12 h-12 rounded-xl mb-4 flex items-center justify-center
+              <div className="p-6 rounded-xl transition-all duration-300 shadow-lg
+                bg-white hover:bg-gray-50 border border-gray-200
+                dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-600
+                hover:shadow-xl transform hover:-translate-y-1">
+                <div className="w-12 h-12 rounded-lg mb-4 flex items-center justify-center
                   bg-gradient-to-r from-purple-500 to-pink-500
-                  group-hover:scale-110 transition-transform duration-300
-                  dark:shadow-[0_0_20px_rgba(168,85,247,0.4)]
-                  dark:group-hover:shadow-[0_0_30px_rgba(168,85,247,0.6)]">
+                  group-hover:scale-105 transition-transform duration-300">
                   <FaChartLine className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2
-                  text-gray-800 dark:text-purple-100">Dashboard</h3>
-                <p className="text-gray-600 dark:text-purple-200/80">View analytics and insights</p>
+                  text-gray-800 dark:text-white">Dashboard</h3>
+                <p className="text-gray-600 dark:text-gray-300">View analytics and insights</p>
               </div>
             </AnimatedCard>
           </div>
@@ -291,21 +262,17 @@ function Home() {
 
           {/* Recent Products Section */}
           <AnimatedCard delay={0.42} className="max-w-6xl mx-auto mb-12">
-            <div className="p-8 rounded-2xl shadow-xl transition-all duration-500
-              bg-white/95 border-2 border-gray-200/60
-              dark:bg-gradient-to-br dark:from-slate-800/80 dark:to-slate-900/80 
-              dark:border-blue-400/40 dark:backdrop-blur-xl 
-              dark:shadow-blue-500/20 dark:hover:shadow-blue-400/30">
+            <div className="p-8 rounded-xl shadow-lg transition-all duration-300
+              bg-white border border-gray-200
+              dark:bg-slate-800 dark:border-slate-600">
               
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold
-                  text-gray-800 dark:text-blue-100 
-                  dark:drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
                   Recent Products
                 </h2>
                 <button 
                   onClick={fetchRecentProducts}
-                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-2"
+                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-2 transition-colors"
                 >
                   <span>Refresh</span>
                   <FaHistory className={recentProductsLoading ? "animate-spin" : ""} />
@@ -319,12 +286,8 @@ function Home() {
                 </div>
               )}
 
-              {recentProductsLoading && recentProducts.length === 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl h-64"></div>
-                  ))}
-                </div>
+              {recentProductsLoading ? (
+                <SkeletonLoader type="grid" count={6} />
               ) : recentProducts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {recentProducts.map(product => (

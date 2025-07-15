@@ -1,0 +1,115 @@
+/* Prevent Flash of Unstyled Content (FOUC) */
+html {
+  background-color: #f8fafc; /* Light mode default */
+  transition: background-color 0.3s ease;
+}
+
+html.dark {
+  background-color: #0f172a; /* Dark mode default */
+}
+
+/* Ensure body has consistent background */
+body {
+  background: inherit;
+  transition: all 0.3s ease;
+  margin: 0;
+  padding: 0;
+}
+
+/* Prevent layout shift during loading */
+* {
+  box-sizing: border-box;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Loading state styling to prevent white flashes */
+.loading-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+  transition: all 0.3s ease;
+}
+
+.dark .loading-container {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+}
+
+/* Skeleton loader animations */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.skeleton {
+  animation: shimmer 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400% 100%;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 400% 100%;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* Improve focus indicators */
+:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Dark mode focus */
+.dark :focus {
+  outline-color: #60a5fa;
+}
+
+/* Prevent horizontal scrolling issues */
+body {
+  overflow-x: hidden;
+}
+
+/* Ensure images don't cause layout shift */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Loading spinner consistent styling */
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 2px solid transparent;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.dark .loading-spinner {
+  border-top-color: #60a5fa;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

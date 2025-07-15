@@ -23,12 +23,16 @@ import PdfTestPage from './pages/PdfTestPage'; // Import the new test page
 import { usePerformanceMonitor } from './utils/performanceOptimizations';
 import './styles/animations.css';
 
-// Optimized loading screen
+// Optimized loading screen with consistent styling
 const OptimizedLoadingFallback = React.memo(() => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-    <div className="flex flex-col items-center space-y-4">
-      <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-gray-600 dark:text-gray-300 font-medium">Loading...</p>
+  <div className="min-h-screen transition-all duration-300
+    bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
+    dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+      </div>
     </div>
   </div>
 ));

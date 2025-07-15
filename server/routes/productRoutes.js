@@ -100,6 +100,7 @@ router.post('/update-product/:id',
 );
 router.get('/product/:id', productController.getProduct);
 router.get('/products', productController.getAllProducts);
+router.get('/my-products', auth, requireRole('producer'), productController.getMyProducts);
 router.get('/recent-products', productController.getRecentProducts);
 router.get('/product/by-cert-hash/:certHash', productController.getProductByCertHash);
 

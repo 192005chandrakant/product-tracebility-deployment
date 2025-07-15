@@ -14,10 +14,9 @@ import {
   FaCaretDown,
   FaChartBar
 } from 'react-icons/fa';
-import ParticleBackground from '../components/UI/ParticleBackground';
-import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
-import Scene3D from '../components/3D/Scene3D';
+import GlowingButton from '../components/UI/GlowingButton';
+import SkeletonLoader from '../components/UI/SkeletonLoader';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
 import useRealTimeStats from '../hooks/useRealTimeStats';
 import { buildAPIURL } from '../utils/apiConfig';
@@ -52,38 +51,79 @@ function getFullUrl(url) {
 
 function AdminDashboard() {
   // Real-time statistics
-  const { statistics, loading: statsLoading, refreshStats } = useRealTimeStats(8000); // Refresh every 8 seconds
+  const { statistics, loading: statsLoading, refreshStats } = useRealTimeStats(8000);
   
-  const [products, setProducts] = useState([]);
+  const [myProducts, setMyProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStage, setSelectedStage] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('my-products'); // 'my-products' or 'all-products'
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchProducts();
+    fetchMyProducts();
+    fetchAllProducts();
   }, []);
 
   useEffect(() => {
     filterAndSortProducts();
-  }, [products, searchQuery, selectedStage, sortBy]);
+  }, [myProducts, allProducts, searchQuery, selectedStage, sortBy, activeTab]);
 
-  const fetchProducts = async () => {
+  const fetchMyProducts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔍 Fetching my products with token:', token ? 'Present' : 'Missing');
+      
+      const res = await fetch(buildAPIURL('/api/my-products'), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('🔍 My products response status:', res.status);
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log('🔍 My products data received:', data);
+        console.log('🔍 My products count:', data.length);
+        setMyProducts(data);
+      } else {
+        const errorText = await res.text();
+        console.error('❌ Failed to fetch my products:', res.status, errorText);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching my products:', error);
+    }
+  };
+
+  const fetchAllProducts = async () => {
     try {
       const res = await fetch(buildAPIURL('/api/products'));
       const data = await res.json();
-      setProducts(data);
+      setAllProducts(data);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error fetching all products:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const filterAndSortProducts = () => {
-    let filtered = products.filter(product => {
+    const currentProducts = activeTab === 'my-products' ? myProducts : allProducts;
+    
+    console.log('🔍 Filtering products:', {
+      activeTab,
+      myProductsCount: myProducts.length,
+      allProductsCount: allProducts.length,
+      currentProductsCount: currentProducts.length,
+      searchQuery,
+      selectedStage
+    });
+    
+    let filtered = currentProducts.filter(product => {
       const matchesSearch = product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            product.productId?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStage = !selectedStage || 
@@ -91,6 +131,8 @@ function AdminDashboard() {
       
       return matchesSearch && matchesStage;
     });
+
+    console.log('🔍 Filtered products count:', filtered.length);
 
     // Sort products
     filtered.sort((a, b) => {
@@ -123,50 +165,40 @@ function AdminDashboard() {
     return stageColors[stage] || 'from-gray-500 to-gray-600';
   };
 
-  const uniqueStages = [...new Set(products.flatMap(p => p.stages || []))];
+  // Get current products based on active tab
+  const currentProducts = activeTab === 'my-products' ? myProducts : allProducts;
+  
+  const uniqueStages = [...new Set(currentProducts.flatMap(p => p.stages || []))];
 
   if (loading) {
     return (
-      <div className="min-h-screen relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <Scene3D />
-        </div>
-        <ParticleBackground />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20 z-10"></div>
-        
-        <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
-          <AnimatedCard className="max-w-md w-full">
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <FaChartBar className="text-white text-2xl animate-pulse" />
-              </div>
-              <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Loading Dashboard
-              </h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                Fetching products data...
-              </p>
+      <div className="min-h-screen transition-all duration-300
+        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
+        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FaChartBar className="text-white text-2xl" />
             </div>
-          </AnimatedCard>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
+              Loading Dashboard
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Fetching products data...
+            </p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mt-4"></div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* 3D Background */}
-      <div className="absolute inset-0 z-0">
-        <Scene3D />
-      </div>
+    <div className="min-h-screen transition-all duration-300
+      bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
+      dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
       
-      {/* Particle Background */}
-      <ParticleBackground />
-      
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20 z-10"></div>
-      
-      <div className="relative z-20 min-h-screen">
+      <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Header */}
           <motion.div
@@ -205,12 +237,12 @@ function AdminDashboard() {
               <AnimatedCard className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/50 dark:to-blue-800/50 border-blue-200 dark:border-blue-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Products</p>
+                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">My Products</p>
                     <p className="text-3xl font-bold text-blue-800 dark:text-blue-200">
-                      {statistics.totalProducts}
+                      {myProducts.length}
                     </p>
                     <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
-                      System-wide count
+                      Products I registered
                     </p>
                   </div>
                   <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -256,13 +288,13 @@ function AdminDashboard() {
               <AnimatedCard className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/50 dark:to-orange-800/50 border-orange-200 dark:border-orange-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">My Products</p>
+                    <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">All Products</p>
                     <p className="text-3xl font-bold text-orange-800 dark:text-orange-200">
-                      {products.length}
+                      {allProducts.length}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-xs text-orange-500 dark:text-orange-400">
-                        Your products
+                        Total in system
                       </p>
                       <button
                         onClick={refreshStats}
@@ -279,6 +311,37 @@ function AdminDashboard() {
                   </div>
                 </div>
               </AnimatedCard>
+            </div>
+          </motion.div>
+
+          {/* Tab System */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mb-6"
+          >
+            <div className="flex space-x-1 bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab('my-products')}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  activeTab === 'my-products'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                My Products ({myProducts.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('all-products')}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  activeTab === 'all-products'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                All Products ({allProducts.length})
+              </button>
             </div>
           </motion.div>
 
@@ -362,15 +425,24 @@ function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            {filteredProducts.length === 0 ? (
+            {loading ? (
+              // Skeleton loader for products
+              <SkeletonLoader type="grid" count={6} />
+            ) : filteredProducts.length === 0 ? (
               <AnimatedCard className="p-8 sm:p-12 text-center">
                 <FaBoxOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                   No products found
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  {searchQuery || selectedStage ? 'Try adjusting your search or filters' : 'Start by adding your first product'}
+                  {searchQuery || selectedStage ? 'Try adjusting your search or filters' : 
+                   activeTab === 'my-products' ? 
+                   `You have ${myProducts.length} products but they don't match the current filters` : 
+                   'Start by adding your first product'}
                 </p>
+                <div className="text-xs text-gray-500 mt-2">
+                  Debug: Active tab: {activeTab}, My products: {myProducts.length}, All products: {allProducts.length}, Filtered: {filteredProducts.length}
+                </div>
                 <GlowingButton
                   onClick={() => navigate('/admin/add')}
                   className="w-full sm:w-auto px-6 py-3 font-semibold text-base sm:text-lg"

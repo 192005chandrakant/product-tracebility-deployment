@@ -13,6 +13,46 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <title>Product Traceability</title>
     
+    <!-- Prevent white flash on initial load -->
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+        transition: background 0.3s ease;
+      }
+      
+      /* Dark mode background */
+      @media (prefers-color-scheme: dark) {
+        html, body {
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        }
+      }
+      
+      /* Loading indicator */
+      .initial-loader {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+      }
+      
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border: 2px solid transparent;
+        border-top: 2px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    
     <!-- Chunk loading error handler -->
     <script>
       // Global error handler for chunk loading failures
@@ -76,6 +116,26 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    
+    <!-- Initial loading indicator to prevent white screen -->
+    <div id="initial-loader" class="initial-loader">
+      <div class="spinner"></div>
+    </div>
+    
     <div id="root"></div>
+    
+    <!-- Remove initial loader when React app loads -->
+    <script>
+      window.addEventListener('DOMContentLoaded', function() {
+        // Remove loader after a short delay to ensure smooth transition
+        setTimeout(function() {
+          const loader = document.getElementById('initial-loader');
+          if (loader && document.getElementById('root').children.length > 0) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 300);
+          }
+        }, 100);
+      });
+    </script>
   </body>
 </html>

@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import loading and anti-flicker styles */
+@import './styles/loading.css';
+
 body {
   font-family: 'Inter', sans-serif;
   background: linear-gradient(180deg, #f8fafc 0%, #e0e7ff 100%);

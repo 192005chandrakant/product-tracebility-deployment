@@ -319,11 +319,14 @@ function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex justify-center items-center">
-        <ParticleBackground count={40} />
-        <div className="text-center relative z-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading product details...</p>
+      <div className="min-h-screen transition-all duration-300
+        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
+        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Loading product details...</p>
+          </div>
         </div>
       </div>
     );
@@ -331,32 +334,42 @@ function ProductDetail() {
   
   if (!product) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex justify-center items-center">
-        <ParticleBackground count={40} />
-        <div className="text-center relative z-10">
-          <p className="text-red-400 text-xl">Product not found.</p>
-          <GlowingButton
-            variant="ghost"
-            className="mt-4"
+      <div className="min-h-screen transition-all duration-300
+        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
+        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-red-500 dark:text-red-400 text-xl mb-4">Product not found.</p>
+            <GlowingButton
+              variant="ghost"
+              className="mt-4"
             onClick={() => navigate('/')}
           >
             <FaArrowLeft className="mr-2" />
             Go Back
           </GlowingButton>
+          </div>
         </div>
       </div>
     );
   }
 
   const status = product.stages && product.stages.length > 0 ? product.stages[product.stages.length - 1] : null;
-  const canUpdateStatus = user && (user.role === 'producer' || user.role === 'admin');
+  const canUpdateStatus = user && (user.role === 'producer' || user.role === 'admin') && 
+                          product && product.createdByWallet === user.email;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden flex flex-col justify-center items-center py-8 px-4">
-      <ParticleBackground count={60} />
-      <ToastContainer position="top-center" theme="dark" />
+    <div className="min-h-screen transition-all duration-300
+      bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
+      dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 
+      flex flex-col justify-center items-center py-8 px-4">
+      <ToastContainer position="top-center" />
       <motion.div
-        className="card w-full max-w-3xl p-0 sm:p-0 rounded-2xl bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-gray-100 shadow-xl border border-blue-500/10 overflow-hidden mx-auto"
+        className="card w-full max-w-3xl p-0 sm:p-0 rounded-2xl 
+          bg-white dark:bg-gray-800 
+          text-gray-900 dark:text-gray-100 
+          shadow-xl border border-gray-200 dark:border-gray-700 
+          overflow-hidden mx-auto"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
