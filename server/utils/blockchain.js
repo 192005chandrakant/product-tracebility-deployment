@@ -3,9 +3,20 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
+const rpcUrl = process.env.SEPOLIA_RPC_URL || process.env.INFURA_API_URL;
+const privateKey = process.env.BLOCKCHAIN_PRIVATE_KEY || process.env.PRIVATE_KEY;
+
+if (!rpcUrl) {
+  throw new Error('Blockchain RPC URL is missing. Set SEPOLIA_RPC_URL or INFURA_API_URL.');
+}
+
+if (!privateKey || String(privateKey).includes('your-blockchain-private-key')) {
+  throw new Error('Blockchain private key is missing. Set BLOCKCHAIN_PRIVATE_KEY or PRIVATE_KEY.');
+}
+
 // Use ethers v6 syntax
-const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+const provider = new ethers.JsonRpcProvider(rpcUrl);
+const wallet = new ethers.Wallet(privateKey, provider);
 
 // Check provider connection at startup
 (async () => {
@@ -75,6 +86,6 @@ exports.searchByCertificationHash = async (certificationHash) => {
   }
 };
 
-console.log("INFURA:", process.env.INFURA_API_URL);
-console.log("PRIVATE_KEY loaded:", !!process.env.PRIVATE_KEY);
-console.log("Contract Address:", process.env.CONTRACT_ADDRESS);
+console.log('Blockchain RPC configured:', !!rpcUrl);
+console.log('Blockchain private key configured:', !!privateKey);
+console.log('Contract Address configured:', !!process.env.CONTRACT_ADDRESS);

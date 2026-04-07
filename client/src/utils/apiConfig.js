@@ -1,14 +1,13 @@
 /**
  * API URL Configuration
  * 
- * This utility manages API URLs across environments with smart detection
- * for development (localhost with proxy) and production (direct API calls)
+ * This utility manages API URLs across environments.
+ * Frontend calls backend directly in both development and production.
  */
 
 // Detect current environment and setup
-const isDevelopment = process.env.NODE_ENV === 'development';
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const isProduction = process.env.NODE_ENV === 'production';
+const isDebug = process.env.REACT_APP_DEBUG_API === 'true' || process.env.REACT_APP_DEBUG === 'true';
 
 // Production URLs
 const PRODUCTION_API_URL = 'https://product-traceability-api.onrender.com';
@@ -22,18 +21,15 @@ const LOCAL_FRONTEND_URL = 'http://localhost:3000';
 const getAPIBaseURL = () => {
   // Explicit environment variable override
   if (process.env.REACT_APP_API_URL) {
-    console.log('🔧 Using API URL from environment:', process.env.REACT_APP_API_URL);
     return process.env.REACT_APP_API_URL;
   }
-  
-  // Development mode on localhost - use proxy (empty string)
-  if (isDevelopment && isLocalhost) {
-    console.log('🔧 Development mode - using proxy for local API (no CORS)');
-    return ''; // Empty string uses proxy via setupProxy.js
+
+  // Development fallback
+  if (!isProduction) {
+    return LOCAL_API_URL;
   }
-  
+
   // Production or non-localhost development
-  console.log('🔧 Production mode - using direct API URL');
   return PRODUCTION_API_URL;
 };
 
@@ -41,16 +37,12 @@ const getAPIBaseURL = () => {
 const buildAPIURL = (path) => {
   const baseURL = getAPIBaseURL();
   const formattedPath = path.startsWith('/') ? path : `/${path}`;
-  
-  // In development with proxy, use relative URLs
-  if (!baseURL && isDevelopment && isLocalhost) {
-    console.log(`🔧 Building proxied URL: ${formattedPath}`);
-    return formattedPath;
-  }
-  
-  // For production or explicit base URL
+
+  // Always direct URL
   const fullURL = `${baseURL}${formattedPath}`;
-  console.log(`🔧 Building direct URL: ${fullURL}`);
+  if (isDebug) {
+    console.log(`🔧 API URL: ${fullURL}`);
+  }
   return fullURL;
 };
 
@@ -93,7 +85,9 @@ const apiRequest = async (endpoint, options = {}, retryCount = 2) => {
   }
 
   try {
-    console.log(`🌐 Making API request to: ${url}`);
+    if (isDebug) {
+      console.log(`🌐 API request: ${url}`);
+    }
     
     // Set timeout to prevent hanging requests
     const controller = new AbortController();
@@ -111,25 +105,36 @@ const apiRequest = async (endpoint, options = {}, retryCount = 2) => {
       try {
         errorData = await response.json();
       } catch (e) {
-        errorData = { error: `${response.status} ${response.statusText}` };
+        errorData = { message: `${response.status} ${response.statusText}` };
       }
       
-      console.error(`❌ API request failed: ${response.status} ${response.statusText}`, errorData);
-      throw new Error(errorData.error || `API Error: ${response.status} ${response.statusText}`);
+      if (isDebug) {
+        console.error(`❌ API request failed: ${response.status} ${response.statusText}`, errorData);
+      }
+      throw new Error(
+        (errorData && (errorData.message || errorData.error)) ||
+        `API Error: ${response.status} ${response.statusText}`
+      );
     }
     
     // Handle empty responses
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       const data = await response.json();
-      console.log(`✅ API request successful:`, data);
+      if (isDebug) {
+        console.log('✅ API request successful');
+      }
       return data;
     } else {
-      console.log(`✅ API request successful (no JSON response)`);
+      if (isDebug) {
+        console.log('✅ API request successful (no JSON response)');
+      }
       return { success: true };
     }
   } catch (error) {
-    console.error(`❌ API request error for ${endpoint}:`, error.message);
+    if (isDebug) {
+      console.error(`❌ API request error for ${endpoint}:`, error.message);
+    }
     
     // Retry logic for specific errors
     if (retryCount > 0 && (
@@ -137,7 +142,9 @@ const apiRequest = async (endpoint, options = {}, retryCount = 2) => {
       error.message.includes('Failed to fetch') ||
       error.message.includes('Network request failed')
     )) {
-      console.log(`🔄 Retrying API request to ${endpoint}, attempts left: ${retryCount}`);
+      if (isDebug) {
+        console.log(`🔄 Retrying API request to ${endpoint}, attempts left: ${retryCount}`);
+      }
       // Exponential backoff - wait longer between retries
       await new Promise(r => setTimeout(r, (3 - retryCount) * 1000));
       return apiRequest(endpoint, options, retryCount - 1);

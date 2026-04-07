@@ -51,7 +51,7 @@ const testAPIConnection = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
     
-    const response = await fetch(`${baseURL}/test`, {
+    const response = await fetch(`${baseURL}/api/health`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

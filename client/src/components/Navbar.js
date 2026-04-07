@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaHome, FaQrcode, FaPlus, FaHistory, FaUser, FaSignOutAlt, FaBars, FaTimes, FaUserCircle, FaUserAlt } from 'react-icons/fa';
+import { FaHome, FaQrcode, FaPlus, FaHistory, FaUser, FaSignOutAlt, FaBars, FaTimes, FaUserCircle, FaUserAlt, FaRobot } from 'react-icons/fa';
 
 // Utility to generate a pastel color from a string (email)
 function stringToColor(str) {
@@ -19,6 +19,7 @@ const navLinks = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FaUser, roles: ['admin', 'producer'] },
   { to: '/admin/add', label: 'Add Product', icon: FaPlus, roles: ['producer'] },
   { to: '/admin/update', label: 'Update Product', icon: FaHistory, roles: ['producer'] },
+  { to: '/ai', label: 'AI Console', icon: FaRobot, roles: ['admin', 'producer', 'customer', 'consumer', 'user'] },
 ];
 
 function Navbar({ user, onLogout }) {

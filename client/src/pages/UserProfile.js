@@ -38,6 +38,10 @@ import Scene3D from '../components/3D/Scene3D';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
 import { buildAPIURL } from '../utils/apiConfig';
 
+function isDatabaseProduct(product) {
+  return Boolean(product && typeof product === 'object' && product._id);
+}
+
 function UserProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -89,8 +93,14 @@ function UserProfile() {
       const res = await fetch(buildAPIURL('/api/products'));
       if (res.ok) {
         const data = await res.json();
-        setProducts(data);
-        setUser(prev => ({ ...prev, totalProducts: data.length }));
+        const normalizedProducts = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+        const dbProducts = normalizedProducts.filter(isDatabaseProduct);
+        setProducts(dbProducts);
+        setUser(prev => ({ ...prev, totalProducts: dbProducts.length }));
       }
     } catch (error) {
       console.error('Error fetching products:', error);

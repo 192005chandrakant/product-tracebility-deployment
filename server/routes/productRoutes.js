@@ -3,7 +3,7 @@ const router = express.Router();
 const productController = require('../models/controllers/productController');
 
 // Use enhanced auth middleware instead of basic auth
-const { auth, requireRole, requirePermission } = require('../middleware/enhancedAuth');
+const { auth, requireRole, requirePermission, requireSecondaryAuth } = require('../middleware/enhancedAuth');
 const multer = require('multer');
 
 // Use memory storage for file uploads to Cloudinary
@@ -33,17 +33,23 @@ const handleMulterError = (err, req, res, next) => {
 
 
 // Main add product route with file handling
-router.post('/add-product',
+const addProductHandlers = [
   auth,
   requireRole('producer'),
   requirePermission('add_product'),
   upload.fields([
-    { name: 'certFile', maxCount: 1 },
-    { name: 'imageFile', maxCount: 1 }
+    { name: 'imageFile', maxCount: 1 },
+    { name: 'stageDocumentFiles', maxCount: 12 }
   ]),
   handleMulterError,
+  requireSecondaryAuth,
   productController.addProduct
-);
+];
+
+router.post('/add-product', ...addProductHandlers);
+
+// Alias route for explicit REST-style contract compatibility.
+router.post('/product/add', ...addProductHandlers);
 
 // Original routes
 router.post('/update-product/:id', 
@@ -51,15 +57,16 @@ router.post('/update-product/:id',
   requireRole(['producer', 'admin']), 
   requirePermission('update_product_status'),
   upload.fields([
-    { name: 'certFile', maxCount: 1 },
-    { name: 'imageFile', maxCount: 1 }
+    { name: 'imageFile', maxCount: 1 },
+    { name: 'stageDocumentFiles', maxCount: 12 }
   ]),
   handleMulterError,
+  requireSecondaryAuth,
   productController.updateProduct
 );
 router.get('/product/:id', productController.getProduct);
 router.get('/products', productController.getAllProducts);
-router.get('/my-products', auth, requireRole('producer'), productController.getMyProducts);
+router.get('/my-products', auth, requireRole(['producer', 'admin']), productController.getMyProducts);
 router.get('/recent-products', productController.getRecentProducts);
 router.get('/product/by-cert-hash/:certHash', productController.getProductByCertHash);
 

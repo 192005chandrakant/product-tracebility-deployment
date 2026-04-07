@@ -7,7 +7,7 @@ exports.getProfile = async (req, res) => {
   try {
     console.log('👤 Profile request for user:', req.user.email);
     
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id).select('-password').lean();
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -15,20 +15,36 @@ exports.getProfile = async (req, res) => {
     // Get user statistics based on role
     let stats = {};
     if (user.role === 'producer') {
-      const productCount = await Product.countDocuments({ createdByWallet: user.email });
-      const recentProducts = await Product.find({ createdByWallet: user.email })
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select('productId name origin manufacturer createdAt stages');
-      
-      // Calculate total updates (stages added)
-      const products = await Product.find({ createdByWallet: user.email });
-      const totalUpdates = products.reduce((sum, product) => sum + (product.stages ? product.stages.length : 0), 0);
+      const [productCount, recentProducts, totalUpdatesAgg] = await Promise.all([
+        Product.countDocuments({ createdByWallet: user.email }),
+        Product.find({ createdByWallet: user.email })
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .select('productId name origin manufacturer createdAt stages')
+          .lean(),
+        Product.aggregate([
+          { $match: { createdByWallet: user.email } },
+          { $unwind: { path: '$stages', preserveNullAndEmptyArrays: false } },
+          { $group: { _id: null, count: { $sum: 1 } } }
+        ])
+      ]);
+
+      const totalUpdates = totalUpdatesAgg[0]?.count || 0;
+      const scannedProductsAgg = await Product.aggregate([
+        { $match: { createdByWallet: user.email } },
+        {
+          $project: {
+            stageEventCount: { $size: { $ifNull: ['$stageEvents', []] } }
+          }
+        },
+        { $group: { _id: null, count: { $sum: '$stageEventCount' } } }
+      ]);
+      const scannedProducts = scannedProductsAgg[0]?.count || 0;
       
       stats = {
         totalProducts: productCount,
         totalUpdates: totalUpdates,
-        scannedProducts: Math.floor(productCount * 2.3), // Mock scan data
+        scannedProducts,
         recentProducts
       };
     } else if (user.role === 'consumer') {
@@ -36,27 +52,41 @@ exports.getProfile = async (req, res) => {
       const totalProducts = await Product.countDocuments();
       stats = {
         totalProducts: totalProducts,
-        scannedProducts: Math.floor(totalProducts * 0.1), // Mock consumer scan data
+        scannedProducts: 0,
         totalUpdates: 0,
         recentActivity: []
       };
     } else if (user.role === 'admin') {
-      const totalUsers = await User.countDocuments();
-      const totalProducts = await Product.countDocuments();
-      const recentProducts = await Product.find()
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select('productId name origin manufacturer createdAt createdByWallet stages');
-      
-      // Calculate total updates across all products
-      const allProducts = await Product.find();
-      const totalUpdates = allProducts.reduce((sum, product) => sum + (product.stages ? product.stages.length : 0), 0);
+      const [totalUsers, totalProducts, recentProducts, totalUpdatesAgg] = await Promise.all([
+        User.countDocuments(),
+        Product.countDocuments(),
+        Product.find()
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .select('productId name origin manufacturer createdAt createdByWallet stages')
+          .lean(),
+        Product.aggregate([
+          { $unwind: { path: '$stages', preserveNullAndEmptyArrays: false } },
+          { $group: { _id: null, count: { $sum: 1 } } }
+        ])
+      ]);
+
+      const totalUpdates = totalUpdatesAgg[0]?.count || 0;
+      const scannedProductsAgg = await Product.aggregate([
+        {
+          $project: {
+            stageEventCount: { $size: { $ifNull: ['$stageEvents', []] } }
+          }
+        },
+        { $group: { _id: null, count: { $sum: '$stageEventCount' } } }
+      ]);
+      const scannedProducts = scannedProductsAgg[0]?.count || 0;
       
       stats = {
         totalUsers,
         totalProducts,
         totalUpdates: totalUpdates,
-        scannedProducts: Math.floor(totalProducts * 1.5), // Mock scan data for admin
+        scannedProducts,
         recentProducts
       };
     }
@@ -172,7 +202,7 @@ exports.getUserStats = async (req, res) => {
   try {
     console.log('📊 Stats request for user:', req.user.email);
     
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('email role').lean();
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -180,7 +210,9 @@ exports.getUserStats = async (req, res) => {
     let stats = {};
     
     if (user.role === 'producer') {
-      const products = await Product.find({ createdByWallet: user.email });
+      const products = await Product.find({ createdByWallet: user.email })
+        .select('productId name origin createdAt')
+        .lean();
       const totalProducts = products.length;
       const productsByOrigin = {};
       
@@ -227,7 +259,8 @@ exports.getUserStats = async (req, res) => {
       const recentProducts = await Product.find()
         .sort({ createdAt: -1 })
         .limit(10)
-        .select('productId name origin manufacturer createdAt createdByWallet');
+        .select('productId name origin manufacturer createdAt createdByWallet')
+        .lean();
 
       stats = {
         totalUsers,

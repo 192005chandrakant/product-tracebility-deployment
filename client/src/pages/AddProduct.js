@@ -24,6 +24,91 @@ import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import { buildAPIURL } from '../utils/apiConfig';
+import AIDescriptionGeneratorPanel from '../components/AIDescriptionGeneratorPanel';
+import { isAIEnabled } from '../utils/aiApi';
+import StageDocumentationForm from '../components/StageDocumentationForm';
+import AIStructuredResponse from '../components/AIStructuredResponse';
+import VerificationResultPanel from '../components/VerificationResultPanel';
+
+const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg'
+]);
+const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
+
+function hasDocumentMetadata(doc = {}) {
+  return [
+    doc.title,
+    doc.standardCode,
+    doc.documentReference,
+    doc.issuingAuthority,
+    doc.issuerCountry,
+    doc.complianceScope,
+    doc.documentVersion,
+    doc.certificateNumber,
+    doc.batchNumber,
+    doc.lotNumber,
+    doc.issueDate,
+    doc.expiryDate,
+    doc.notes,
+    doc.verificationNotes
+  ].some((value) => String(value || '').trim().length > 0);
+}
+
+function validateRegistrationDocuments(documents = []) {
+  const issues = [];
+  const docsWithFiles = documents.filter((doc) => doc && doc.file);
+
+  documents.forEach((doc, index) => {
+    if (!doc) {
+      return;
+    }
+
+    const row = index + 1;
+    const hasMetadata = hasDocumentMetadata(doc);
+
+    if (!doc.file && hasMetadata) {
+      issues.push(`Document ${row}: upload a file or clear the draft fields.`);
+      return;
+    }
+
+    if (!doc.file) {
+      return;
+    }
+
+    if (!String(doc.title || '').trim()) {
+      issues.push(`Document ${row}: title is required.`);
+    }
+
+    if (!String(doc.documentReference || '').trim()) {
+      issues.push(`Document ${row}: document reference is required.`);
+    }
+
+    if (!String(doc.issuingAuthority || '').trim()) {
+      issues.push(`Document ${row}: issuing authority is required.`);
+    }
+
+    const mimeType = String(doc.file.type || '').toLowerCase();
+    if (!ALLOWED_DOCUMENT_MIME_TYPES.has(mimeType)) {
+      issues.push(`Document ${row}: unsupported file type. Use PDF, PNG, or JPG.`);
+    }
+
+    if (Number(doc.file.size || 0) > MAX_DOCUMENT_SIZE_BYTES) {
+      issues.push(`Document ${row}: file size exceeds 10 MB.`);
+    }
+
+    if (doc.issueDate && doc.expiryDate && new Date(doc.issueDate) > new Date(doc.expiryDate)) {
+      issues.push(`Document ${row}: expiry date must be on or after issue date.`);
+    }
+  });
+
+  return {
+    issues,
+    docsWithFiles
+  };
+}
 
 function AddProduct() {
   const [form, setForm] = useState({
@@ -35,15 +120,18 @@ function AddProduct() {
     blockchainRefHash: '',
     password: '', // Add password field for secondary authentication
   });
-  const [certFile, setCertFile] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verificationFeedback, setVerificationFeedback] = useState(null);
   const [qrCode, setQrCode] = useState(null);
   const [qrCodeDownloadUrl, setQrCodeDownloadUrl] = useState(null); // Add QR download URL state
   const [registeredProduct, setRegisteredProduct] = useState(null);
+  const [stageDocuments, setStageDocuments] = useState([]);
+  const [documentValidationErrors, setDocumentValidationErrors] = useState([]);
   const navigate = useNavigate();
+  const enableAI = isAIEnabled();
 
   // Test server connectivity on mount
   useEffect(() => {
@@ -80,12 +168,15 @@ function AddProduct() {
     testServer();
   }, []);
 
+  useEffect(() => {
+    if (documentValidationErrors.length > 0) {
+      setDocumentValidationErrors([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageDocuments]);
+
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleFile = e => {
-    setCertFile(e.target.files[0]);
   };
 
   const handleImage = e => {
@@ -112,9 +203,10 @@ function AddProduct() {
     
     setLoading(true);
     setError('');
+    setDocumentValidationErrors([]);
+    setVerificationFeedback(null);
     
     console.log('Submitting form with data:', form);
-    console.log('Certificate file:', certFile);
     console.log('Image file:', imageFile);
     
     try {
@@ -125,14 +217,44 @@ function AddProduct() {
       });
       
       // Add files to FormData
-      if (certFile) {
-        data.append('certFile', certFile);
-        console.log('Added certFile to FormData:', certFile.name);
-      }
       if (imageFile) {
         data.append('imageFile', imageFile);
         console.log('Added imageFile to FormData:', imageFile.name);
       }
+
+      const documentValidation = validateRegistrationDocuments(stageDocuments);
+      if (documentValidation.issues.length > 0) {
+        setDocumentValidationErrors(documentValidation.issues);
+        throw new Error(documentValidation.issues[0]);
+      }
+
+      const documentsWithFiles = documentValidation.docsWithFiles.map((doc) => ({ ...doc }));
+
+      const stageDocumentsMeta = documentsWithFiles.map((doc, index) => ({
+        stage: 'Registered',
+        documentType: doc.documentType,
+        title: doc.title,
+        standardCode: doc.standardCode,
+        documentReference: doc.documentReference,
+        issuingAuthority: doc.issuingAuthority,
+        issuerCountry: doc.issuerCountry,
+        complianceScope: doc.complianceScope,
+        documentVersion: doc.documentVersion,
+        certificateNumber: doc.certificateNumber,
+        batchNumber: doc.batchNumber,
+        lotNumber: doc.lotNumber,
+        issueDate: doc.issueDate,
+        expiryDate: doc.expiryDate,
+        notes: doc.notes,
+        verificationNotes: doc.verificationNotes,
+        requiresVerification: true,
+        fileIndex: index
+      }));
+
+      data.append('stageDocumentsMeta', JSON.stringify(stageDocumentsMeta));
+      documentsWithFiles.forEach((doc) => {
+        data.append('stageDocumentFiles', doc.file);
+      });
       
       // Debug: Log all FormData entries
       console.log('=== FORMDATA DEBUG ===');
@@ -165,10 +287,23 @@ function AddProduct() {
         throw new Error('Server returned non-JSON response');
       }
       
-      const responseData = await res.json();
+      const text = await res.text();
+      if (!text || text.trim().length === 0) {
+        throw new Error(`Server returned empty response with status ${res.status}`);
+      }
+      let responseData;
+      try {
+        responseData = JSON.parse(text);
+      } catch (parseErr) {
+        console.error('Failed to parse JSON response:', text);
+        throw new Error(`Server returned invalid JSON (status ${res.status})`);
+      }
       console.log('Response data:', responseData);
       
-      if (!res.ok) throw new Error(responseData.error || 'Failed to add product');
+      if (!res.ok) {
+        setVerificationFeedback(responseData.verification || null);
+        throw new Error(responseData.message || responseData.error || 'Failed to add product');
+      }
       
       // Dispatch custom event to refresh statistics
       window.dispatchEvent(new Event('productAdded'));
@@ -207,6 +342,7 @@ function AddProduct() {
       }
       
       setRegisteredProduct(responseData.product);
+      setVerificationFeedback(responseData.verification || null);
       toast.success('Product added successfully!');
       // Optionally, do not redirect immediately
       // setTimeout(() => navigate('/admin/dashboard'), 1200);
@@ -361,7 +497,14 @@ function AddProduct() {
                       <div><strong>Origin:</strong> {registeredProduct.origin}</div>
                       <div><strong>Manufacturer:</strong> {registeredProduct.manufacturer}</div>
                       {registeredProduct.description && (
-                        <div className="col-span-full"><strong>Description:</strong> {registeredProduct.description}</div>
+                        <div className="col-span-full">
+                          <AIStructuredResponse
+                            content={registeredProduct.description}
+                            fallbackTitle="Description"
+                            titleClassName="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-200"
+                            bodyClassName="text-sm leading-6 text-gray-700 dark:text-gray-300"
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -382,10 +525,12 @@ function AddProduct() {
                         blockchainRefHash: '',
                         password: ''
                       });
-                      setCertFile(null);
                       setImageFile(null);
                       setImagePreview(null);
                       setError('');
+                      setDocumentValidationErrors([]);
+                      setVerificationFeedback(null);
+                      setStageDocuments([]);
                     }}
                     variant="ghost"
                     className="px-6 py-3 font-semibold"
@@ -594,6 +739,30 @@ function AddProduct() {
                     </div>
                   </div>
 
+                  {enableAI ? (
+                    <div className="mt-6">
+                      <AIDescriptionGeneratorPanel
+                        key={registeredProduct ? registeredProduct.productId : 'ai-description-panel'}
+                        onUseDescription={(generatedDescription) => {
+                          setForm(prev => ({
+                            ...prev,
+                            description: generatedDescription
+                          }));
+                          toast.success('Description added to form');
+                        }}
+                      />
+                    </div>
+                  ) : null}
+
+                  <StageDocumentationForm
+                    stage="Registered"
+                    title="Registration Stage Documentation"
+                    subtitle="Upload optional compliance documents for registration. If you add a file, it is validated and AI-verified before the product is created."
+                    validationErrors={documentValidationErrors}
+                    documents={stageDocuments}
+                    setDocuments={setStageDocuments}
+                  />
+
                   {/* Blockchain Reference Hash */}
                   <div className="relative group">
                     <label className="block text-sm font-semibold mb-3 transition-all duration-300
@@ -626,9 +795,9 @@ function AddProduct() {
                   </div>
 
                   {/* File Uploads */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-6">
                     {/* Product Image */}
-                    <div className="relative group">
+                    <div className="relative group w-full">
                       <label className="block text-sm font-semibold mb-3 transition-all duration-300
                         text-gray-700 group-focus-within:text-emerald-600 
                         dark:text-slate-300 dark:group-focus-within:text-emerald-400">
@@ -674,53 +843,6 @@ function AddProduct() {
                       )}
                     </div>
 
-                    {/* Certificate File */}
-                    <div className="relative group">
-                      <label className="block text-sm font-semibold mb-3 transition-all duration-300
-                        text-gray-700 group-focus-within:text-emerald-600 
-                        dark:text-slate-300 dark:group-focus-within:text-emerald-400">
-                        Certificate File
-                      </label>
-                      <div className="relative">
-                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-300 z-10
-                          text-gray-400 group-focus-within:text-emerald-500 dark:group-focus-within:text-emerald-400">
-                          <FaCertificate className="text-lg" />
-                        </div>
-                        <input
-                          type="file"
-                          name="certFile"
-                          accept="image/*,.pdf"
-                          onChange={handleFile}
-                          className="w-full pl-12 pr-4 py-4 rounded-xl transition-all duration-300 font-medium
-                            bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500
-                            focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-200/50
-                            hover:border-gray-300 hover:bg-gray-50/80
-                            dark:bg-slate-700/50 dark:border-slate-600 dark:text-slate-100
-                            dark:focus:bg-slate-700/80 dark:focus:border-emerald-400 dark:focus:ring-emerald-400/30
-                            dark:hover:border-slate-500 dark:hover:bg-slate-700/70
-                            shadow-sm hover:shadow-md focus:shadow-lg hover-lift
-                            dark:shadow-slate-800/50 dark:focus:shadow-emerald-500/20
-                            file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold 
-                            file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:transition-all
-                            dark:file:bg-blue-900/50 dark:file:text-blue-300 dark:hover:file:bg-blue-900/70"
-                        />
-                      </div>
-                      {certFile && (
-                        <motion.div 
-                          className="mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                            📄 {certFile.name}
-                          </p>
-                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                            {(certFile.size / 1024).toFixed(1)} KB
-                          </p>
-                        </motion.div>
-                      )}
-                    </div>
                   </div>
 
                   {/* Password Confirmation */}
@@ -770,6 +892,32 @@ function AddProduct() {
                     </motion.div>
                   )}
 
+                  {verificationFeedback && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <VerificationResultPanel
+                        verification={verificationFeedback}
+                        title="Verification Feedback"
+                      />
+                      {Array.isArray(verificationFeedback.stageDocumentation?.details) && verificationFeedback.stageDocumentation.details.length > 0 && (
+                        <div className="mt-4 rounded-xl border border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-900/20 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-300 mb-2">
+                            Document Checks
+                          </p>
+                          <ul className="list-disc ml-5 text-sm text-cyan-800 dark:text-cyan-100 space-y-1">
+                            {verificationFeedback.stageDocumentation.details.slice(0, 4).map((item, index) => (
+                              <li key={index}>
+                                {item.title || item.documentType || 'Document'}: {item.reason || item.decision?.reason || 'verified'}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
                   {/* Submit Button */}
                   <div className="flex flex-col sm:flex-row gap-4 pt-4">
                     <GlowingButton
@@ -793,6 +941,7 @@ function AddProduct() {
                     </GlowingButton>
 
                     <GlowingButton
+                      type="button"
                       onClick={() => navigate(-1)}
                       variant="outline"
                       size="lg"

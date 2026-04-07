@@ -5,13 +5,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaEdit, 
-  FaTimes, 
   FaBox, 
   FaSearch, 
   FaCheck, 
   FaSpinner,
-  FaUpload,
-  FaFileAlt,
   FaImage,
   FaChartBar,
   FaCube,
@@ -22,7 +19,10 @@ import {
   FaClock,
   FaCheckCircle,
   FaExclamationTriangle,
-  FaLock
+  FaLock,
+  FaRobot,
+  FaPaperPlane,
+  FaLightbulb
 } from 'react-icons/fa';
 import ParticleBackground from '../components/UI/ParticleBackground';
 import GlowingButton from '../components/UI/GlowingButton';
@@ -30,6 +30,11 @@ import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
 import useRealTimeStats from '../hooks/useRealTimeStats';
+import { aiChat, isAIEnabled } from '../utils/aiApi';
+import { SETTINGS_CHANGED_EVENT } from '../utils/appSettings';
+import StageDocumentationForm from '../components/StageDocumentationForm';
+import AIStructuredResponse from '../components/AIStructuredResponse';
+import VerificationResultPanel from '../components/VerificationResultPanel';
 
 const STAGE_OPTIONS = [
   { value: 'Harvested', label: 'Harvested', color: 'from-green-500 to-green-600', icon: FaBox },
@@ -39,6 +44,86 @@ const STAGE_OPTIONS = [
   { value: 'Delivered', label: 'Delivered', color: 'from-cyan-500 to-cyan-600', icon: FaCheckCircle },
   { value: 'Sold', label: 'Sold', color: 'from-red-500 to-red-600', icon: FaCheck },
 ];
+
+const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg'
+]);
+const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
+
+function hasDocumentMetadata(doc = {}) {
+  return [
+    doc.title,
+    doc.standardCode,
+    doc.documentReference,
+    doc.issuingAuthority,
+    doc.issuerCountry,
+    doc.complianceScope,
+    doc.documentVersion,
+    doc.certificateNumber,
+    doc.batchNumber,
+    doc.lotNumber,
+    doc.issueDate,
+    doc.expiryDate,
+    doc.notes,
+    doc.verificationNotes
+  ].some((value) => String(value || '').trim().length > 0);
+}
+
+function validateStageDocuments(documents = []) {
+  const issues = [];
+  const docsWithFiles = documents.filter((doc) => doc && doc.file);
+
+  documents.forEach((doc, index) => {
+    if (!doc) {
+      return;
+    }
+
+    const row = index + 1;
+    const hasMetadata = hasDocumentMetadata(doc);
+
+    if (!doc.file && hasMetadata) {
+      issues.push(`Document ${row}: upload a file or clear the draft fields.`);
+      return;
+    }
+
+    if (!doc.file) {
+      return;
+    }
+
+    if (!String(doc.title || '').trim()) {
+      issues.push(`Document ${row}: title is required.`);
+    }
+
+    if (!String(doc.documentReference || '').trim()) {
+      issues.push(`Document ${row}: document reference is required.`);
+    }
+
+    if (!String(doc.issuingAuthority || '').trim()) {
+      issues.push(`Document ${row}: issuing authority is required.`);
+    }
+
+    const mimeType = String(doc.file.type || '').toLowerCase();
+    if (!ALLOWED_DOCUMENT_MIME_TYPES.has(mimeType)) {
+      issues.push(`Document ${row}: unsupported file type. Use PDF, PNG, or JPG.`);
+    }
+
+    if (Number(doc.file.size || 0) > MAX_DOCUMENT_SIZE_BYTES) {
+      issues.push(`Document ${row}: file size exceeds 10 MB.`);
+    }
+
+    if (doc.issueDate && doc.expiryDate && new Date(doc.issueDate) > new Date(doc.expiryDate)) {
+      issues.push(`Document ${row}: expiry date must be on or after issue date.`);
+    }
+  });
+
+  return {
+    issues,
+    docsWithFiles
+  };
+}
 
 // Utility function for debouncing
 const useDebounce = (value, delay) => {
@@ -66,6 +151,7 @@ function UpdateProduct() {
   const [stage, setStage] = useState('');
   const [password, setPassword] = useState(''); // Add password for secondary authentication
   const [message, setMessage] = useState('');
+  const [verificationFeedback, setVerificationFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
@@ -76,20 +162,31 @@ function UpdateProduct() {
   const [searchLoading, setSearchLoading] = useState(false);
   
   // File uploads
-  const [uploadFiles, setUploadFiles] = useState({
-    certificate: null,
-    image: null
-  });
-  const [uploadPreviews, setUploadPreviews] = useState({
-    certificate: null,
-    image: null
-  });
-  
   // Stage history
   const [stageHistory, setStageHistory] = useState([]);
+  const [stageDocuments, setStageDocuments] = useState([]);
+  const [documentValidationErrors, setDocumentValidationErrors] = useState([]);
+
+  // AI update assistant
+  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiReply, setAiReply] = useState('');
+  const [aiError, setAiError] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [enableAI, setEnableAI] = useState(isAIEnabled());
   
   const navigate = useNavigate();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    const syncAISetting = () => setEnableAI(isAIEnabled());
+    window.addEventListener('storage', syncAISetting);
+    window.addEventListener(SETTINGS_CHANGED_EVENT, syncAISetting);
+
+    return () => {
+      window.removeEventListener('storage', syncAISetting);
+      window.removeEventListener(SETTINGS_CHANGED_EVENT, syncAISetting);
+    };
+  }, []);
 
   // Search products when search query changes
   useEffect(() => {
@@ -99,6 +196,13 @@ function UpdateProduct() {
       setSearchResults([]);
     }
   }, [debouncedSearchQuery]);
+
+  useEffect(() => {
+    if (documentValidationErrors.length > 0) {
+      setDocumentValidationErrors([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageDocuments]);
 
   // Search products by ID or name
   const searchProducts = useCallback(async (query) => {
@@ -160,34 +264,13 @@ function UpdateProduct() {
     setStageHistory(product.stages || []);
   }, []);
 
-  // Handle file uploads
-  const handleFileUpload = useCallback((type, file) => {
-    if (!file) return;
-    
-    setUploadFiles(prev => ({ ...prev, [type]: file }));
-    
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setUploadPreviews(prev => ({ ...prev, [type]: e.target.result }));
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setUploadPreviews(prev => ({ ...prev, [type]: URL.createObjectURL(file) }));
-    }
-  }, []);
-
-  // Remove uploaded file
-  const removeFile = useCallback((type) => {
-    setUploadFiles(prev => ({ ...prev, [type]: null }));
-    setUploadPreviews(prev => ({ ...prev, [type]: null }));
-  }, []);
-
   // Main update handler with file uploads
   const handleUpdate = async e => {
     e.preventDefault();
     setMessage('');
+    setIsSuccess(false);
     setLoading(true);
+    setDocumentValidationErrors([]);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -198,23 +281,68 @@ function UpdateProduct() {
       const apiConfig = await import('../utils/apiConfig');
       const apiUrl = apiConfig.buildAPIURL(`/api/update-product/${productId}`);
       
+      if (!password) {
+        throw new Error('Password confirmation is required.');
+      }
+
+      const formData = new FormData();
+      formData.append('stage', stage);
+      formData.append('password', password);
+
+      const documentValidation = validateStageDocuments(stageDocuments);
+      if (documentValidation.issues.length > 0) {
+        setDocumentValidationErrors(documentValidation.issues);
+        throw new Error(documentValidation.issues[0]);
+      }
+
+      const documentsWithFiles = documentValidation.docsWithFiles.map((doc) => ({ ...doc }));
+
+      const stageDocumentsMeta = documentsWithFiles.map((doc, index) => ({
+        stage,
+        documentType: doc.documentType,
+        title: doc.title,
+        standardCode: doc.standardCode,
+        documentReference: doc.documentReference,
+        issuingAuthority: doc.issuingAuthority,
+        issuerCountry: doc.issuerCountry,
+        complianceScope: doc.complianceScope,
+        documentVersion: doc.documentVersion,
+        certificateNumber: doc.certificateNumber,
+        batchNumber: doc.batchNumber,
+        lotNumber: doc.lotNumber,
+        issueDate: doc.issueDate,
+        expiryDate: doc.expiryDate,
+        notes: doc.notes,
+        verificationNotes: doc.verificationNotes,
+        requiresVerification: !!doc.requiresVerification,
+        fileIndex: index
+      }));
+
+      formData.append('stageDocumentsMeta', JSON.stringify(stageDocumentsMeta));
+      documentsWithFiles.forEach((doc) => {
+        formData.append('stageDocumentFiles', doc.file);
+      });
+
       const res = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
+        headers: {
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ stage }),
+        body: formData,
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to update product');
+        setVerificationFeedback(data.verification || null);
+        throw new Error(data.message || data.error || 'Failed to update product');
       }
+
+      setVerificationFeedback(data.verification || null);
 
       // Show success message with transaction hash if available
       if (data.txHash) {
         setMessage(`Product stage updated successfully! Transaction hash: ${data.txHash}`);
+        setIsSuccess(true);
         toast.success('Stage updated successfully!', {
           autoClose: 5000,
           onClick: () => {
@@ -225,8 +353,11 @@ function UpdateProduct() {
         });
       } else {
         setMessage('Product stage updated successfully!');
+        setIsSuccess(true);
         toast.success('Stage updated successfully!');
       }
+
+      setStageDocuments([]);
 
       // Navigate to product detail page after delay
       setTimeout(() => {
@@ -237,11 +368,43 @@ function UpdateProduct() {
       console.error('Update error:', err);
       const errorMessage = err.message || 'Failed to update product stage';
       setMessage(errorMessage);
+      setIsSuccess(false);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleAskAI = useCallback(async () => {
+    setAiError('');
+    setAiReply('');
+
+    const activeProductId = (productId || selectedProduct?.productId || '').trim();
+    if (!activeProductId) {
+      setAiError('Select a product or enter a product ID first.');
+      return;
+    }
+
+    const prompt = aiQuestion.trim() || `Review this planned update. Current stage history: ${stageHistory.join(' -> ') || 'none'}. Planned new stage: ${stage || 'not selected'}. Highlight any operational risks or checks before updating.`;
+
+    setAiLoading(true);
+    try {
+      const response = await aiChat({
+        productId: activeProductId,
+        question: prompt
+      });
+
+      if (response && response.success && response.data) {
+        setAiReply(response.data.reply || 'No AI response received.');
+      } else {
+        setAiError((response && response.message) || 'Unable to get AI guidance at the moment.');
+      }
+    } catch (requestError) {
+      setAiError(requestError.message || 'Unable to get AI guidance at the moment.');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [aiQuestion, productId, selectedProduct, stage, stageHistory]);
 
   const selectedStage = useMemo(() => {
     return STAGE_OPTIONS.find(option => option.value === stage);
@@ -590,6 +753,126 @@ function UpdateProduct() {
                       </motion.div>
                     )}
 
+                    <StageDocumentationForm
+                      stage={stage || 'Pending Stage'}
+                      title="Detailed Stage Documentation"
+                      subtitle="Attach optional compliance and audit documents for this stage. Add files only when this update requires documentation or verification."
+                      validationErrors={documentValidationErrors}
+                      documents={stageDocuments}
+                      setDocuments={setStageDocuments}
+                    />
+
+                    {/* AI Stage Advisor */}
+                    {enableAI ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-6 rounded-lg border border-cyan-200 dark:border-cyan-900/60 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30"
+                      >
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-cyan-500/15 flex items-center justify-center">
+                              <FaRobot className="text-cyan-600 dark:text-cyan-300" />
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                                AI Stage Advisor
+                              </h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Ask for a quick review before you submit the update.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-white/80 dark:bg-slate-900/70 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
+                            <FaLightbulb />
+                            Live AI guidance
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <textarea
+                            value={aiQuestion}
+                            onChange={(event) => setAiQuestion(event.target.value)}
+                            placeholder={`Example: Should I move ${productId || 'this product'} to ${stage || 'the selected stage'} now?`}
+                            rows={4}
+                            maxLength={1000}
+                            className="w-full px-4 py-3 rounded-lg border border-cyan-200 dark:border-cyan-800 bg-white/80 dark:bg-slate-900/80 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                          />
+
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              'Is this stage transition appropriate?',
+                              'What checks should I verify first?',
+                              'Summarize the operational risk of this update.'
+                            ].map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => setAiQuestion(suggestion)}
+                                className="px-3 py-2 rounded-full text-xs font-medium border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-200 hover:bg-cyan-100 dark:hover:bg-cyan-900/40 transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <GlowingButton
+                              type="button"
+                              onClick={handleAskAI}
+                              disabled={aiLoading || (!productId && !selectedProduct)}
+                              className="flex-1 py-3 font-semibold"
+                              glowColor="blue"
+                            >
+                              {aiLoading ? (
+                                <>
+                                  <FaSpinner className="mr-2 animate-spin" />
+                                  Getting AI guidance...
+                                </>
+                              ) : (
+                                <>
+                                  <FaPaperPlane className="mr-2" />
+                                  Ask AI
+                                </>
+                              )}
+                            </GlowingButton>
+                          </div>
+
+                          <AnimatePresence>
+                            {aiError && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 8 }}
+                                className="p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
+                              >
+                                <p className="text-sm text-red-700 dark:text-red-200">{aiError}</p>
+                              </motion.div>
+                            )}
+                            {aiReply && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 8 }}
+                                className="p-4 rounded-lg border border-cyan-200 dark:border-cyan-800 bg-white/90 dark:bg-slate-900/80"
+                              >
+                                <div className="flex items-center gap-2 mb-2 text-cyan-700 dark:text-cyan-300 text-sm font-semibold">
+                                  <FaRobot />
+                                  AI Guidance
+                                </div>
+                                <AIStructuredResponse
+                                  content={aiReply}
+                                  fallbackTitle="Operational Guidance"
+                                  titleClassName="text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-300"
+                                  bodyClassName="text-sm leading-6 text-gray-700 dark:text-gray-200"
+                                />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </motion.div>
+                    ) : null}
+
                     {/* Success/Error Messages */}
                     <AnimatePresence>
                       {message && (
@@ -620,6 +903,32 @@ function UpdateProduct() {
                         </motion.div>
                       )}
                     </AnimatePresence>
+
+                    {verificationFeedback && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <VerificationResultPanel
+                          verification={verificationFeedback}
+                          title="Verification Feedback"
+                        />
+                        {Array.isArray(verificationFeedback.stageDocumentation?.details) && verificationFeedback.stageDocumentation.details.length > 0 && (
+                          <div className="mt-4 rounded-xl border border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-900/20 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-300 mb-2">
+                              Document Checks
+                            </p>
+                            <ul className="list-disc ml-5 text-sm text-cyan-800 dark:text-cyan-100 space-y-1">
+                              {verificationFeedback.stageDocumentation.details.slice(0, 4).map((item, index) => (
+                                <li key={index}>
+                                  {item.title || item.documentType || 'Document'}: {item.reason || item.decision?.reason || 'verified'}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
 
                     {/* Password Confirmation */}
                     <div className="relative group mb-6 border-2 border-amber-100 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10 p-6 rounded-lg">

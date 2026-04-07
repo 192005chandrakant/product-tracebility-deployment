@@ -6,108 +6,109 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 const path = require('path');
+const fs = require('fs');
 
 const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const statisticsRoutes = require('./routes/statisticsRoutes');
+const aiRoutes = require('./routes/aiRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const { bootstrapAdminAccount } = require('./utils/adminBootstrap');
 
 const app = express();
 
-// Enhanced CORS setup for both development and production
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl requests, proxy)
+const normalizeOrigin = (value) => {
+  if (!value) return null;
+  try {
+    const parsed = new URL(String(value).trim());
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return null;
+  }
+};
+
+const buildAllowedOrigins = () => {
+  const defaults = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'https://blockchain-product-traceability.netlify.app',
+    'https://walmart-sparkthon.netlify.app',
+    'https://walmart-sparkthon-product-traceability.netlify.app',
+    'https://main--walmart-sparkthon.netlify.app',
+    'https://deploy-preview--walmart-sparkthon.netlify.app',
+    'https://main--blockchain-product-traceability.netlify.app',
+    'https://deploy-preview--blockchain-product-traceability.netlify.app',
+    'https://product-tracebility-deployment.vercel.app'
+  ];
+
+  const fromEnv = String(process.env.CORS_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const fromClientApp = [process.env.CLIENT_APP_URL, process.env.REACT_APP_API_URL].filter(Boolean);
+
+  return new Set(
+    [...defaults, ...fromEnv, ...fromClientApp]
+      .map(normalizeOrigin)
+      .filter(Boolean)
+  );
+};
+
+const isPrivateDevHost = (origin) => {
+  try {
+    const { hostname } = new URL(origin);
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+    return false;
+  } catch {
+    return false;
+  }
+};
+
+const allowedOrigins = buildAllowedOrigins();
+const loggedCorsOrigins = new Set();
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Non-browser requests (curl, server-to-server) do not send Origin.
     if (!origin) {
-      // Reduce logging - only log once per session
-      if (!global.corsLogged) {
-        console.log('CORS allowing no origin (proxy/mobile)');
-        global.corsLogged = true;
+      return callback(null, true);
+    }
+
+    const normalizedOrigin = normalizeOrigin(origin);
+    const isDev = process.env.NODE_ENV !== 'production';
+    const allowAll = String(process.env.CORS_ALLOW_ALL || '').toLowerCase() === 'true';
+    const isAllowed = Boolean(
+      allowAll ||
+      (normalizedOrigin && allowedOrigins.has(normalizedOrigin)) ||
+      (isDev && normalizedOrigin && isPrivateDevHost(normalizedOrigin))
+    );
+
+    if (isAllowed) {
+      if (!loggedCorsOrigins.has(origin)) {
+        console.log('CORS allowing origin:', origin);
+        loggedCorsOrigins.add(origin);
       }
       return callback(null, true);
     }
-    
-    // Define allowed origins
-    const allowedOrigins = [
-      // Development origins
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3001',
-      'http://localhost:5000',
-      
-      // Production origins - Netlify domains
-      'https://blockchain-product-traceability.netlify.app',
-      'https://blockchain-product-traceability.netlify.app/',
-      'https://walmart-sparkthon.netlify.app',
-      'https://walmart-sparkthon-product-traceability.netlify.app',
-      'https://main--walmart-sparkthon.netlify.app',
-      'https://deploy-preview--walmart-sparkthon.netlify.app',
-      'https://main--blockchain-product-traceability.netlify.app',
-      'https://deploy-preview--blockchain-product-traceability.netlify.app',
-      'https://product-tracebility-deployment.vercel.app',
-      'https://product-tracebility-deployment.vercel.app/',
-      'https://product-tracebility-deployment.vercel.app/api',
-      'https://product-tracebility-deployment.vercel.app/api/auth',
-      'https://product-tracebility-deployment.vercel.app/api/profile',
-      'https://product-tracebility-deployment.vercel.app/api/statistics',
-      'https://product-tracebility-deployment.vercel.app/api/statistics/test',
-      'https://product-tracebility-deployment.vercel.app/product/2025100704'
-    ];
-    
-    // In development mode, be more permissive
-    if (process.env.NODE_ENV === 'development' || process.env.CORS_ALLOW_ALL === 'true') {
-      // Reduce logging - only log once per origin
-      if (!global.allowedOrigins) global.allowedOrigins = new Set();
-      if (!global.allowedOrigins.has(origin)) {
-        console.log('CORS allowing origin (dev mode):', origin);
-        global.allowedOrigins.add(origin);
-      }
-      return callback(null, true);
-    }
-    
-    // Check localhost patterns for development
-    if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
-      if (!global.allowedOrigins) global.allowedOrigins = new Set();
-      if (!global.allowedOrigins.has(origin)) {
-        console.log('CORS allowing localhost origin:', origin);
-        global.allowedOrigins.add(origin);
-      }
-      return callback(null, true);
-    }
-    
-    // Check Netlify preview patterns
-    if (origin && (origin.includes('netlify.app') || origin.includes('deploy-preview'))) {
-      if (!global.allowedOrigins) global.allowedOrigins = new Set();
-      if (!global.allowedOrigins.has(origin)) {
-        console.log('CORS allowing Netlify deployment:', origin);
-        global.allowedOrigins.add(origin);
-      }
-      return callback(null, true);
-    }
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
-      if (!global.allowedOrigins) global.allowedOrigins = new Set();
-      if (!global.allowedOrigins.has(origin)) {
-        console.log('CORS allowing listed origin:', origin);
-        global.allowedOrigins.add(origin);
-      }
-      return callback(null, true);
-    }
-    
-    // Default fallback - deny access
+
     console.log('CORS blocking origin:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With', 
-    'Access-Control-Request-Method', 'Access-Control-Request-Headers'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With', 'Access-Control-Request-Method', 'Access-Control-Request-Headers'],
   maxAge: 86400
-}));
+};
 
-// Add OPTIONS pre-flight response for all routes
-app.options('*', cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Security middleware
 app.use(helmet({
@@ -117,7 +118,7 @@ app.use(helmet({
 
 // Disable compression in development to fix content decoding errors
 if (process.env.NODE_ENV === 'development') {
-  console.log('🔧 Development mode - compression disabled to fix proxy issues');
+  console.log('🔧 Development mode - compression disabled to simplify local cross-origin debugging');
 } else {
   // Compression middleware for better performance (production only)
   app.use(compression({
@@ -132,8 +133,9 @@ if (process.env.NODE_ENV === 'development') {
   }));
 }
 
-// Trust first proxy for rate limiting
-app.set('trust proxy', 1);
+// Trust proxy only when explicitly enabled or in production deployments.
+const trustProxyEnabled = process.env.NODE_ENV === 'production' || String(process.env.TRUST_PROXY || '').toLowerCase() === 'true';
+app.set('trust proxy', trustProxyEnabled ? 1 : false);
 
 // Rate limiting - disabled for development
 if (process.env.NODE_ENV === 'production') {
@@ -143,7 +145,7 @@ if (process.env.NODE_ENV === 'production') {
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
-    trustProxy: true
+    trustProxy: trustProxyEnabled
   });
   app.use('/api/', limiter);
 } else {
@@ -165,6 +167,30 @@ app.use(express.urlencoded({
 // Environment variables
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/product-traceability';
+const CLIENT_BUILD_PATH = path.resolve(__dirname, '..', 'client', 'build');
+const CLIENT_INDEX_PATH = path.join(CLIENT_BUILD_PATH, 'index.html');
+const HAS_CLIENT_BUILD = fs.existsSync(CLIENT_BUILD_PATH);
+const HAS_CLIENT_INDEX = fs.existsSync(CLIENT_INDEX_PATH);
+const PRODUCT_ID_PATTERN = /^[A-Za-z0-9._-]{3,120}$/;
+
+function getClientAppBaseURL() {
+  const raw = String(process.env.CLIENT_APP_URL || 'http://localhost:3000').trim();
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Unsupported protocol');
+    }
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch (error) {
+    console.warn('Invalid CLIENT_APP_URL, using default http://localhost:3000');
+    return 'http://localhost:3000';
+  }
+}
+
+if (HAS_CLIENT_BUILD) {
+  app.use(express.static(CLIENT_BUILD_PATH));
+}
 
 // Function to find available port
 const findAvailablePort = async (startPort) => {
@@ -259,11 +285,17 @@ mongoose.connect(MONGODB_URI, {
 })
 .then(() => {
   mongoConnected = true;
+  global.mongoConnected = true;
   console.log('✅ MongoDB connected successfully');
   console.log(`   Database: ${MONGODB_URI.split('/').pop()}`);
+
+  bootstrapAdminAccount().catch((error) => {
+    console.error(`❌ Admin bootstrap failed: ${error.message}`);
+  });
 })
 .catch((err) => {
   mongoConnected = false;
+  global.mongoConnected = false;
   console.error('❌ MongoDB connection error:', err.message);
   console.log('⚠️ Server will continue without database connection');
   console.log('💡 To fix this:');
@@ -275,43 +307,31 @@ mongoose.connect(MONGODB_URI, {
 // Monitor MongoDB connection status
 mongoose.connection.on('connected', () => {
   mongoConnected = true;
+  global.mongoConnected = true;
   console.log('✅ MongoDB connection established');
 });
 
 mongoose.connection.on('error', (err) => {
   mongoConnected = false;
+  global.mongoConnected = false;
   console.error('❌ MongoDB connection error:', err.message);
 });
 
 mongoose.connection.on('disconnected', () => {
   mongoConnected = false;
+  global.mongoConnected = false;
   console.log('⚠️ MongoDB connection disconnected');
 });
 
 // Export connection status for use in other modules
 global.mongoConnected = mongoConnected;
 
-// Disable compression in development to fix content decoding errors
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔧 Development mode - compression disabled to fix proxy issues');
-} else {
-  // Compression middleware for better performance (production only)
-  app.use(compression({
-    filter: (req, res) => {
-      if (req.headers['x-no-compression']) {
-        return false;
-      }
-      return compression.filter(req, res);
-    },
-    level: 6, // Compression level (1-9)
-    threshold: 1024 // Only compress responses > 1KB
-  }));
-}
-
 // Register Routes
 app.use('/api', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Add statistics routes manually for testing
 app.get('/api/statistics/test', (req, res) => {
@@ -322,50 +342,48 @@ app.get('/api/statistics/test', (req, res) => {
 app.get('/api/statistics/stats', async (req, res) => {
   try {
     const Product = require('./models/Product');
-    
-    // Get real product count
-    let productCount = 0;
-    let dbError = false;
-    
-    // Check if MongoDB is connected
-    if (global.mongoConnected && mongoose.connection.readyState === 1) {
-      try {
-        productCount = await Product.countDocuments();
-      } catch (err) {
-        dbError = true;
-        // Only log once per session to reduce noise
-        if (!global.dbErrorLogged) {
-          console.log('Using mock product count due to DB error:', err.message);
-          global.dbErrorLogged = true;
-        }
-        productCount = 15; // fallback
-      }
-    } else {
-      dbError = true;
-      // Only log once per session to reduce noise
-      if (!global.dbErrorLogged) {
-        console.log('Using mock product count - MongoDB not connected');
-        global.dbErrorLogged = true;
-      }
-      productCount = 15; // fallback
+
+    if (!global.mongoConnected || mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'MongoDB is not connected',
+        message: 'Statistics require a live database connection'
+      });
     }
-    
-    // Mock some realistic statistics
-    const totalScans = Math.floor(productCount * 2.3 + Math.random() * 20);
-    const totalUpdates = Math.floor(productCount * 1.8 + Math.random() * 15);
-    
-    const stats = {
-      totalProducts: productCount,
-      totalScans: totalScans,
-      totalUpdates: totalUpdates,
-      // Remove dummy products - these should come from the database
-      recentProducts: [],
-      dbConnected: !dbError
-    };
-    
-    res.json({ 
-      success: true, 
-      stats,
+
+    const [totalProducts, recentProducts, stageAgg, stageEventAgg] = await Promise.all([
+      Product.countDocuments(),
+      Product.find()
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .limit(8)
+        .select('productId name origin manufacturer createdAt updatedAt stages blockchainEvents stageEvents')
+        .lean(),
+      Product.aggregate([
+        { $unwind: { path: '$stages', preserveNullAndEmptyArrays: false } },
+        { $group: { _id: null, count: { $sum: 1 } } }
+      ]),
+      Product.aggregate([
+        {
+          $project: {
+            stageEventCount: { $size: { $ifNull: ['$stageEvents', []] } }
+          }
+        },
+        { $group: { _id: null, count: { $sum: '$stageEventCount' } } }
+      ])
+    ]);
+
+    const totalUpdates = stageAgg[0]?.count || 0;
+    const totalScans = stageEventAgg[0]?.count || 0;
+
+    res.json({
+      success: true,
+      stats: {
+        totalProducts,
+        totalScans,
+        totalUpdates,
+        recentProducts,
+        dbConnected: true
+      },
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -402,6 +420,22 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// Anonymous deep-link fallback for QR targets.
+app.get('/product/:id', (req, res) => {
+  const productId = String(req.params.id || '');
+  if (!PRODUCT_ID_PATTERN.test(productId)) {
+    return res.status(400).json({ error: 'Invalid product id format' });
+  }
+
+  if (HAS_CLIENT_INDEX) {
+    return res.sendFile(CLIENT_INDEX_PATH);
+  }
+
+  const frontendBase = getClientAppBaseURL();
+  const target = `${frontendBase}/product/${encodeURIComponent(productId)}`;
+  return res.redirect(302, target);
+});
+
 // 404 Not Found Handler
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found', path: req.originalUrl });
@@ -415,7 +449,7 @@ const startServer = async () => {
     const server = app.listen(availablePort, () => {
       console.log(`🚀 Server running on port ${availablePort}`);
       console.log(`📡 API available at http://localhost:${availablePort}`);
-      console.log(`🧪 Test endpoint: http://localhost:${availablePort}/test`);
+      console.log(`🧪 Health endpoint: http://localhost:${availablePort}/api/health`);
       // Dynamically log allowed CORS origins
       const allowedOrigins = [
         'http://localhost:3000',

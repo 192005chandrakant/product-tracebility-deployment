@@ -1,311 +1,941 @@
-const path = require('path');
-const { ethers } = require('ethers');
-
 const Product = require('../Product.js');
-const { generateQRCode } = require('../../qr/generateQR.js');
+const { generateQRCode, generateQRCodeDataURL } = require('../../qr/generateQR.js');
 const blockchain = require('../../utils/blockchain.js');
 const { hashString } = require('../../utils/hash.js');
 const StorageFactory = require('../../services/storageFactory.js');
+const { validateCertificateFile } = require('../../services/verification/fileValidation');
+const { analyzeCertificateWithGemini } = require('../../services/verification/geminiVerification');
+const { matchProductAgainstCertificate } = require('../../services/verification/fieldMatching');
+const { computeVerificationRisk } = require('../../services/verification/riskScoring');
+const { decideVerificationOutcome } = require('../../services/verification/decisionEngine');
+const {
+  sanitizeText,
+  parseDateOrNull,
+  extractVerificationReason,
+  parseStageDocumentsMeta,
+  resolveStageDocumentEntries,
+  validateStageDocumentEntries
+} = require('../../services/verification/stageDocumentContracts');
+const {
+  buildBlockchainEventRecord,
+  buildLegacyBlockchainEvents,
+  buildBlockchainTransparencySnapshot
+} = require('../../services/blockchainLedger');
 
-// Use Cloudinary as the only storage service
-const getStorageService = () => {
-  return StorageFactory.getStorageService();
-};
+const REGISTRATION_STAGE = 'Registered';
+const VALID_STAGES = ['Harvested', 'Processed', 'Packaged', 'Shipped', 'Delivered', 'Sold'];
+const REQUIRE_REGISTRATION_DOCS = String(process.env.VERIFICATION_REQUIRE_REGISTRATION_DOCS || '').toLowerCase() === 'true';
+const STRICT_REGISTRATION_CERT_REQUIRED = String(
+  process.env.VERIFICATION_STRICT_REGISTRATION_CERT_REQUIRED || 'false'
+).toLowerCase() !== 'false';
 
-exports.addProduct = async (req, res) => {
-  try {
-    // Check for authenticated user
-    if (!req.user || !req.user.email) {
-      return res.status(401).json({ error: 'Secondary authentication required. Please log in again.' });
-    }
-    
-    console.log('Adding product with data:', req.body);
-    console.log('Files:', req.files);
-    
-    // Check if product already exists
-    const existingProduct = await Product.findOne({ productId: req.body.productId });
-    if (existingProduct) {
-      return res.status(400).json({ 
-        error: 'Product already exists',
-        message: `Product with ID ${req.body.productId} already exists in the database`
-      });
-    }
-    
-    let certFileData = null;
-    let imageFileData = null;
-    let blockchainRefHash = req.body.blockchainRefHash || '';
-    let txHash = null;
-    
-    // Handle certificate file upload to Google Drive
-    if (req.files && req.files.certFile && req.files.certFile[0]) {
-      const certFile = req.files.certFile[0];
-      const certFileName = `cert_${Date.now()}_${certFile.originalname}`;
-      
-      console.log('Uploading certificate to storage:', certFileName);
-      const certUploadResult = await getStorageService().uploadFile(
-        certFile.buffer,
-        certFileName,
-        certFile.mimetype,
-        req.body.productId
-      );
-      
-      if (certUploadResult.success) {
-        certFileData = {
-          fileId: certUploadResult.fileId,
-          fileName: certUploadResult.fileName,
-          publicUrl: certUploadResult.publicUrl,
-          downloadUrl: certUploadResult.downloadUrl
-        };
-        
-        // Generate hash from file buffer for blockchain
-        blockchainRefHash = hashString(certFile.buffer);
-        console.log('Certificate uploaded successfully:', certFileName);
-      } else {
-        console.error('Certificate upload failed:', certUploadResult.error);
-        return res.status(500).json({ 
-          error: 'Failed to upload certificate file', 
-          details: certUploadResult.error 
-        });
-      }
-    }
-    
-    // Handle image file upload to Google Drive
-    if (req.files && req.files.imageFile && req.files.imageFile[0]) {
-      const imageFile = req.files.imageFile[0];
-      const imageFileName = `image_${Date.now()}_${imageFile.originalname}`;
-      
-      console.log('Uploading image to storage:', imageFileName);
-      const imageUploadResult = await getStorageService().uploadFile(
-        imageFile.buffer,
-        imageFileName,
-        imageFile.mimetype,
-        req.body.productId
-      );
-      
-      if (imageUploadResult.success) {
-        imageFileData = {
-          fileId: imageUploadResult.fileId,
-          fileName: imageUploadResult.fileName,
-          publicUrl: imageUploadResult.publicUrl,
-          downloadUrl: imageUploadResult.downloadUrl
-        };
-        console.log('Image uploaded successfully:', imageFileName);
-      } else {
-        console.error('Image upload failed:', imageUploadResult.error);
-        return res.status(500).json({ 
-          error: 'Failed to upload image file', 
-          details: imageUploadResult.error 
-        });
-      }
-    }
+const getStorageService = () => StorageFactory.getStorageService();
 
-    // Blockchain integration (enabled)
+function resolvePublicBaseUrl(req) {
+  const configuredBase = String(
+    process.env.PUBLIC_BASE_URL || process.env.CLIENT_APP_URL || ''
+  ).trim();
+
+  if (configuredBase) {
     try {
-      txHash = await blockchain.addProductOnChain({
-        productId: req.body.productId,
-        name: req.body.name,
-        origin: req.body.origin,
-        manufacturer: req.body.manufacturer,
-        certificationHash: blockchainRefHash,
-      });
-      console.log('Blockchain txHash:', txHash);
-    } catch (blockchainError) {
-      console.error('Blockchain error:', blockchainError);
-      
-      // Handle specific blockchain errors
-      if (blockchainError.reason === 'Product already exists') {
-        return res.status(400).json({ 
-          error: 'Product already exists on blockchain',
-          message: `Product with ID ${req.body.productId} is already registered on the blockchain. Please use a different product ID.`,
-          details: 'This product ID has been used before and cannot be reused.'
-        });
+      const parsed = new URL(configuredBase);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return `${parsed.protocol}//${parsed.host}`;
       }
-      
-      // For other blockchain errors, continue without blockchain but log the error
-      console.log('⚠️  Continuing without blockchain due to error:', blockchainError.message);
+    } catch (error) {
+      // Ignore invalid configured URL and fallback to request-derived value.
+    }
+  }
+
+  const hostHeader = String((req && req.get && req.get('host')) || '').trim();
+  const safeHost = /^[A-Za-z0-9.-]+(?::\d{1,5})?$/.test(hostHeader) ? hostHeader : 'localhost:5000';
+  const protocol = req && req.secure ? 'https' : 'http';
+  return `${protocol}://${safeHost}`;
+}
+
+function parsePositiveInt(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function buildSkippedVerification(message) {
+  const issue = message || 'Verification was not required for this document.';
+  return {
+    decision: {
+      status: 'skipped',
+      reviewState: 'not_required',
+      reason: 'verification_not_required'
+    },
+    riskResult: {
+      riskScore: 0,
+      issues: [issue],
+      criticalFailures: []
+    },
+    pipeline: {
+      fileValidation: {
+        valid: true,
+        issues: [],
+        metadata: null
+      },
+      ai: {
+        success: false,
+        skipped: true,
+        reason: 'verification_not_required'
+      },
+      fieldMatch: {
+        overall: 'pass',
+        score: 100,
+        issues: []
+      }
+    },
+    model: null,
+    aiFailed: false,
+    aiAnalysis: null,
+    aiVerification: null
+  };
+}
+
+function validateRequiredVerificationContext(productContext = {}) {
+  const issues = [];
+
+  if (!sanitizeText(productContext.productName, 200)) {
+    issues.push('Product name is required for certificate field matching.');
+  }
+
+  if (!sanitizeText(productContext.manufacturer, 200)) {
+    issues.push('Manufacturer is required for certificate field matching.');
+  }
+
+  if (!sanitizeText(productContext.certificationType, 200)) {
+    issues.push('Certification type is required for certificate field matching.');
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues
+  };
+}
+
+async function runCertificateVerification({ file, productContext = {}, required = true }) {
+  if (!file) {
+    if (required) {
+      return {
+        blocked: true,
+        responseCode: 400,
+        ...buildSkippedVerification('Certificate file is required for verification.')
+      };
     }
 
-    const product = new Product({ 
-      ...req.body, 
-      certFile: certFileData, 
-      imageFile: imageFileData,
-      blockchainRefHash: txHash || blockchainRefHash || 'mock-hash-' + Date.now(),
-      certificationHash: blockchainRefHash,
-      createdByWallet: req.user.email
-    });
-    
-    await product.save();
-    console.log('Product saved successfully:', product);
+    return {
+      blocked: false,
+      ...buildSkippedVerification('No certificate file was provided, so verification was skipped.')
+    };
+  }
 
-    // Generate QR code and upload to storage
-    let qrCodeData = null;
-    try {
-      // Generate QR code with full product URL for better user experience
-      const productUrl = `${req.protocol}://${req.get('host')}/product/${product.productId}`;
-      console.log('Generating QR code for URL:', productUrl);
-      
-      const qrCodeBuffer = await generateQRCode(productUrl);
-      
-      if (qrCodeBuffer) {
-        const qrFileName = `qr_${product.productId}_${Date.now()}.png`;
-        console.log('Uploading QR code to storage:', qrFileName);
-        
-        const qrUploadResult = await getStorageService().uploadFile(
-          qrCodeBuffer,
-          qrFileName,
-          'image/png',
-          product.productId
-        );
-        
-        if (qrUploadResult.success) {
-          qrCodeData = {
-            fileId: qrUploadResult.fileId,
-            fileName: qrUploadResult.fileName,
-            publicUrl: qrUploadResult.publicUrl,
-            downloadUrl: qrUploadResult.downloadUrl,
-            qrContent: productUrl, // Store what the QR code contains
-            isMock: qrUploadResult.isMock || false
-          };
-          
-          // Include base64 data for mock responses so QR codes can still be displayed
-          if (qrUploadResult.base64Data) {
-            qrCodeData.base64Data = qrUploadResult.base64Data;
-            qrCodeData.hasLocalData = true;
-          }
-          
-          // Update product with QR code data
-          product.qrCode = qrCodeData;
-          await product.save();
-          
-          console.log('QR code uploaded and saved successfully');
-        } else {
-          console.error('QR code upload failed:', qrUploadResult.error);
-          // Generate base64 fallback for immediate display
-          const { generateQRCodeDataURL } = require('../../qr/generateQR');
-          const qrDataURL = await generateQRCodeDataURL(productUrl);
-          qrCodeData = {
-            base64Data: qrDataURL,
-            fileName: qrFileName,
-            qrContent: productUrl,
-            isMock: true,
-            publicUrl: qrDataURL,
-            downloadUrl: qrDataURL
-          };
+  const fileValidation = validateCertificateFile(file);
+  if (!fileValidation.valid) {
+    return {
+      blocked: true,
+      responseCode: 400,
+      decision: {
+        status: 'blocked',
+        reviewState: 'rejected',
+        reason: 'invalid_certificate_file'
+      },
+      riskResult: {
+        riskScore: 100,
+        issues: fileValidation.issues,
+        criticalFailures: ['invalid_file']
+      },
+      pipeline: {
+        fileValidation,
+        ai: {
+          success: false,
+          reason: 'file_validation_failed'
+        },
+        fieldMatch: {
+          overall: 'fail',
+          score: 0,
+          issues: ['File validation failed before AI analysis.']
         }
+      },
+      model: null,
+      aiFailed: false,
+      aiAnalysis: null,
+      aiVerification: null
+    };
+  }
+
+  const aiVerification = await analyzeCertificateWithGemini({
+    file,
+    productContext
+  });
+
+  const aiFailed = !aiVerification.success;
+  const aiAnalysis = aiFailed
+    ? {
+        structure: 'warning',
+        languageQuality: 'warning',
+        signaturePresence: 'unclear',
+        logoConsistency: 'unclear',
+        dateValidation: 'unclear',
+        issues: aiVerification.issues || ['AI verification stage failed.'],
+        extractedFields: {},
+        confidence: 0
       }
-    } catch (qrError) {
-      console.error('QR generation/upload error:', qrError);
-      // Generate fallback base64 QR code
-      try {
-        const productUrl = `${req.protocol}://${req.get('host')}/product/${product.productId}`;
-        const { generateQRCodeDataURL } = require('../../qr/generateQR');
+    : aiVerification.analysis;
+
+  const fieldMatch = aiFailed
+    ? {
+        overall: 'warning',
+        averageScore: 0,
+        fields: {
+          productName: null,
+          manufacturer: null,
+          certificationType: null
+        },
+        issues: ['Field matching was skipped because AI extraction failed.']
+      }
+    : matchProductAgainstCertificate({
+        product: {
+          name: productContext.productName,
+          manufacturer: productContext.manufacturer,
+          certificationType: productContext.certificationType
+        },
+        extractedFields: aiAnalysis.extractedFields || {}
+      });
+
+  const riskResult = computeVerificationRisk({
+    fileValidation,
+    aiAnalysis,
+    fieldMatch,
+    aiFailure: aiFailed
+  });
+
+  const decision = decideVerificationOutcome({
+    riskScore: riskResult.riskScore,
+    criticalFailures: riskResult.criticalFailures,
+    aiFailed,
+    aiRecommendedAction: aiVerification.recommendedAction
+  });
+
+  const pipeline = {
+    fileValidation,
+    ai: {
+      success: !aiFailed,
+      model: aiVerification.model || null,
+      analysis: aiAnalysis,
+      reason: aiVerification.reason || null
+    },
+    fieldMatch
+  };
+
+  return {
+    blocked: decision.status === 'blocked',
+    responseCode: decision.status === 'blocked' ? 422 : 200,
+    decision,
+    riskResult,
+    pipeline,
+    model: aiVerification.model || null,
+    aiFailed,
+    aiAnalysis,
+    aiVerification
+  };
+}
+
+async function uploadFileForProduct({ file, productId, prefix }) {
+  if (!file) {
+    return null;
+  }
+
+  if (!file.buffer || !Buffer.isBuffer(file.buffer) || !file.buffer.length) {
+    throw new Error('Uploaded file is missing a readable buffer');
+  }
+
+  if (!file.mimetype || typeof file.mimetype !== 'string') {
+    throw new Error('Uploaded file is missing a valid mime type');
+  }
+
+  const fileName = `${prefix}_${Date.now()}_${file.originalname}`;
+  const result = await getStorageService().uploadFile(
+    file.buffer,
+    fileName,
+    file.mimetype,
+    productId
+  );
+
+  if (!result.success) {
+    throw new Error(result.error || 'File upload failed');
+  }
+
+  return {
+    fileId: result.fileId,
+    fileName: result.fileName,
+    originalFileName: result.originalFileName,
+    publicUrl: result.publicUrl,
+    downloadUrl: result.downloadUrl,
+    shareUrl: result.shareUrl,
+    webViewLink: result.webViewLink,
+    webContentLink: result.webContentLink,
+    format: result.format,
+    resourceType: result.resourceType,
+    isPdf: result.isPdf,
+    cloudinaryResult: result.cloudinaryResult
+  };
+}
+
+async function processStageDocuments({
+  productId,
+  stage,
+  documentsMeta,
+  documentFiles,
+  productContext,
+  uploader
+}) {
+  const docs = [];
+  const verificationResults = [];
+  const resolvedEntries = resolveStageDocumentEntries({
+    stage,
+    documentsMeta,
+    documentFiles
+  });
+
+  for (const entry of resolvedEntries) {
+    const { meta, resolvedStage, file } = entry;
+
+    const storedFile = await uploadFileForProduct({
+      file,
+      productId,
+      prefix: `stage_${resolvedStage.toLowerCase()}`
+    });
+
+    const shouldVerify = meta.requiresVerification || ['certificate', 'compliance_certificate', 'lab_report'].includes(meta.documentType);
+    let verificationResult;
+
+    if (shouldVerify) {
+      verificationResult = await runCertificateVerification({
+        file,
+        productContext: {
+          ...productContext,
+          certificationType: meta.standardCode || productContext.certificationType
+        },
+        required: true
+      });
+    } else {
+      verificationResult = buildSkippedVerification('Document verification was optional and not requested.');
+    }
+
+    docs.push({
+      stage: resolvedStage,
+      documentType: meta.documentType,
+      title: meta.title,
+      standardCode: meta.standardCode,
+      documentReference: meta.documentReference,
+      issuingAuthority: meta.issuingAuthority,
+      issuerCountry: meta.issuerCountry,
+      complianceScope: meta.complianceScope,
+      documentVersion: meta.documentVersion,
+      certificateNumber: meta.certificateNumber,
+      batchNumber: meta.batchNumber,
+      lotNumber: meta.lotNumber,
+      issueDate: meta.issueDate,
+      expiryDate: meta.expiryDate,
+      notes: meta.notes,
+      verificationNotes: meta.verificationNotes,
+      requiresVerification: shouldVerify,
+      file: storedFile,
+      uploadedBy: uploader,
+      uploadedAt: new Date(),
+      verification: {
+        status: verificationResult.decision.status,
+        reviewState: verificationResult.decision.reviewState,
+        riskScore: verificationResult.riskResult.riskScore,
+        issues: verificationResult.riskResult.issues,
+        criticalFailures: verificationResult.riskResult.criticalFailures,
+        aiModel: verificationResult.model,
+        reason: extractVerificationReason({
+          decision: verificationResult.decision,
+          aiVerification: verificationResult.aiVerification
+        }),
+        pipeline: verificationResult.pipeline,
+        verifiedAt: new Date()
+      }
+    });
+
+    verificationResults.push({
+      blocked: !!verificationResult.blocked,
+      documentType: meta.documentType,
+      title: meta.title,
+      decision: verificationResult.decision,
+      riskResult: verificationResult.riskResult,
+      pipeline: verificationResult.pipeline,
+      reason: extractVerificationReason({
+        decision: verificationResult.decision,
+        aiVerification: verificationResult.aiVerification
+      })
+    });
+  }
+
+  return {
+    docs,
+    verificationResults
+  };
+}
+
+function summarizeStageVerification(results = []) {
+  if (!results.length) {
+    return {
+      status: 'skipped',
+      reviewState: 'not_required',
+      issues: [],
+      riskScore: 0,
+      reason: 'No stage documentation was added for this update.'
+    };
+  }
+
+  const hasBlocked = results.some((item) => item.decision.status === 'blocked');
+  const hasFlagged = results.some((item) => item.decision.status === 'flagged');
+  const status = hasBlocked ? 'blocked' : hasFlagged ? 'flagged' : 'allowed';
+  const reviewState = hasBlocked ? 'rejected' : hasFlagged ? 'pending_review' : 'verified';
+  const riskScore = Math.max(...results.map((item) => Number(item.riskResult.riskScore || 0)));
+  const issues = [...new Set(results.flatMap((item) => item.riskResult.issues || []))].slice(0, 30);
+  const reason =
+    (results.find((item) => item.decision.status === 'blocked') || {}).reason ||
+    (results.find((item) => item.decision.status === 'flagged') || {}).reason ||
+    results[0].reason ||
+    'Stage documentation was processed successfully.';
+
+  return {
+    status,
+    reviewState,
+    issues,
+    riskScore,
+    reason
+  };
+}
+
+function extractBlockchainHash(blockchainResult) {
+  if (!blockchainResult) {
+    return null;
+  }
+
+  if (typeof blockchainResult === 'string') {
+    return blockchainResult;
+  }
+
+  return blockchainResult.hash || blockchainResult.txHash || null;
+}
+
+async function buildAndUploadQrCode(req, product) {
+  let qrCodeData = null;
+  const publicBaseUrl = resolvePublicBaseUrl(req);
+
+  try {
+    const productUrl = `${publicBaseUrl}/product/${encodeURIComponent(product.productId)}`;
+    const qrCodeBuffer = await generateQRCode(productUrl);
+
+    if (qrCodeBuffer) {
+      const qrFileName = `qr_${product.productId}_${Date.now()}.png`;
+      const qrUploadResult = await getStorageService().uploadFile(
+        qrCodeBuffer,
+        qrFileName,
+        'image/png',
+        product.productId
+      );
+
+      if (qrUploadResult.success) {
+        qrCodeData = {
+          fileId: qrUploadResult.fileId,
+          fileName: qrUploadResult.fileName,
+          publicUrl: qrUploadResult.publicUrl,
+          downloadUrl: qrUploadResult.downloadUrl,
+          qrContent: productUrl,
+          isMock: qrUploadResult.isMock || false
+        };
+
+        if (qrUploadResult.base64Data) {
+          qrCodeData.base64Data = qrUploadResult.base64Data;
+          qrCodeData.hasLocalData = true;
+        }
+
+        product.qrCode = qrCodeData;
+        await product.save();
+      } else {
         const qrDataURL = await generateQRCodeDataURL(productUrl);
         qrCodeData = {
           base64Data: qrDataURL,
-          fileName: `qr_${product.productId}_fallback.png`,
+          fileName: qrFileName,
           qrContent: productUrl,
           isMock: true,
           publicUrl: qrDataURL,
           downloadUrl: qrDataURL
         };
-      } catch (fallbackError) {
-        console.error('Fallback QR generation failed:', fallbackError);
       }
     }
+  } catch (qrError) {
+    console.error('QR generation/upload error:', qrError);
+    try {
+      const productUrl = `${publicBaseUrl}/product/${encodeURIComponent(product.productId)}`;
+      const qrDataURL = await generateQRCodeDataURL(productUrl);
+      qrCodeData = {
+        base64Data: qrDataURL,
+        fileName: `qr_${product.productId}_fallback.png`,
+        qrContent: productUrl,
+        isMock: true,
+        publicUrl: qrDataURL,
+        downloadUrl: qrDataURL
+      };
+    } catch (fallbackError) {
+      console.error('Fallback QR generation failed:', fallbackError);
+    }
+  }
 
-    res.status(201).json({ 
+  return qrCodeData;
+}
+
+exports.addProduct = async (req, res) => {
+  try {
+    if (!req.user || !req.user.email) {
+      return res.status(401).json({ error: 'Secondary authentication required. Please log in again.' });
+    }
+
+    const imageFile = req.files && req.files.imageFile && req.files.imageFile[0];
+    const stageDocumentFiles = (req.files && req.files.stageDocumentFiles) || [];
+    const stageDocumentsMeta = parseStageDocumentsMeta(req.body.stageDocumentsMeta);
+
+    const requiredContext = validateRequiredVerificationContext({
+      productName: req.body && req.body.name,
+      manufacturer: req.body && req.body.manufacturer,
+      certificationType: req.body && req.body.certificationType
+    });
+
+    if (!requiredContext.valid) {
+      return res.status(400).json({
+        success: false,
+        status: 'blocked',
+        riskScore: 100,
+        issues: requiredContext.issues,
+        message: requiredContext.issues[0] || 'Missing required verification fields.'
+      });
+    }
+
+    const existingProduct = await Product.findOne({ productId: req.body.productId });
+    if (existingProduct) {
+      return res.status(400).json({
+        error: 'Product already exists',
+        message: `Product with ID ${req.body.productId} already exists in the database`
+      });
+    }
+
+    let imageFileData = null;
+    let blockchainRefHash = req.body.blockchainRefHash || '';
+
+    if (imageFile) {
+      imageFileData = await uploadFileForProduct({
+        file: imageFile,
+        productId: req.body.productId,
+        prefix: 'image'
+      });
+    }
+
+    const registrationValidation = validateStageDocumentEntries({
+      stage: REGISTRATION_STAGE,
+      documentsMeta: stageDocumentsMeta,
+      documentFiles: stageDocumentFiles,
+      requireAtLeastOneFile: REQUIRE_REGISTRATION_DOCS || STRICT_REGISTRATION_CERT_REQUIRED,
+      enforceRequiredFields: true
+    });
+
+    if (!registrationValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        status: 'blocked',
+        riskScore: 100,
+        message: registrationValidation.issues[0] || 'Registration document validation failed.',
+        issues: registrationValidation.issues
+      });
+    }
+
+    const registrationEntries = registrationValidation.entries;
+
+    const normalizedRegistrationMeta = registrationEntries.map(({ meta }, index) => ({
+      ...meta,
+      stage: REGISTRATION_STAGE,
+      requiresVerification: true,
+      fileIndex: index
+    }));
+
+    const normalizedRegistrationFiles = registrationEntries.map(({ file }) => file);
+
+    if (!blockchainRefHash && normalizedRegistrationFiles[0] && normalizedRegistrationFiles[0].buffer) {
+      blockchainRefHash = hashString(normalizedRegistrationFiles[0].buffer);
+    }
+
+    const docsProcessing = await processStageDocuments({
+      productId: req.body.productId,
+      stage: REGISTRATION_STAGE,
+      documentsMeta: normalizedRegistrationMeta,
+      documentFiles: normalizedRegistrationFiles,
+      productContext: {
+        productName: req.body && req.body.name,
+        manufacturer: req.body && req.body.manufacturer,
+        certificationType: req.body && req.body.certificationType
+      },
+      uploader: req.user.email
+    });
+
+    const blockedDoc = docsProcessing.verificationResults.find((result) => result.blocked);
+    if (blockedDoc) {
+      const blockedSummary = summarizeStageVerification(docsProcessing.verificationResults);
+      return res.status(422).json({
+        success: false,
+        status: 'blocked',
+        riskScore: blockedDoc.riskResult.riskScore,
+        issues: blockedDoc.riskResult.issues,
+        message: 'One of the registration-stage documents failed verification.',
+        verification: {
+          status: blockedDoc.decision.status,
+          reviewState: blockedDoc.decision.reviewState,
+          riskScore: blockedDoc.riskResult.riskScore,
+          issues: blockedDoc.riskResult.issues,
+          stage: REGISTRATION_STAGE,
+          reason: blockedDoc.reason,
+          decision: blockedDoc.decision,
+          pipeline: blockedDoc.pipeline,
+          documentTitle: blockedDoc.title,
+          documentType: blockedDoc.documentType,
+          stageDocumentation: {
+            summary: blockedSummary,
+            details: docsProcessing.verificationResults
+          }
+        }
+      });
+    }
+
+    let blockchainResult = null;
+    let blockchainEvent = null;
+    try {
+      blockchainResult = await blockchain.addProductOnChain({
+        productId: req.body.productId,
+        name: req.body.name,
+        origin: req.body.origin,
+        manufacturer: req.body.manufacturer,
+        certificationHash: blockchainRefHash
+      });
+    } catch (blockchainError) {
+      console.error('Blockchain error:', blockchainError);
+      if (blockchainError.reason === 'Product already exists') {
+        return res.status(400).json({
+          error: 'Product already exists on blockchain',
+          message: `Product with ID ${req.body.productId} is already registered on the blockchain. Please use a different product ID.`,
+          details: 'This product ID has been used before and cannot be reused.'
+        });
+      }
+
+      blockchainEvent = buildBlockchainEventRecord({
+        action: 'register_product',
+        stage: REGISTRATION_STAGE,
+        productId: req.body.productId,
+        actorEmail: req.user.email,
+        actorRole: req.user.role,
+        payload: {
+          name: req.body.name,
+          origin: req.body.origin,
+          manufacturer: req.body.manufacturer,
+          certificationHash: blockchainRefHash
+        },
+        error: blockchainError
+      });
+    }
+
+    const txHash = extractBlockchainHash(blockchainResult);
+    if (!blockchainEvent) {
+      blockchainEvent = buildBlockchainEventRecord({
+        action: 'register_product',
+        stage: REGISTRATION_STAGE,
+        productId: req.body.productId,
+        actorEmail: req.user.email,
+        actorRole: req.user.role,
+        txResult: blockchainResult,
+        payload: {
+          name: req.body.name,
+          origin: req.body.origin,
+          manufacturer: req.body.manufacturer,
+          certificationHash: blockchainRefHash
+        }
+      });
+    }
+
+    const stageVerificationSummary = summarizeStageVerification(docsProcessing.verificationResults);
+    const registrationDecision = {
+      status: stageVerificationSummary.status,
+      reviewState: stageVerificationSummary.reviewState,
+      reason: stageVerificationSummary.reason
+    };
+
+    const product = new Product({
+      ...req.body,
+      imageFile: imageFileData,
+      blockchainRefHash: blockchainRefHash || `mock-hash-${Date.now()}`,
+      blockchainTx: txHash,
+      blockchainStatus: blockchainEvent.status,
+      blockchainUpdatedAt: blockchainEvent.recordedAt,
+      blockchainEvents: [blockchainEvent],
+      certificationHash: blockchainRefHash,
+      createdByWallet: req.user.email,
+      stageEvents: [{
+        stage: REGISTRATION_STAGE,
+        stageNotes: sanitizeText(req.body.registrationStageNotes, 800),
+        updatedBy: req.user.email,
+        blockchainTxHash: txHash || null,
+        documents: docsProcessing.docs,
+        verificationSummary: stageVerificationSummary,
+        recordedAt: new Date()
+      }],
+      verification: {
+        status: stageVerificationSummary.status,
+        reviewState: stageVerificationSummary.reviewState,
+        riskScore: stageVerificationSummary.riskScore,
+        issues: stageVerificationSummary.issues,
+        criticalFailures: [],
+        aiModel: null,
+        reason: stageVerificationSummary.reason,
+        pipeline: {
+          source: 'stage_documents',
+          documentsProcessed: docsProcessing.verificationResults.length
+        },
+        verifiedAt: new Date()
+      }
+    });
+
+    await product.save();
+
+    const qrCodeData = await buildAndUploadQrCode(req, product);
+
+    return res.status(201).json({
       message: 'Product added successfully',
-      product: product.toObject(), 
-      qrCode: qrCodeData, 
-      blockchainTx: txHash || blockchainRefHash || 'mock-hash-' + Date.now() 
+      success: true,
+      status: product.verification.status,
+      riskScore: product.verification.riskScore,
+      issues: product.verification.issues,
+      product: product.toObject(),
+      qrCode: qrCodeData,
+      blockchainTx: txHash,
+      blockchainEvent,
+      verification: {
+        status: stageVerificationSummary.status,
+        reviewState: stageVerificationSummary.reviewState,
+        riskScore: stageVerificationSummary.riskScore,
+        issues: stageVerificationSummary.issues,
+        decision: registrationDecision,
+        model: null,
+        reason: stageVerificationSummary.reason,
+        pipeline: {
+          source: 'stage_documents',
+          documentsProcessed: docsProcessing.verificationResults.length
+        },
+        stageDocumentation: {
+          summary: stageVerificationSummary,
+          details: docsProcessing.verificationResults
+        }
+      }
     });
   } catch (err) {
     console.error('Error in addProduct:', err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
 
 exports.updateProduct = async (req, res) => {
   try {
-    // Check for authenticated user
     if (!req.user || !req.user.email) {
       return res.status(401).json({ error: 'Secondary authentication required. Please log in again.' });
     }
-    
-    console.log('📝 Updating product:', { id: req.params.id, stage: req.body.stage });
+
     const { id } = req.params;
-    const { stage } = req.body;
+    const stage = sanitizeText(req.body.stage, 80);
 
     if (!stage) {
       return res.status(400).json({ error: 'Stage is required' });
     }
 
-    // Validate product exists first
+    if (!VALID_STAGES.includes(stage)) {
+      return res.status(400).json({
+        error: `Invalid stage. Must be one of: ${VALID_STAGES.join(', ')}`
+      });
+    }
+
     const existingProduct = await Product.findOne({ productId: id });
     if (!existingProduct) {
-      console.log('❌ Product not found:', id);
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Check if user owns this product
-    if (existingProduct.createdByWallet !== req.user.email) {
-      console.log('❌ User does not own this product:', { 
-        productOwner: existingProduct.createdByWallet, 
-        currentUser: req.user.email 
-      });
-      return res.status(403).json({ 
-        error: 'Access denied. You can only update your own products.' 
+    if (req.user.role !== 'admin' && existingProduct.createdByWallet !== req.user.email) {
+      return res.status(403).json({
+        error: 'Access denied. You can only update your own products.'
       });
     }
 
-    // Validate stage value
-    const validStages = ['Harvested', 'Processed', 'Packaged', 'Shipped', 'Delivered', 'Sold'];
-    if (!validStages.includes(stage)) {
-      console.log('❌ Invalid stage:', stage);
-      return res.status(400).json({ error: `Invalid stage. Must be one of: ${validStages.join(', ')}` });
+    const stageDocumentFiles = (req.files && req.files.stageDocumentFiles) || [];
+    const stageDocumentsMeta = parseStageDocumentsMeta(req.body.stageDocumentsMeta);
+
+    const stageValidation = validateStageDocumentEntries({
+      stage,
+      documentsMeta: stageDocumentsMeta,
+      documentFiles: stageDocumentFiles,
+      requireAtLeastOneFile: false,
+      enforceRequiredFields: true
+    });
+
+    if (!stageValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        status: 'blocked',
+        message: stageValidation.issues[0] || 'Stage document validation failed.',
+        issues: stageValidation.issues
+      });
     }
 
-    let txHash = null;
+    const docsProcessing = await processStageDocuments({
+      productId: existingProduct.productId,
+      stage,
+      documentsMeta: stageValidation.entries.map(({ meta }) => meta),
+      documentFiles: stageDocumentFiles,
+      productContext: {
+        productName: existingProduct.name,
+        manufacturer: existingProduct.manufacturer,
+        certificationType: req.body.certificationType || ''
+      },
+      uploader: req.user.email
+    });
+
+    const blockedDoc = docsProcessing.verificationResults.find((result) => result.blocked);
+    if (blockedDoc) {
+      const blockedSummary = summarizeStageVerification(docsProcessing.verificationResults);
+      return res.status(422).json({
+        success: false,
+        status: 'blocked',
+        riskScore: blockedDoc.riskResult.riskScore,
+        issues: blockedDoc.riskResult.issues,
+        message: 'Stage update blocked because a document failed verification.',
+        verification: {
+          status: blockedDoc.decision.status,
+          reviewState: blockedDoc.decision.reviewState,
+          riskScore: blockedDoc.riskResult.riskScore,
+          issues: blockedDoc.riskResult.issues,
+          stage,
+          reason: blockedDoc.reason,
+          decision: blockedDoc.decision,
+          pipeline: blockedDoc.pipeline,
+          documentTitle: blockedDoc.title,
+          documentType: blockedDoc.documentType,
+          context: 'stage_document',
+          stageDocumentation: {
+            summary: blockedSummary,
+            details: docsProcessing.verificationResults
+          }
+        }
+      });
+    }
+
+    let blockchainResult = null;
+    let blockchainEvent = null;
     try {
-      console.log('🔄 Updating stage on blockchain...');
-      txHash = await blockchain.updateStageOnChain(id, stage);
-      console.log('✅ Blockchain update successful, txHash:', txHash);
+      blockchainResult = await blockchain.updateStageOnChain(id, stage);
     } catch (blockchainError) {
-      console.error('⚠️ Blockchain error:', blockchainError);
-      // Continue without blockchain - we'll still update the database
+      console.error('Blockchain error:', blockchainError);
+      blockchainEvent = buildBlockchainEventRecord({
+        action: 'update_stage',
+        stage,
+        productId: id,
+        actorEmail: req.user.email,
+        actorRole: req.user.role,
+        payload: {
+          stage,
+          stageNotes: req.body.stageNotes || '',
+          stageLocation: req.body.stageLocation || ''
+        },
+        error: blockchainError
+      });
     }
 
-    // Update product with new stage
-    const updateData = {
-      $push: { stages: stage }
-    };
-    if (txHash) {
-      updateData.blockchainTx = txHash;
+    const txHash = extractBlockchainHash(blockchainResult);
+    if (!blockchainEvent) {
+      blockchainEvent = buildBlockchainEventRecord({
+        action: 'update_stage',
+        stage,
+        productId: id,
+        actorEmail: req.user.email,
+        actorRole: req.user.role,
+        txResult: blockchainResult,
+        payload: {
+          stage,
+          stageNotes: req.body.stageNotes || '',
+          stageLocation: req.body.stageLocation || ''
+        }
+      });
     }
 
-    const product = await Product.findOneAndUpdate(
+    const verificationSummary = summarizeStageVerification(docsProcessing.verificationResults);
+
+    const stageDocuments = [...docsProcessing.docs];
+
+    const updatedProduct = await Product.findOneAndUpdate(
       { productId: id },
-      updateData,
+      {
+        $set: {
+          blockchainTx: txHash,
+          blockchainStatus: blockchainEvent.status,
+          blockchainUpdatedAt: blockchainEvent.recordedAt
+        },
+        $push: {
+          stages: stage,
+          blockchainEvents: blockchainEvent,
+          stageEvents: {
+            stage,
+            stageNotes: sanitizeText(req.body.stageNotes, 800),
+            location: sanitizeText(req.body.stageLocation, 180),
+            updatedBy: req.user.email,
+            blockchainTxHash: txHash || null,
+            documents: stageDocuments,
+            verificationSummary: {
+              ...verificationSummary,
+              reason: verificationSummary.reason || blockchainEvent.errorMessage || null
+            },
+            recordedAt: new Date()
+          }
+        }
+      },
       { new: true }
     );
 
-    console.log('✅ Product updated successfully:', {
-      productId: product.productId,
-      stages: product.stages,
-      blockchainTx: txHash
-    });
-
-    res.json({
+    return res.json({
       message: 'Product updated successfully',
-      stages: product.stages,
-      blockchainTx: txHash
+      stages: updatedProduct.stages,
+      blockchainTx: txHash,
+      txHash,
+      blockchainEvent,
+      verification: {
+        status: verificationSummary.status,
+        reviewState: verificationSummary.reviewState,
+        riskScore: verificationSummary.riskScore,
+        issues: verificationSummary.issues,
+        reason: verificationSummary.reason,
+        stage,
+        certificate: null,
+        stageDocumentation: {
+          summary: verificationSummary,
+          details: docsProcessing.verificationResults
+        }
+      },
+      stageEvent: updatedProduct.stageEvents[updatedProduct.stageEvents.length - 1]
     });
   } catch (err) {
-    console.error('❌ Error in updateProduct:', err);
-    res.status(500).json({ 
+    console.error('Error in updateProduct:', err);
+    return res.status(500).json({
       error: 'Failed to update product',
       details: err.message,
-      stage: req.body.stage 
+      stage: req.body.stage
     });
   }
 };
@@ -314,12 +944,13 @@ exports.getProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const product = await Product.findOne({ productId: id });
-    if (!product) return res.status(404).json({ error: 'Product not found' });
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
 
     let onChain = null;
     try {
       onChain = await blockchain.getProductOnChain(id);
-    // Fix: Convert all BigInt values in onChain to strings
       function bigIntToString(obj) {
         if (typeof obj === 'bigint') return obj.toString();
         if (Array.isArray(obj)) return obj.map(bigIntToString);
@@ -331,65 +962,117 @@ exports.getProduct = async (req, res) => {
         return obj;
       }
       onChain = bigIntToString(onChain);
-
     } catch (e) {
       console.error('Blockchain error in getProduct:', e);
     }
 
-    res.json({ ...product.toObject(), onChain });
+    const productObject = product.toObject();
+    if (!Array.isArray(productObject.blockchainEvents) || productObject.blockchainEvents.length === 0) {
+      productObject.blockchainEvents = buildLegacyBlockchainEvents(productObject);
+    }
+
+    const transparency = buildBlockchainTransparencySnapshot(productObject, onChain);
+
+    return res.json({ ...productObject, onChain, transparency });
   } catch (err) {
     console.error('Error in getProduct:', err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
 
 exports.getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
-    res.json(products);
+    const page = parsePositiveInt(req.query.page);
+    const limit = parsePositiveInt(req.query.limit);
+    const usePagination = Boolean(page || limit);
+
+    if (!usePagination) {
+      const products = await Product.find();
+      return res.json(products);
+    }
+
+    const normalizedPage = page || 1;
+    const normalizedLimit = Math.min(limit || 20, 100);
+    const skip = (normalizedPage - 1) * normalizedLimit;
+
+    const [products, total] = await Promise.all([
+      Product.find().sort({ createdAt: -1 }).skip(skip).limit(normalizedLimit),
+      Product.countDocuments()
+    ]);
+
+    return res.json({
+      data: products,
+      pagination: {
+        page: normalizedPage,
+        limit: normalizedLimit,
+        total,
+        totalPages: Math.ceil(total / normalizedLimit),
+        hasNextPage: skip + products.length < total,
+        hasPrevPage: normalizedPage > 1
+      }
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
 
-// New endpoint to get products by specific user
 exports.getMyProducts = async (req, res) => {
   try {
-    // Check for authenticated user
     if (!req.user || !req.user.email) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-    
-    console.log('🔍 getMyProducts called for user:', req.user.email);
-    
-    const products = await Product.find({ createdByWallet: req.user.email });
-    console.log('🔍 My products found for', req.user.email, ':', products.length);
-    
-    res.json(products);
+
+    const page = parsePositiveInt(req.query.page);
+    const limit = parsePositiveInt(req.query.limit);
+    const usePagination = Boolean(page || limit);
+    const filter = { createdByWallet: req.user.email };
+
+    if (!usePagination) {
+      const products = await Product.find(filter);
+      return res.json(products);
+    }
+
+    const normalizedPage = page || 1;
+    const normalizedLimit = Math.min(limit || 20, 100);
+    const skip = (normalizedPage - 1) * normalizedLimit;
+
+    const [products, total] = await Promise.all([
+      Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(normalizedLimit),
+      Product.countDocuments(filter)
+    ]);
+
+    return res.json({
+      data: products,
+      pagination: {
+        page: normalizedPage,
+        limit: normalizedLimit,
+        total,
+        totalPages: Math.ceil(total / normalizedLimit),
+        hasNextPage: skip + products.length < total,
+        hasPrevPage: normalizedPage > 1
+      }
+    });
   } catch (err) {
-    console.error('❌ Error in getMyProducts:', err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
 
 exports.getProductByCertHash = async (req, res) => {
   try {
     const { certHash } = req.params;
-    
-    // First try to find by certificationHash field
     let product = await Product.findOne({ certificationHash: certHash });
-    
-    // If not found, try to find by blockchainRefHash (for backward compatibility)
+
     if (!product) {
       product = await Product.findOne({ blockchainRefHash: certHash });
     }
-    
-    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
 
     let onChain = null;
     try {
       onChain = await blockchain.getProductOnChain(product.productId);
-      // Convert BigInt values to strings
       function bigIntToString(obj) {
         if (typeof obj === 'bigint') return obj.toString();
         if (Array.isArray(obj)) return obj.map(bigIntToString);
@@ -405,40 +1088,42 @@ exports.getProductByCertHash = async (req, res) => {
       console.error('Blockchain error in getProductByCertHash:', e);
     }
 
-    res.json({ ...product.toObject(), onChain });
+    const productObject = product.toObject();
+    if (!Array.isArray(productObject.blockchainEvents) || productObject.blockchainEvents.length === 0) {
+      productObject.blockchainEvents = buildLegacyBlockchainEvents(productObject);
+    }
+
+    const transparency = buildBlockchainTransparencySnapshot(productObject, onChain);
+
+    return res.json({ ...productObject, onChain, transparency });
   } catch (err) {
     console.error('Error in getProductByCertHash:', err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
 
 exports.getRecentProducts = async (req, res) => {
   try {
-    // Get the limit parameter from query or default to 6
-    const limit = parseInt(req.query.limit) || 6;
-    
-    // Find the most recently added products
+    const limit = parseInt(req.query.limit, 10) || 6;
+
     const recentProducts = await Product.find({})
       .sort({ createdAt: -1 })
       .limit(limit)
-      .select('productId name manufacturer origin stage stages imageFile createdAt updatedAt');
-    
-    // Transform data if needed
-    const transformedProducts = recentProducts.map(product => {
+      .select('productId name manufacturer origin stage stages stageEvents imageFile createdAt updatedAt');
+
+    const transformedProducts = recentProducts.map((product) => {
       const productObj = product.toObject();
-      
-      // Ensure stages is available
+
       if (!productObj.stages || productObj.stages.length === 0) {
         productObj.stages = productObj.stage ? [productObj.stage] : ['Created'];
       }
-      
+
       return productObj;
     });
-    
-    console.log(`Returning ${transformedProducts.length} recent products`);
-    res.status(200).json(transformedProducts);
+
+    return res.status(200).json(transformedProducts);
   } catch (error) {
     console.error('Error fetching recent products:', error);
-    res.status(500).json({ error: 'Failed to fetch recent products' });
+    return res.status(500).json({ error: 'Failed to fetch recent products' });
   }
 };

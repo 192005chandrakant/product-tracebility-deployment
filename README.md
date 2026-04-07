@@ -1,461 +1,760 @@
-# Product Traceability Blockchain System
+﻿# Product Traceability Platform
 
-A comprehensive blockchain-based product traceability system built with Node.js, React, MongoDB, and integrated with Cloudinary for file storage.
+Enterprise-grade product traceability platform that combines blockchain-backed records, secure APIs, a modern React frontend, and AI-assisted operational insights.
 
-## 🚀 Features
-
-- **Blockchain Integration**: Secure product registration on blockchain
-- **Role-Based Authentication**: Admin, Manufacturer, Consumer roles with different permissions
-- **File Management**: Upload and manage product images, certificates, and QR codes via Cloudinary
-- **QR Code Generation**: Automatic QR code generation for product tracking
-- **Real-time Dashboard**: Monitor product statistics and activities
-- **Certificate Management**: Upload and view product certificates (PDF support)
-- **Secure Operations**: Password confirmation for sensitive actions
-
-## 🏗️ Architecture
-
-```
-product-tracibility/
-├── client/                 # React frontend application
-├── server/                 # Node.js/Express backend API
-├── contracts/              # Blockchain smart contracts
-├── scripts/               # Deployment scripts
-├── artifacts/             # Compiled smart contracts
-└── cache/                 # Hardhat cache files
-```
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **React** 18+ with hooks
-- **Tailwind CSS** for styling
-- **React Router** for navigation
-- **React Hot Toast** for notifications
-- **React Icons** for UI icons
-
-### Backend
-- **Node.js** with Express.js
-- **MongoDB** with Mongoose ODM
-- **JWT** for authentication
-- **Multer** for file uploads
-- **QR Code** generation library
-- **Cloudinary** for file storage
-
-### Blockchain
-- **Hardhat** for smart contract development
-- **Solidity** for smart contracts
-- **Ethereum** compatible networks
-
-## 📋 Prerequisites
-
-Before running this application, make sure you have:
-
-- **Node.js** (v16 or higher)
-- **npm** or **yarn**
-- **MongoDB** (local or cloud instance)
-- **Cloudinary** account for file storage
-- **Git** for version control
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-```bash
-git clone <repository-url>
-cd product-tracibility
-```
-
-### 2. Install Dependencies
-```bash
-# Install root dependencies (for blockchain)
-npm install
-
-# Install server dependencies
-cd server
-npm install
-
-# Install client dependencies
-cd ../client
-npm install
-```
-
-### 3. Environment Setup
-
-Create `.env` files in both `server/` and root directory:
-
-**server/.env:**
-```env
-# Database
-MONGODB_URI=mongodb://localhost:27017/product-traceability
-JWT_SECRET=your-super-secret-jwt-key
-
-# Cloudinary Configuration
-CLOUDINARY_CLOUD_NAME=your-cloudinary-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
-
-# Server Configuration
-PORT=5000
-NODE_ENV=development
-```
-
-**Root .env (for blockchain):**
-```env
-# Blockchain Configuration
-PRIVATE_KEY=your-ethereum-private-key
-INFURA_PROJECT_ID=your-infura-project-id
-```
-
-### 4. Start Development Servers
-
-```bash
-# Terminal 1: Start MongoDB (if local)
-mongod
-
-# Terminal 2: Start backend server
-cd server
-npm start
-
-# Terminal 3: Start frontend development server
-cd client
-npm start
-
-# Terminal 4: Deploy smart contracts (optional)
-npx hardhat run scripts/deploy.js --network localhost
-```
-
-### 5. Access the Application
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **MongoDB**: mongodb://localhost:27017
-
-## 🔧 Configuration
-
-### Cloudinary Setup
-1. Create a Cloudinary account at [cloudinary.com](https://cloudinary.com)
-2. Get your Cloud Name, API Key, and API Secret from the dashboard
-3. Add these credentials to your `server/.env` file
-
-### MongoDB Setup
-- **Local**: Install MongoDB locally and start the service
-- **Cloud**: Use MongoDB Atlas and update the connection string
-
-### Blockchain Setup (Optional)
-- Install Hardhat: `npm install --save-dev hardhat`
-- Configure network settings in `hardhat.config.js`
-- Deploy contracts: `npx hardhat run scripts/deploy.js`
-
-## 👥 User Roles
-
-### Admin
-- Create and manage products
-- Update product status
-- View all products and statistics
-- Manage user accounts
-
-### Manufacturer
-- Create products for their company
-- Update their product status
-- View their products
-
-### Consumer
-- View product details
-- Scan QR codes
-- Access product certificates
-
-## 🔐 Security Features
-
-- **JWT Authentication**: Secure token-based authentication
-- **Role-based Access Control**: Different permissions for different user types
-- **Password Confirmation**: Required for sensitive operations
-- **File Upload Security**: Validated file types and sizes
-- **Blockchain Integration**: Immutable product records
-
-## 📱 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-
-### Products
-- `GET /api/products` - Get all products
-- `POST /api/products` - Create new product
-- `GET /api/product/:id` - Get product details
-- `PUT /api/product/:id/status` - Update product status
-- `GET /api/product/:id/qr` - Get/generate QR code
-
-### File Management
-- `POST /storage/upload` - Upload files to Cloudinary
-- `GET /storage/file/:id` - Get file information
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **MongoDB Connection Error**
-   - Ensure MongoDB is running
-   - Check connection string in `.env`
-   - Verify network access for cloud databases
-
-2. **File Upload Issues**
-   - Verify Cloudinary credentials
-   - Check file size limits
-   - Ensure proper file formats
-
-3. **Authentication Problems**
-   - Check JWT secret configuration
-   - Verify token expiration settings
-   - Clear browser storage and retry
-
-4. **Frontend Build Issues**
-   - Clear node_modules and reinstall
-   - Check for port conflicts
-   - Verify environment variables
-
-### Debugging
-
-- Check browser console for frontend errors
-- Review server logs for backend issues
-- Use MongoDB Compass for database inspection
-- Test API endpoints with Postman or similar tools
-
-## 📚 Additional Resources
-
-- [React Documentation](https://reactjs.org/docs)
-- [Express.js Guide](https://expressjs.com/en/guide/routing.html)
-- [MongoDB Manual](https://docs.mongodb.com/)
-- [Cloudinary Documentation](https://cloudinary.com/documentation)
-- [Hardhat Documentation](https://hardhat.org/docs)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 📞 Support
-
-For support and questions:
-- Check the documentation in `client/README.md` and `server/README.md`
-- Review the troubleshooting section above
-- Create an issue in the repository
-npm install
-
-# Install client dependencies
-cd ../client
-npm install
-
-# Go back to root
-cd ..
-```
-
-### 3. Environment Configuration
-
-#### Server Environment (server/.env)
-```bash
-cd server
-cp .env.example .env
-```
-
-Edit `server/.env` with your configuration:
-
-```properties
-# Database
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/product-traceability
-
-# JWT Secret (generate a secure random string)
-JWT_SECRET=your-super-secret-jwt-key-here
-
-# Blockchain Configuration
-INFURA_API_KEY=your-infura-project-id
-PRIVATE_KEY=your-ethereum-private-key
-CONTRACT_ADDRESS=deployed-contract-address
-SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/your-infura-project-id
-
-# Google Drive OAuth (Free 15GB Storage)
-GOOGLE_DRIVE_ENABLED=true
-GOOGLE_OAUTH_CLIENT_ID=your-google-oauth-client-id
-GOOGLE_OAUTH_CLIENT_SECRET=your-google-oauth-client-secret
-GOOGLE_OAUTH_REDIRECT_URI=http://localhost:5000/auth/google/callback
-GOOGLE_DRIVE_FOLDER_NAME=Product-Uploads
-```
-
-### 4. Start the Application
-
-#### Terminal 1 - Backend Server
-```bash
-cd server
-npm start
-```
-Server will run on: http://localhost:5000
-
-#### Terminal 2 - Frontend Client
-```bash
-cd client
-npm start
-```
-Client will run on: http://localhost:3000
-
-## 🔧 Detailed Setup Guide
-
-### MongoDB Setup
-
-1. **Create MongoDB Atlas Account**
-   - Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
-   - Create a free cluster
-   - Create a database user
-   - Whitelist your IP address
-   - Get the connection string
-
-2. **Configure Database**
-   - Replace `MONGODB_URI` in `server/.env`
-   - Format: `mongodb+srv://username:password@cluster.mongodb.net/product-traceability`
-
-### Blockchain Setup (Optional)
-
-1. **Infura Configuration**
-   - Sign up at [Infura](https://infura.io/)
-   - Create a new project
-   - Copy the Project ID
-   - Update `INFURA_API_KEY` in `server/.env`
-
-2. **Ethereum Wallet**
-   - Create a MetaMask wallet
-   - Get test ETH from Sepolia faucet
-   - Export private key (keep it secure!)
-   - Update `PRIVATE_KEY` in `server/.env`
-
-3. **Deploy Smart Contract**
-   ```bash
-   cd server
-   npx hardhat run scripts/deploy.js --network sepolia
-   ```
-   - Copy the deployed contract address
-   - Update `CONTRACT_ADDRESS` in `server/.env`
-
-## 🎯 Usage
-
-### 1. User Registration & Authentication
-- Visit: http://localhost:3000
-- Click "Sign Up" to create an account
-- Choose role: Producer, Distributor, or Consumer
-- Login with your credentials
-
-### 2. Product Management
-- Go to Admin Dashboard
-- Click "Add Product" to create new products
-- Upload certificates and images
-- Track products through different stages
-- Generate and scan QR codes
-
-### 4. Product Tracking
-- Use QR code scanner to track products
-- View complete product history
-- Update product stages and locations
-- Monitor analytics and statistics
-
-## 📱 Available Scripts
-
-### Server Scripts
-```bash
-cd server
-npm start          # Start production server
-npm run dev        # Start development server with nodemon
-npm test           # Run tests
-```
-
-### Client Scripts
-```bash
-cd client
-npm start          # Start development server
-npm run build      # Build for production
-npm test           # Run tests
-npm run eject      # Eject from Create React App
-```
-
-## 🚀 Production Deployment
-
-### Environment Variables for Production
-Update your production `.env` files with:
-- Production MongoDB URI
-- Production domain in OAuth redirect URI
-- Mainnet RPC URLs (if using mainnet)
-- Secure JWT secrets
-
-### Build and Deploy
-```bash
-# Build client for production
-cd client
-npm run build
-
-# The build folder contains the production-ready files
-# Deploy the server and serve the built client files
-```
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-1. **Google Drive "File not found" Error**
-   - Ensure OAuth is properly configured
-   - Check redirect URI matches exactly
-   - Verify Google Drive API is enabled
-
-2. **Database Connection Error**
-   - Check MongoDB URI format
-   - Verify IP whitelist in MongoDB Atlas
-   - Ensure database user has proper permissions
-
-3. **Blockchain Connection Issues**
-   - Verify Infura project ID
-   - Check network configuration
-   - Ensure sufficient ETH balance for transactions
-
-4. **Frontend Won't Load**
-   - Ensure backend server is running on port 5000
-   - Check CORS configuration
-   - Verify proxy setting in client package.json
-
-### Development Mode Features
-
-- **Mock Mode**: App works without Google Drive connection
-- **Enhanced QR Codes**: Base64 encoded QR codes for offline viewing
-- **Fallback Storage**: Local file storage when cloud storage unavailable
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For support and questions:
-- Check the troubleshooting section above
-- Review server and client README files for specific setup instructions
-- Ensure all environment variables are properly configured
-
-## 🌟 Key Technologies
-
-- **Frontend**: React.js, Framer Motion, Three.js, Tailwind CSS
-- **Backend**: Node.js, Express.js, MongoDB, Mongoose
-- **Blockchain**: Ethereum, Hardhat, Ethers.js
-- **Storage**: Cloudinary
-- **Authentication**: JWT, bcrypt
-- **File Processing**: Multer, QR Code generation
+The system is designed for producer-driven product lifecycle tracking, certificate proofing, QR-based verification, and role-based access control. It supports real-world workflows from product registration to post-distribution validation.
 
 ---
 
-**Happy Tracking! 🚀**
+## Table of Contents
+
+1. Executive Summary
+2. Business Problem and Solution
+3. Product Capabilities
+4. System Architecture
+5. End-to-End Request Flow
+6. Technology Stack
+7. Repository Structure (Current)
+8. Environment Variables
+9. Local Development Setup
+10. Runbook and Scripts
+11. API Surface
+12. Security and Reliability
+13. AI Response Formatting Strategy
+14. Deployment Notes
+15. Troubleshooting
+16. Roadmap Recommendations
+
+---
+
+## 1. Executive Summary
+
+Product Traceability Platform enables organizations to:
+
+- Register and manage products with immutable blockchain references.
+- Track lifecycle stages (for example: Harvested, Processed, Packaged, Shipped, Delivered).
+- Generate and distribute QR codes for quick product verification.
+- Store media and certificates in cloud storage.
+- Surface live operational metrics for administrators and producers.
+- Use Gemini-powered AI for product chat, product description generation, and dashboard insight summaries.
+
+This implementation is optimized for fast iteration in development and controlled operation in production.
+
+---
+
+## 2. Business Problem and Solution
+
+### Problem
+
+Supply chains often struggle with fragmented product records, weak authenticity proofs, and delayed operational visibility.
+
+### Solution
+
+This platform unifies traceability data into one system:
+
+- Off-chain operational data is stored in MongoDB.
+- On-chain anchors provide immutable proof references.
+- QR scans bridge physical products and digital records.
+- AI endpoints provide structured, professional analysis for users and admins.
+
+### Expected Outcomes
+
+- Faster verification of product authenticity.
+- Better trust for downstream stakeholders and consumers.
+- Improved operational decision-making through centralized stats and insights.
+
+---
+
+## 3. Product Capabilities
+
+### Core Platform
+
+- Role-based authentication and authorization.
+- Producer-focused product creation and updates.
+- Product profile with origin, manufacturer, stages, and certificate hash.
+- QR generation per product with reusable public URL metadata.
+- Dashboard metrics for scans, updates, and product counts.
+
+### AI Capabilities (Gemini-backed)
+
+- Product Chat: Ask contextual questions against live product data.
+- Description Generator: Produce polished product descriptions from keywords and tone.
+- Dashboard Insights: Generate executive summaries and action points from current view state.
+
+### AI Output Quality Layer
+
+AI responses are generated by Gemini and then normalized at backend level into professional sections and bullet points for consistency.
+
+---
+
+## 4. System Architecture
+
+### 4.1 High-Level Architecture Diagram
+
+```mermaid
+flowchart LR
+    U[Web User] --> C[React Client App]
+    C -->|REST over HTTPS| A[Express API Server]
+
+    A --> M[(MongoDB)]
+    A --> G[Gemini API]
+    A --> CL[Cloudinary Storage]
+    A --> B[Blockchain Utilities]
+    B --> S[(Sepolia Smart Contract)]
+
+    A --> Q[QR Generation Service]
+    Q --> C
+
+    S --> V[On-chain Verification Anchor]
+    M --> V2[Off-chain Operational Records]
+```
+
+### 4.2 Backend Component View
+
+```mermaid
+flowchart TB
+    R[Routes] --> CT[Controllers]
+    CT --> SV[Services]
+    CT --> MD[Models]
+
+    SV --> AIS[AI Services]
+    SV --> STS[Storage Services]
+    SV --> QRS[QR Service]
+    SV --> BCS[Blockchain Utilities]
+
+    AIS --> GEM[Gemini Client]
+    AIS --> RF[Response Formatter]
+
+    MD --> MDB[(MongoDB)]
+    STS --> CLD[Cloudinary]
+```
+
+### 4.3 Architecture in Words
+
+The platform follows a layered architecture where the React client acts as the presentation layer, the Express server acts as the orchestration and policy layer, and MongoDB plus blockchain form the persistence and trust layers.
+
+At runtime, a user action starts in the client application, which sends authenticated REST requests to backend endpoints. The backend routes delegate to controllers, controllers apply validation and authorization, and then call service modules for domain operations such as AI generation, file storage, QR generation, hashing, and blockchain interactions.
+
+Product master data, metadata, lifecycle stages, certificate references, and QR metadata are stored in MongoDB for fast query and dashboard use cases. In parallel, blockchain utilities write and read immutable product anchors on-chain (for example product identity, origin, manufacturer, certification hash, timeline markers) to provide tamper-evident traceability.
+
+For file handling, uploaded assets such as certificates and product images are processed by the storage abstraction layer and persisted in cloud storage. The persisted file references are then attached to product records, enabling both document retrieval and verification workflows in product-detail pages.
+
+For verification UX, the client renders three trust surfaces together: off-chain record details from MongoDB, on-chain data from smart contracts, and certificate/document links from storage. This design gives users both operational context and cryptographic traceability in one view.
+
+For AI capabilities, the backend builds context-aware prompts from live product or dashboard data, calls Gemini APIs, and normalizes model output into professional structured sections before returning responses. This keeps outputs consistent and user-facing quality high while still using real model-generated content.
+
+Security is enforced through token-based authentication, role and permission checks, and route-level controls for sensitive operations. Performance and reliability are supported by API rate limiting, health checks, and separation of concerns across route, controller, service, and utility layers.
+
+### 4.4 Diagrammatic Architecture (Detailed)
+
+```mermaid
+flowchart TB
+    subgraph Client Layer
+        U[Producer / Admin / Consumer]
+        UI[React UI Pages\nAdd Product, Product Detail, QR Scan, Dashboard]
+    end
+
+    subgraph API Layer
+        GW[Express Gateway]
+        AUTH[Auth + RBAC Middleware]
+        ROUTES[Routes]
+        CTRL[Controllers]
+        SVC[Domain Services]
+    end
+
+    subgraph Data and Trust Layer
+        MDB[(MongoDB)]
+        BC[Blockchain Utility]
+        SC[(ProductTraceability Smart Contract)]
+        ST[Storage Service]
+        CL[(Cloudinary)]
+        AI[Gemini API]
+    end
+
+    U --> UI
+    UI --> GW
+    GW --> AUTH --> ROUTES --> CTRL --> SVC
+
+    SVC --> MDB
+    SVC --> BC --> SC
+    SVC --> ST --> CL
+    SVC --> AI
+```
+
+### 4.5 Product Verification Pipeline (Diagram)
+
+```mermaid
+flowchart LR
+    A[Producer submits product + files] --> B[API validates auth, role, request]
+    B --> C[Certificate and image upload]
+    C --> D[Generate certification hash]
+    D --> E[Persist off-chain product record]
+    E --> F[Attempt on-chain product anchor]
+    F --> G[Generate QR code and attach links]
+    G --> H[Product detail page shows\nCert Hash + On-Chain Data + Lifecycle]
+    H --> I[Consumer/Admin verifies via\nProduct ID, Cert Hash, QR, and stages]
+```
+
+### 4.6 Architecture (ASCII View)
+
+```text
+Users --> React Client --> Express API --> Controllers/Services
+                                 |--> MongoDB (product records, stages, refs)
+                                 |--> Cloudinary (certificate/image/QR assets)
+                                 |--> Blockchain (immutable product anchors)
+                                 |--> Gemini API (AI chat, descriptions, insights)
+
+Verification surfaces in UI:
+1) Off-chain product record
+2) On-chain product data
+3) Certificate and QR references
+```
+
+---
+
+## 5. End-to-End Request Flow
+
+### 5.1 Product Registration Flow
+
+```mermaid
+sequenceDiagram
+    participant UI as Client UI
+    participant API as Express API
+    participant DB as MongoDB
+    participant ST as Storage Service
+    participant BC as Blockchain Utility
+
+    UI->>API: POST /api/add-product (multipart form)
+    API->>ST: Upload cert/image
+    ST-->>API: Public URLs + file metadata
+    API->>BC: Create blockchain reference/hash
+    BC-->>API: On-chain reference/hash
+    API->>DB: Save product record
+    DB-->>API: Saved product document
+    API-->>UI: Success response with product details
+```
+
+### 5.2 AI Insight Flow
+
+```mermaid
+sequenceDiagram
+    participant UI as Client UI
+    participant API as AI Controller
+    participant AIS as AI Service Layer
+    participant GEM as Gemini API
+
+    UI->>API: POST /api/ai/chat or /generate-description or /dashboard-insights
+    API->>AIS: Build prompt with validated context
+    AIS->>GEM: generateContent request
+    GEM-->>AIS: Raw model output
+    AIS->>AIS: Normalize into professional structured output
+    AIS-->>API: Formatted response + model metadata
+    API-->>UI: JSON response
+```
+
+---
+
+## 6. Technology Stack
+
+### Frontend
+
+- React 18
+- React Router 6
+- Tailwind CSS
+- Framer Motion, GSAP, React Spring
+- html5-qrcode and jsQR
+- React App Rewired
+
+### Backend
+
+- Node.js + Express 4
+- MongoDB + Mongoose 8
+- JWT authentication
+- Helmet, CORS, rate limiting
+- Multer for file uploads
+- Cloudinary integration
+- QR code generation
+
+### Blockchain
+
+- Solidity smart contract(s)
+- Hardhat toolchain
+- Ethers.js
+- Sepolia network integration
+
+### AI
+
+- Gemini generateContent API
+- Gemini model preference:
+  - gemini-2.5-flash-lite
+  - gemini-2.5-flash
+- Backend response formatter for consistent enterprise-style output
+
+---
+
+## 7. Repository Structure (Current)
+
+The structure below reflects the current workspace organization.
+
+```text
+product-tracibility/
+├── package.json
+├── README.md
+├── artifacts/
+│   └── contracts/
+│       └── ProductTraceability.sol/
+├── cache/
+├── contracts/
+│   ├── ProductTraceability.sol
+│   └── ProductTraceability.abi.json
+├── scripts/
+│   ├── deploy.js
+│   ├── fix-all-errors.js
+│   ├── restart-clean.js
+│   ├── setup-mongodb-quick.js
+│   └── start-mongodb.js
+├── client/
+│   ├── package.json
+│   ├── config-overrides.js
+│   ├── postcss.config.js
+│   ├── tailwind.config.js
+│   ├── public/
+│   ├── build/
+│   └── src/
+│       ├── App.js
+│       ├── index.js
+│       ├── index.css
+│       ├── setupProxy.js
+│       ├── setupProxy_manual.js
+│       ├── components/
+│       │   ├── APIStatusIndicator.js
+│       │   ├── BackendConnectionStatus.js
+│       │   ├── CertificateViewer.js
+│       │   ├── ProductSearch.js
+│       │   ├── PerformanceMonitor.js
+│       │   ├── Navbar.js
+│       │   ├── Layout.js
+│       │   ├── ErrorBoundary.js
+│       │   ├── OptimizedImage.js
+│       │   ├── 3D/
+│       │   └── UI/
+│       ├── hooks/
+│       │   └── useRealTimeStats.js
+│       ├── pages/
+│       │   ├── Home.js
+│       │   ├── Landing.js
+│       │   ├── AddProduct.js
+│       │   ├── UpdateProduct.js
+│       │   ├── UpdateProductNew.js
+│       │   ├── ProductDetail.js
+│       │   ├── QRScan.js
+│       │   ├── AdminDashboard.js
+│       │   ├── UserProfile.js
+│       │   ├── AuthLogin.js
+│       │   └── AuthRegister.js
+│       ├── styles/
+│       └── utils/
+│           ├── apiConfig.js
+│           ├── enhancedApiConfig.js
+│           ├── apiTest.js
+│           ├── lazyLoading.js
+│           ├── performanceOptimizations.js
+│           ├── reactUtils.js
+│           └── webSocketManager.js
+└── server/
+    ├── package.json
+    ├── README.md
+    ├── index.js
+    ├── seedDatabase.js
+    ├── middleware/
+    │   ├── auth.js
+    │   └── enhancedAuth.js
+    ├── models/
+    │   ├── Product.js
+    │   ├── User.js
+    │   └── controllers/
+    │       ├── authController.js
+    │       ├── productController.js
+    │       ├── profileController.js
+    │       └── statisticsController.js
+    ├── routes/
+    │   ├── authRoutes.js
+    │   ├── productRoutes.js
+    │   ├── profileRoutes.js
+    │   ├── statisticsRoutes.js
+    │   └── aiRoutes.js
+    ├── services/
+    │   ├── cloudinaryService.js
+    │   ├── storageFactory.js
+    │   └── ai/
+    │       ├── geminiClient.js
+    │       ├── responseFormatter.js
+    │       ├── chatService.js
+    │       ├── descriptionService.js
+    │       └── dashboardService.js
+    ├── qr/
+    │   └── generateQR.js
+    └── utils/
+        ├── blockchain.js
+        ├── hash.js
+        └── role.js
+```
+
+---
+
+## 8. Environment Variables
+
+### 8.1 Server Environment
+
+Create server/.env and configure:
+
+```env
+MONGODB_URI=...
+JWT_SECRET=...
+PORT=5000
+NODE_ENV=development
+
+# blockchain
+CONTRACT_ADDRESS=...
+SEPOLIA_RPC_URL=...
+# preferred key name
+BLOCKCHAIN_PRIVATE_KEY=...
+# optional fallback key name used by older setups
+PRIVATE_KEY=...
+
+# storage
+STORAGE_TYPE=cloudinary
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+Optional but implemented:
+
+```env
+# admin bootstrap
+ADMIN_BOOTSTRAP_ENABLED=true
+ADMIN_BOOTSTRAP_EMAIL=admin@producttraceability.local
+ADMIN_BOOTSTRAP_PASSWORD=...
+ADMIN_BOOTSTRAP_SECRET=... # min 32 chars
+ADMIN_BOOTSTRAP_ROTATE_PASSWORD=false
+ALLOW_ADMIN_REGISTRATION=false
+
+# AI
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_TIMEOUT_MS=15000
+AI_RATE_LIMIT_WINDOW_MS=900000
+AI_RATE_LIMIT_MAX=20
+
+# auth logging (disabled by default)
+AUTH_DEBUG_LOGS=false
+```
+
+## Run Locally
+
+Backend:
+
+```bash
+cd server
+npm run dev
+```
+
+Frontend:
+
+```bash
+cd client
+npm start
+```
+
+Production backend mode (local check):
+
+```bash
+cd server
+npm run prod
+```
+
+Client build:
+
+```bash
+cd client
+npm run build
+```
+
+## Active Backend Routes
+
+Base routes mounted from `server/index.js`:
+
+- `/api` -> product routes
+- `/api/auth` -> auth routes
+- `/api/profile` -> profile routes
+- `/api/statistics` -> statistics routes
+- `/api/ai` -> AI routes
+- `/api/admin` -> admin routes
+
+Health and utility:
+
+- `GET /api/health`
+- `GET /api/db-test`
+- `GET /api/statistics/test`
+- `GET /api/statistics/stats` (debug summary)
+- `GET /product/:id` (anonymous deep-link fallback for QR)
+
+Authentication:
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+
+Products:
+
+- `POST /api/add-product` (producer + permission)
+- `POST /api/update-product/:id` (producer/admin + permission; ownership rules enforced in controller)
+- `GET /api/product/:id`
+- `GET /api/products`
+- `GET /api/my-products`
+- `GET /api/recent-products`
+- `GET /api/product/by-cert-hash/:certHash`
+- `GET /api/product/:id/qr`
+
+Profile:
+
+- `GET /api/profile`
+- `PUT /api/profile`
+- `GET /api/profile/stats`
+
+Statistics:
+
+- `GET /api/statistics/stats`
+- `GET /api/statistics/dashboard`
+- `POST /api/statistics/scan/:productId`
+
+AI:
+
+- `GET /api/ai/health`
+- `POST /api/ai/chat`
+- `POST /api/ai/generate-description`
+- `POST /api/ai/dashboard-insights`
+
+Admin:
+
+- `GET /api/admin/overview`
+- `GET /api/admin/products/flagged`
+- `GET /api/admin/product/:id`
+- `POST /api/admin/product/:id/action`
+
+## Pagination Support (Backward-Compatible)
+
+Implemented for heavy list endpoints:
+
+- `GET /api/products`
+- `GET /api/my-products`
+
+Behavior:
+
+- Without query params: returns legacy array response.
+- With `page` or `limit`: returns object with `data` and `pagination`.
+
+Example:
+
+```http
+GET /api/products?page=1&limit=20
+```
+
+## Security and Auth Notes
+
+- JWT required for protected routes.
+- Admin bootstrap is env-driven and runs after Mongo connection.
+- Public admin registration is blocked unless explicitly enabled.
+- Secondary auth checks are implemented for sensitive operations.
+
+## QR and Transparency Flow
+
+Current flow:
+
+1. Product created or updated
+2. Blockchain tx stored (`blockchainTx`) and event records maintained (`blockchainEvents`)
+3. QR generated via `/api/product/:id/qr`
+4. QR points to `/product/:id`
+5. Backend deep-link serves client app (or redirects to `CLIENT_APP_URL` fallback)
+
+## Smoke Testing
+
+Ledger transparency smoke script:
+
+```bash
+cd server
+npm run test:smoke:ledger
+```
+
+Required env for smoke script:
+
+```env
+SMOKE_BASE_URL=http://localhost:5000
+LEDGER_SMOKE_EMAIL=...
+LEDGER_SMOKE_PASSWORD=...
+LEDGER_SMOKE_PRODUCT_ID=...
+LEDGER_SMOKE_RUN_UPDATE=false
+```
+
+## Current Known Implementation Notes
+
+- `server/nodemon.json` is configured to avoid restart storms by ignoring non-server paths.
+- API latency logging is enabled for `/api/*` routes in backend runtime logs.
+- AI/admin modules and verification services are restored and load correctly.
+
+## Root Scripts (Blockchain/Deployment Helpers)
+
+From repository root:
+
+```bash
+npm run deploy-contract
+npm run verify-contract
+npm run test-blockchain
+npm run validate-deployment
+npm run setup-deployment
+```
+
+### Server Scripts
+
+```bash
+cd server
+npm start
+npm run dev
+npm run prod
+npm run test:ai
+npm run analyze
+npm run monitor
+npm run cluster
+```
+
+### Client Scripts
+
+```bash
+cd client
+npm start
+npm run build
+npm run build:enhanced
+npm run build:prod
+npm run preview
+npm run lighthouse
+```
+
+---
+
+## 11. API Surface
+
+### Authentication
+
+- POST /api/auth/register
+- POST /api/auth/login
+
+### Products
+
+- POST /api/add-product
+- POST /api/update-product/:id
+- GET /api/product/:id
+- GET /api/products
+- GET /api/my-products
+- GET /api/recent-products
+- GET /api/product/by-cert-hash/:certHash
+- GET /api/product/:id/qr
+
+### Profile
+
+- GET /api/profile
+- PUT /api/profile
+- GET /api/profile/stats
+
+### Statistics
+
+- GET /api/statistics/test
+- GET /api/statistics/stats
+- GET /api/statistics/stats (route module protected endpoint)
+- GET /api/statistics/dashboard
+- POST /api/statistics/scan/:productId
+
+### AI
+
+- GET /api/ai/health
+- POST /api/ai/chat
+- POST /api/ai/generate-description
+- POST /api/ai/dashboard-insights
+
+All AI endpoints require auth and are rate-limited.
+
+---
+
+## 12. Security and Reliability
+
+### Security Controls
+
+- JWT-based auth middleware.
+- Role and permission checks for sensitive operations.
+- Helmet headers and controlled CORS policy.
+- Request size limits and upload size caps.
+- Rate limiting in production and dedicated AI limiter.
+
+### Reliability Controls
+
+- Mongo connection diagnostics via /api/db-test.
+- Fallback-safe startup flow with connection status logging.
+- API health endpoint for service checks.
+- Retry-aware client-side API helper.
+
+---
+
+## 13. AI Response Formatting Strategy
+
+AI quality in this platform follows a two-layer strategy:
+
+1. Prompt Contract Layer
+- The backend prompts Gemini to return strict JSON schema for each AI capability.
+
+2. Output Normalization Layer
+- Backend formatter converts model output to professional, readable sections.
+- Outputs are normalized into clear headings and bullet points.
+- This avoids inconsistent raw markdown and improves UI readability.
+
+Result: responses remain Gemini-generated while presentation is enterprise-ready.
+
+---
+
+## 14. Deployment Notes
+
+
+### Production Checklist
+
+- Set NODE_ENV=production.
+- Use strong JWT secret and rotated credentials.
+- Restrict CORS to official frontend domains.
+- Set stable Gemini model and quotas.
+- Add observability (logs, uptime checks, alerts).
+
+---
+
+## 15. Troubleshooting
+
+### API Not Reachable
+
+- Confirm backend is running on expected port.
+- Confirm proxy/base URL configuration from client.
+- Check CORS policy for current frontend origin.
+
+### Database Issues
+
+- Validate MONGODB_URI and network allowlist.
+- Use /api/db-test for diagnostics.
+
+### AI Endpoint Failures
+
+- Verify GEMINI_API_KEY and model availability.
+- Check AI rate limit env values.
+- Inspect server logs for model-specific quota errors.
+
+### Upload Problems
+
+- Verify Cloudinary keys.
+- Check max upload size and content type.
+
+---
+

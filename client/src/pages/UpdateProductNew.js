@@ -21,7 +21,8 @@ import {
   FaRefresh,
   FaClock,
   FaCheckCircle,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaLock
 } from 'react-icons/fa';
 import ParticleBackground from '../components/UI/ParticleBackground';
 import GlowingButton from '../components/UI/GlowingButton';
@@ -91,6 +92,7 @@ function UpdateProduct() {
   
   // Stage history
   const [stageHistory, setStageHistory] = useState([]);
+  const [password, setPassword] = useState('');
   
   const navigate = useNavigate();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -202,6 +204,11 @@ function UpdateProduct() {
       return;
     }
 
+    if (!password.trim()) {
+      toast.error('Password confirmation is required for secure updates');
+      return;
+    }
+
     setMessage('');
     setLoading(true);
     setIsSuccess(false);
@@ -212,10 +219,36 @@ function UpdateProduct() {
       // Create FormData for file uploads
       const formData = new FormData();
       formData.append('stage', stage);
-      
+      formData.append('password', password.trim());
+
       if (uploadFiles.certificate) {
-        formData.append('certFile', uploadFiles.certificate);
+        const stageDocumentsMeta = [
+          {
+            stage,
+            documentType: 'certificate',
+            title: `${stage} certification evidence`,
+            standardCode: '',
+            documentReference: `${productId}-${stage}-CERT`,
+            issuingAuthority: 'information not available',
+            issuerCountry: '',
+            complianceScope: '',
+            documentVersion: '',
+            certificateNumber: '',
+            batchNumber: '',
+            lotNumber: '',
+            issueDate: '',
+            expiryDate: '',
+            notes: 'Uploaded from legacy update flow.',
+            verificationNotes: '',
+            requiresVerification: true,
+            fileIndex: 0
+          }
+        ];
+
+        formData.append('stageDocumentsMeta', JSON.stringify(stageDocumentsMeta));
+        formData.append('stageDocumentFiles', uploadFiles.certificate);
       }
+
       if (uploadFiles.image) {
         formData.append('imageFile', uploadFiles.image);
       }
@@ -231,7 +264,7 @@ function UpdateProduct() {
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update product');
+        throw new Error(errorData.message || errorData.error || 'Failed to update product');
       }
       
       const result = await response.json();
@@ -247,6 +280,7 @@ function UpdateProduct() {
       setTimeout(() => {
         setProductId('');
         setStage('');
+        setPassword('');
         setMessage('');
         setIsSuccess(false);
         setSelectedProduct(null);
@@ -593,6 +627,27 @@ function UpdateProduct() {
                         </div>
                       </motion.div>
                     )}
+
+                    <div className="space-y-2">
+                      <label className="block text-lg font-semibold text-gray-700 dark:text-gray-300">
+                        Password Confirmation
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <FaLock className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Enter your account password"
+                          className="w-full pl-12 pr-4 py-4 bg-white/70 dark:bg-gray-700/70 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent backdrop-blur-sm transition-all duration-200 text-lg"
+                          required
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Required for secondary authentication before stage updates.</p>
+                    </div>
+
                     {/* Success/Error Messages */}
                     <AnimatePresence>
                       {message && (
@@ -627,7 +682,7 @@ function UpdateProduct() {
                     <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 pt-6">
                       <GlowingButton
                         type="submit"
-                        disabled={loading || !productId || !stage}
+                        disabled={loading || !productId || !stage || !password.trim()}
                         className="flex-1 py-4 font-semibold text-lg"
                         glowColor="green"
                       >

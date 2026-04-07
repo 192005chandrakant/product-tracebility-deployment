@@ -60,6 +60,7 @@ export const LazyProductDetail = createLazyComponent(() => import('../pages/Prod
 export const LazyAdminDashboard = createLazyComponent(() => import('../pages/AdminDashboard'), 'AdminDashboard');
 export const LazyAddProduct = createLazyComponent(() => import('../pages/AddProduct'), 'AddProduct');
 export const LazyUpdateProduct = createLazyComponent(() => import('../pages/UpdateProduct'), 'UpdateProduct');
+export const LazyAIConsole = createLazyComponent(() => import('../pages/AIConsole'), 'AIConsole');
 
 // Enhanced loading fallback component with better UX
 export const EnhancedLoadingFallback = () => (

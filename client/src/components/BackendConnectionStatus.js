@@ -18,10 +18,9 @@ const BackendConnectionStatus = ({ showDetails = false }) => {
     
     try {
       // Test basic connectivity
-      const response = await fetch(buildAPIURL('/test'), {
+      const response = await fetch(buildAPIURL('/api/health'), {
         method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        timeout: 10000
+        headers: { 'Accept': 'application/json' }
       });
       
       let productCount = 0;

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const statisticsController = require('../models/controllers/statisticsController');
-const { auth } = require('../middleware/auth');
+const { auth } = require('../middleware/enhancedAuth');
 
 console.log('📊 Statistics routes loaded');
 

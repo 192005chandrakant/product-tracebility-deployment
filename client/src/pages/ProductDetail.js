@@ -12,6 +12,15 @@ import AnimatedCard from '../components/UI/AnimatedCard';
 import GlowingButton from '../components/UI/GlowingButton';
 import ParticleBackground from '../components/UI/ParticleBackground';
 import { getAPIBaseURL, buildAPIURL } from '../utils/apiConfig';
+import AIProductChatPanel from '../components/AIProductChatPanel';
+import { isAIEnabled } from '../utils/aiApi';
+import VerificationTimeline from '../components/VerificationTimeline';
+import ProductStageEventsSection from '../components/ProductStageEventsSection';
+import StageDocumentsSection from '../components/StageDocumentsSection';
+import BlockchainTransparencySection from '../components/BlockchainTransparencySection';
+import ProductVerificationStatusSection from '../components/ProductVerificationStatusSection';
+import AIStructuredResponse from '../components/AIStructuredResponse';
+import VerificationResultPanel from '../components/VerificationResultPanel';
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/600x300?text=No+Image';
 const STATUS_OPTIONS = [
@@ -142,6 +151,7 @@ function ProductDetail() {
   const [qrCode, setQrCode] = useState(null);
   const [loadingQR, setLoadingQR] = useState(false);
   const [txHash, setTxHash] = useState(null);
+  const enableAI = isAIEnabled();
 
   // Function to fetch QR code
   const fetchQrCode = async () => {
@@ -276,15 +286,23 @@ function ProductDetail() {
 
   const handleStatusUpdate = async () => {
     if (!newStatus) return;
+    if (!confirmPassword) {
+      toast.error('Password confirmation is required');
+      return;
+    }
+
     setStatusUpdating(true);
     try {
+      const formData = new FormData();
+      formData.append('stage', newStatus);
+      formData.append('password', confirmPassword);
+
       const res = await fetch(buildAPIURL(`/api/update-product/${product.productId}`), {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ stage: newStatus }),
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update status');
@@ -298,11 +316,20 @@ function ProductDetail() {
       setProduct(prevProduct => ({ 
         ...prevProduct, 
         stages: [...(prevProduct.stages || []), newStatus],
-        blockchainTx: data.blockchainTx 
+        stageEvents: data.stageEvent
+          ? [...(prevProduct.stageEvents || []), data.stageEvent]
+          : (prevProduct.stageEvents || []),
+        blockchainTx: data.blockchainTx,
+        blockchainStatus: data.blockchainEvent?.status || prevProduct.blockchainStatus,
+        blockchainUpdatedAt: data.blockchainEvent?.recordedAt || prevProduct.blockchainUpdatedAt,
+        blockchainEvents: data.blockchainEvent
+          ? [...(prevProduct.blockchainEvents || []), data.blockchainEvent]
+          : (prevProduct.blockchainEvents || [])
       }));
       
       toast.success('Status updated successfully!');
       setNewStatus('');
+      setConfirmPassword('');
     } catch (e) {
       console.error('Status update error:', e);
       toast.error(e.message);
@@ -407,6 +434,31 @@ function ProductDetail() {
             <div className="text-gray-700 dark:text-gray-300 text-sm sm:text-base"><strong>Origin:</strong> {product.origin}</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm sm:text-base"><strong>Manufacturer:</strong> {product.manufacturer}</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm sm:text-base overflow-x-auto"><strong>Cert Hash:</strong> <span className="break-all">{product.blockchainRefHash}</span></div>
+            <div className="col-span-1 sm:col-span-2 flex flex-wrap items-center gap-3">
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${product.verification?.status === 'allowed' ? 'bg-green-100 text-green-700' : product.verification?.status === 'blocked' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                Verification: {product.verification?.status || 'flagged'}
+              </span>
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                Review State: {product.verification?.reviewState || 'pending_review'}
+              </span>
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${Number(product.verification?.riskScore || 0) >= 75 ? 'bg-red-100 text-red-700' : Number(product.verification?.riskScore || 0) >= 40 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                Risk Score: {product.verification?.riskScore ?? 'N/A'}
+              </span>
+            </div>
+            <div className="col-span-1 sm:col-span-2">
+              <VerificationResultPanel
+                verification={product.verification}
+                title="Verification Summary"
+              />
+            </div>
+
+            <ProductVerificationStatusSection product={product} />
+
+            {product.verification && (
+              <div className="col-span-1 sm:col-span-2 mt-2">
+                <VerificationTimeline product={product} verification={product.verification} />
+              </div>
+            )}
             {txHash && (
               <div className="col-span-1 sm:col-span-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base overflow-x-auto bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-200 dark:border-blue-800 mt-2">
                 <strong>Last Transaction Hash:</strong> 
@@ -427,7 +479,16 @@ function ProductDetail() {
                 </div>
               </div>
             )}
-            {product.description && <div className="col-span-1 sm:col-span-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base"><strong>Description:</strong> {product.description}</div>}
+            {product.description && (
+              <div className="col-span-1 sm:col-span-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base">
+                <AIStructuredResponse
+                  content={product.description}
+                  fallbackTitle="Description"
+                  titleClassName="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300"
+                  bodyClassName="text-sm leading-6 text-gray-700 dark:text-gray-200"
+                />
+              </div>
+            )}
             
             {/* Use the new CertificateViewer component */}
             <CertificateViewer product={product} getDownloadUrl={getDownloadUrl} />
@@ -531,6 +592,12 @@ function ProductDetail() {
             ))}
           </VerticalTimeline>
 
+          <ProductStageEventsSection stageEvents={product.stageEvents} />
+
+          <StageDocumentsSection stageEvents={product.stageEvents} />
+
+          <BlockchainTransparencySection product={product} user={user} />
+
           {product.blockchainTx && (
             <div className="mt-6 p-4 bg-gray-100 dark:bg-slate-700 rounded-lg text-xs sm:text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-600 overflow-x-auto">
               <strong>Blockchain Transaction:</strong> <a href={`https://sepolia.etherscan.io/tx/${product.blockchainTx}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">{product.blockchainTx}</a>
@@ -551,6 +618,19 @@ function ProductDetail() {
 </div>
             </div>
           )}
+
+          {product.verification?.pipeline && (
+            <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+              <h4 className="font-semibold mb-2 text-lg text-gray-900 dark:text-gray-100">Verification Pipeline</h4>
+              <pre className="text-xs whitespace-pre-wrap break-words overflow-x-auto text-gray-700 dark:text-gray-300">{JSON.stringify(product.verification.pipeline, null, 2)}</pre>
+            </div>
+          )}
+
+          {enableAI ? (
+            <div className="mt-6">
+              <AIProductChatPanel productId={product.productId} />
+            </div>
+          ) : null}
         </div>
       </motion.div>
     </div>

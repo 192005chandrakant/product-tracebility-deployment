@@ -31,4 +31,8 @@ UserSchema.pre('save', function(next) {
   next();
 });
 
+// Query performance indexes for auth and admin-facing lookups.
+UserSchema.index({ role: 1, isActive: 1 });
+UserSchema.index({ lastLogin: -1 });
+
 module.exports = mongoose.model('User', UserSchema); 

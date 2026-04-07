@@ -13,6 +13,7 @@ import {
   LazyAdminDashboard, 
   LazyAddProduct, 
   LazyUpdateProduct, 
+  LazyAIConsole,
   LazyLanding,
   LoadingFallback 
 } from './utils/lazyLoading';
@@ -143,8 +144,9 @@ function App() {
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="/admin/dashboard" element={<PrivateRoute allowedRoles={['admin','producer']}><LazyAdminDashboard /></PrivateRoute>} />
               <Route path="/admin/add" element={<PrivateRoute allowedRoles={['producer']}><LazyAddProduct /></PrivateRoute>} />
-              <Route path="/admin/update" element={<PrivateRoute allowedRoles={['producer']}><LazyUpdateProduct /></PrivateRoute>} />
-              <Route path="/admin/update/:id" element={<PrivateRoute allowedRoles={['producer']}><LazyUpdateProduct /></PrivateRoute>} />
+              <Route path="/admin/update" element={<PrivateRoute allowedRoles={['producer', 'admin']}><LazyUpdateProduct /></PrivateRoute>} />
+              <Route path="/admin/update/:id" element={<PrivateRoute allowedRoles={['producer', 'admin']}><LazyUpdateProduct /></PrivateRoute>} />
+              <Route path="/ai" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer', 'customer', 'user']}><LazyAIConsole /></PrivateRoute>} />
               <Route path="/auth/login" element={<LazyAuthLogin />} />
               <Route path="/auth/register" element={<LazyAuthRegister />} />
             </Routes>

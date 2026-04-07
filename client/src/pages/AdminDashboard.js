@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import { 
   FaEdit, 
   FaBoxOpen, 
@@ -12,7 +13,16 @@ import {
   FaSync,
   FaArrowLeft,
   FaCaretDown,
-  FaChartBar
+  FaChartBar,
+  FaShieldAlt,
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaTimesCircle,
+  FaTrash,
+  FaClipboardCheck,
+  FaBell,
+  FaSearchPlus,
+  FaHistory
 } from 'react-icons/fa';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import GlowingButton from '../components/UI/GlowingButton';
@@ -20,8 +30,16 @@ import SkeletonLoader from '../components/UI/SkeletonLoader';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
 import useRealTimeStats from '../hooks/useRealTimeStats';
 import { buildAPIURL } from '../utils/apiConfig';
+import AIInsightsPanel from '../components/AIInsightsPanel';
+import VerificationTimeline from '../components/VerificationTimeline';
+import VerificationResultPanel from '../components/VerificationResultPanel';
+import { getAdminOverview, getFlaggedProducts, getAdminActionLogs, getAdminProduct, takeAdminAction } from '../utils/adminApi';
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/400x200?text=No+Image';
+
+function isDatabaseProduct(product) {
+  return Boolean(product && typeof product === 'object' && product._id);
+}
 
 function isValidImage(url) {
   // If it's an object with publicUrl (Cloudinary or other storage)
@@ -49,6 +67,59 @@ function getFullUrl(url) {
   return PLACEHOLDER_IMG;
 }
 
+function getLatestDocumentFile(product) {
+  if (!product) {
+    return null;
+  }
+
+  const stageEvents = Array.isArray(product.stageEvents) ? product.stageEvents : [];
+  for (let index = stageEvents.length - 1; index >= 0; index -= 1) {
+    const event = stageEvents[index];
+    const docs = Array.isArray(event?.documents) ? event.documents : [];
+    for (let docIndex = docs.length - 1; docIndex >= 0; docIndex -= 1) {
+      const file = docs[docIndex]?.file;
+      if (file && (file.publicUrl || file.downloadUrl || file.shareUrl || file.url)) {
+        return file;
+      }
+    }
+  }
+
+  return product.certFile || null;
+}
+
+function getVerificationMeta(verification) {
+  const status = verification?.status || 'flagged';
+  const riskScore = Number(verification?.riskScore || 0);
+
+  if (status === 'allowed') {
+    return {
+      label: 'Verified',
+      statusClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      reviewClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      riskClass: 'bg-emerald-500',
+      riskScore
+    };
+  }
+
+  if (status === 'blocked') {
+    return {
+      label: 'Blocked',
+      statusClass: 'bg-rose-100 text-rose-700 border-rose-200',
+      reviewClass: 'bg-rose-50 text-rose-700 border-rose-200',
+      riskClass: 'bg-rose-500',
+      riskScore
+    };
+  }
+
+  return {
+    label: 'Flagged',
+    statusClass: 'bg-amber-100 text-amber-700 border-amber-200',
+    reviewClass: 'bg-amber-50 text-amber-700 border-amber-200',
+    riskClass: 'bg-amber-500',
+    riskScore
+  };
+}
+
 function AdminDashboard() {
   // Real-time statistics
   const { statistics, loading: statsLoading, refreshStats } = useRealTimeStats(8000);
@@ -61,12 +132,41 @@ function AdminDashboard() {
   const [sortBy, setSortBy] = useState('name');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('my-products'); // 'my-products' or 'all-products'
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminOverview, setAdminOverview] = useState(null);
+  const [flaggedProducts, setFlaggedProducts] = useState([]);
+  const [moderationLoading, setModerationLoading] = useState(false);
+  const [selectedReviewProduct, setSelectedReviewProduct] = useState(null);
+  const [selectedReviewLoading, setSelectedReviewLoading] = useState(false);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [moderationFilter, setModerationFilter] = useState('all');
+  const [adminActionLogs, setAdminActionLogs] = useState([]);
+  const reviewSelectionCounterRef = useRef(0);
   const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setIsAdmin(decoded.role === 'admin');
+        if (decoded.role === 'admin') {
+          setActiveTab('all-products');
+        }
+      } catch (error) {
+        setIsAdmin(false);
+      }
+    }
+
     fetchMyProducts();
     fetchAllProducts();
   }, []);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadAdminData();
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     filterAndSortProducts();
@@ -87,9 +187,15 @@ function AdminDashboard() {
       
       if (res.ok) {
         const data = await res.json();
-        console.log('🔍 My products data received:', data);
-        console.log('🔍 My products count:', data.length);
-        setMyProducts(data);
+        const normalizedProducts = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+        const dbProducts = normalizedProducts.filter(isDatabaseProduct);
+        console.log('🔍 My products data received:', dbProducts);
+        console.log('🔍 My products count:', dbProducts.length);
+        setMyProducts(dbProducts);
       } else {
         const errorText = await res.text();
         console.error('❌ Failed to fetch my products:', res.status, errorText);
@@ -103,11 +209,95 @@ function AdminDashboard() {
     try {
       const res = await fetch(buildAPIURL('/api/products'));
       const data = await res.json();
-      setAllProducts(data);
+      const normalizedProducts = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+          ? data.data
+          : [];
+      const dbProducts = normalizedProducts.filter(isDatabaseProduct);
+      setAllProducts(dbProducts);
     } catch (error) {
       console.error('Error fetching all products:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAdminData = async () => {
+    try {
+      setModerationLoading(true);
+      const [overviewResult, flaggedResult, actionLogsResult] = await Promise.allSettled([
+        getAdminOverview(),
+        getFlaggedProducts(),
+        getAdminActionLogs(20)
+      ]);
+
+      if (overviewResult.status === 'fulfilled' && overviewResult.value?.success) {
+        setAdminOverview(overviewResult.value.data);
+      }
+
+      if (flaggedResult.status === 'fulfilled' && flaggedResult.value?.success) {
+        setFlaggedProducts(flaggedResult.value.data || []);
+      }
+
+      if (actionLogsResult.status === 'fulfilled' && actionLogsResult.value?.success) {
+        setAdminActionLogs(actionLogsResult.value.data || []);
+      }
+    } catch (error) {
+      console.error('Admin data load failed:', error);
+    } finally {
+      setModerationLoading(false);
+    }
+  };
+
+  const handleAdminAction = async (productId, action) => {
+    const reason = window.prompt(`Enter reason for ${action} action (optional):`, '') || '';
+    try {
+      setReviewBusy(true);
+      const response = await takeAdminAction(productId, action, reason);
+      if (response?.success) {
+        await loadAdminData();
+        await fetchAllProducts();
+        await fetchMyProducts();
+        setSelectedReviewProduct(null);
+      }
+    } catch (error) {
+      console.error('Admin action failed:', error);
+    } finally {
+      setReviewBusy(false);
+    }
+  };
+
+  const closeReviewPanel = () => {
+    setSelectedReviewProduct(null);
+  };
+
+  const handleSelectReviewProduct = async (product) => {
+    if (!product || !product.productId) {
+      return;
+    }
+
+    const selectionToken = reviewSelectionCounterRef.current + 1;
+    reviewSelectionCounterRef.current = selectionToken;
+
+    setSelectedReviewProduct(product);
+    setSelectedReviewLoading(true);
+
+    try {
+      const response = await getAdminProduct(product.productId);
+      const detailedProduct = response && response.success && response.data
+        ? response.data
+        : null;
+
+      if (selectionToken === reviewSelectionCounterRef.current && detailedProduct) {
+        setSelectedReviewProduct(detailedProduct);
+      }
+    } catch (error) {
+      console.error('Failed to load admin product detail:', error);
+    } finally {
+      if (selectionToken === reviewSelectionCounterRef.current) {
+        setSelectedReviewLoading(false);
+      }
     }
   };
 
@@ -165,6 +355,74 @@ function AdminDashboard() {
     return stageColors[stage] || 'from-gray-500 to-gray-600';
   };
 
+  const getRiskColor = (score) => {
+    if (score >= 75) return 'bg-red-100 text-red-700 border-red-200';
+    if (score >= 40) return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+    return 'bg-green-100 text-green-700 border-green-200';
+  };
+
+  const moderationStats = useMemo(() => {
+    const queue = flaggedProducts || [];
+    const totalRisk = queue.reduce((sum, product) => sum + Number(product?.verification?.riskScore || 0), 0);
+
+    return {
+      flagged: queue.length,
+      blocked: queue.filter((product) => product?.verification?.status === 'blocked').length,
+      verified: queue.filter((product) => product?.verification?.status === 'allowed').length,
+      pending: queue.filter((product) => (product?.verification?.reviewState || 'pending_review') === 'pending_review').length,
+      averageRisk: queue.length ? Math.round(totalRisk / queue.length) : 0
+    };
+  }, [flaggedProducts]);
+
+  const moderationBreakdown = useMemo(() => {
+    const queue = flaggedProducts || [];
+    return queue.reduce((accumulator, product) => {
+      const status = product?.verification?.status || 'flagged';
+      if (status === 'allowed') {
+        accumulator.verified += 1;
+      } else if (status === 'blocked') {
+        accumulator.blocked += 1;
+      } else {
+        accumulator.flagged += 1;
+      }
+      return accumulator;
+    }, { verified: 0, flagged: 0, blocked: 0 });
+  }, [flaggedProducts]);
+
+  const reviewSummary = selectedReviewProduct ? getVerificationMeta(selectedReviewProduct.verification) : null;
+
+  const filteredModerationQueue = useMemo(() => {
+    const queue = flaggedProducts || [];
+
+    if (moderationFilter === 'all') {
+      return queue;
+    }
+
+    return queue.filter((product) => {
+      const status = product?.verification?.status || 'flagged';
+      if (moderationFilter === 'verified') return status === 'allowed';
+      if (moderationFilter === 'blocked') return status === 'blocked';
+      return status === 'flagged';
+    });
+  }, [flaggedProducts, moderationFilter]);
+
+  useEffect(() => {
+    if (!filteredModerationQueue.length) {
+      if (selectedReviewProduct) {
+        setSelectedReviewProduct(null);
+      }
+      return;
+    }
+
+    const stillVisible = selectedReviewProduct
+      ? filteredModerationQueue.some((product) => product.productId === selectedReviewProduct.productId)
+      : false;
+
+    if (!stillVisible) {
+      handleSelectReviewProduct(filteredModerationQueue[0]);
+    }
+  }, [filteredModerationQueue, selectedReviewProduct]);
+
   // Get current products based on active tab
   const currentProducts = activeTab === 'my-products' ? myProducts : allProducts;
   
@@ -192,6 +450,33 @@ function AdminDashboard() {
       </div>
     );
   }
+
+  const adminCards = [
+    {
+      label: 'Total Products',
+      value: adminOverview?.totalProducts ?? allProducts.length,
+      icon: FaBoxOpen,
+      color: 'from-blue-50 to-blue-100'
+    },
+    {
+      label: 'Flagged Products',
+      value: adminOverview?.flaggedProducts ?? flaggedProducts.length,
+      icon: FaExclamationTriangle,
+      color: 'from-yellow-50 to-yellow-100'
+    },
+    {
+      label: 'Verified Products',
+      value: adminOverview?.verifiedProducts ?? allProducts.filter((product) => product.verification?.status === 'allowed').length,
+      icon: FaCheckCircle,
+      color: 'from-green-50 to-green-100'
+    },
+    {
+      label: 'Blocked Products',
+      value: adminOverview?.blockedProducts ?? allProducts.filter((product) => product.verification?.status === 'blocked').length,
+      icon: FaTimesCircle,
+      color: 'from-red-50 to-red-100'
+    }
+  ];
 
   return (
     <div className="min-h-screen transition-all duration-300
@@ -314,6 +599,362 @@ function AdminDashboard() {
             </div>
           </motion.div>
 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8"
+          >
+            <AIInsightsPanel
+              products={currentProducts}
+              activeTab={activeTab}
+              searchQuery={searchQuery}
+              selectedStage={selectedStage}
+              sortBy={sortBy}
+            />
+          </motion.div>
+
+          {isAdmin ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12 }}
+              className="mb-10"
+            >
+              <AnimatedCard className="p-6 sm:p-8 border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 shadow-2xl shadow-slate-200/40 dark:shadow-slate-950/30">
+                <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6 mb-6">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold mb-3">
+                      <FaShieldAlt /> Admin Moderation Console
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Verification Review Center</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                      Monitor flagged products, inspect AI risk signals, and approve, reject, or remove records.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
+                        Flag threshold: {adminOverview?.flagThreshold ?? 40}
+                      </span>
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
+                        {moderationStats.pending} pending review
+                      </span>
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold">
+                        {moderationStats.blocked} blocked
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3 xl:items-end">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="min-w-[140px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-4 py-3">
+                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Queue size</p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-white">{moderationStats.flagged}</p>
+                      </div>
+                      <div className="min-w-[140px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-4 py-3">
+                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Avg risk</p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-white">{moderationStats.averageRisk}</p>
+                      </div>
+                    </div>
+                    <GlowingButton onClick={loadAdminData} variant="secondary" glowColor="blue" className="px-5 py-2">
+                      <FaSync className={moderationLoading ? 'animate-spin' : ''} /> Refresh Moderation Data
+                    </GlowingButton>
+                  </div>
+                </div>
+
+                <div className="mb-5 grid grid-cols-3 gap-2 sm:max-w-xl">
+                  {[
+                    { key: 'verified', label: 'Verified', count: moderationBreakdown.verified, cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                    { key: 'flagged', label: 'Flagged', count: moderationBreakdown.flagged, cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+                    { key: 'blocked', label: 'Blocked', count: moderationBreakdown.blocked, cls: 'bg-rose-50 text-rose-700 border-rose-200' }
+                  ].map((item) => (
+                    <div key={item.key} className={`rounded-xl border px-3 py-2 text-sm font-semibold ${item.cls}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span>{item.label}</span>
+                        <span>{item.count}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                  {adminCards.map((card) => {
+                    const Icon = card.icon;
+                    return (
+                      <div key={card.label} className={`rounded-2xl border p-4 bg-gradient-to-br ${card.color} shadow-sm`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm text-slate-600 font-medium">{card.label}</p>
+                            <p className="text-3xl font-bold text-slate-900 dark:text-slate-950">{card.value}</p>
+                          </div>
+                          <div className="w-12 h-12 rounded-xl bg-white/80 flex items-center justify-center shadow-sm">
+                            <Icon className="text-slate-700" />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] gap-6">
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                    <div className="flex flex-col gap-4 px-4 sm:px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Moderation Queue</h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">Pick a product to inspect it in the detail pane.</p>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                          {filteredModerationQueue.length} items
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { key: 'all', label: 'All' },
+                          { key: 'verified', label: 'Verified' },
+                          { key: 'flagged', label: 'Flagged' },
+                          { key: 'blocked', label: 'Blocked' }
+                        ].map((filter) => {
+                          const active = moderationFilter === filter.key;
+                          const count = filter.key === 'all'
+                            ? flaggedProducts.length
+                            : filter.key === 'verified'
+                              ? moderationBreakdown.verified
+                              : filter.key === 'blocked'
+                                ? moderationBreakdown.blocked
+                                : moderationBreakdown.flagged;
+                          return (
+                            <button
+                              key={filter.key}
+                              type="button"
+                              onClick={() => setModerationFilter(filter.key)}
+                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                            >
+                              {filter.label}
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] ${active ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                                {count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto max-h-[36rem]">
+                      <table className="min-w-full">
+                        <thead className="bg-slate-50 dark:bg-slate-800 sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">Product</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">Risk</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {filteredModerationQueue.length > 0 ? filteredModerationQueue.map((product) => {
+                            const verificationMeta = getVerificationMeta(product.verification);
+                            const isSelected = selectedReviewProduct?.productId === product.productId;
+
+                            return (
+                              <tr
+                                key={product.productId}
+                                onClick={() => handleSelectReviewProduct(product)}
+                                className={`cursor-pointer transition-colors ${isSelected ? 'bg-slate-100 dark:bg-slate-800/80' : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'}`}
+                              >
+                                <td className="px-4 py-4">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-700">
+                                      {isValidImage(product.imageFile) ? (
+                                        <img
+                                          src={getFullUrl(product.imageFile)}
+                                          alt={product.name}
+                                          className="w-full h-full object-cover"
+                                          onError={(event) => {
+                                            event.target.onerror = null;
+                                            event.target.src = PLACEHOLDER_IMG;
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                          <FaBoxOpen className="text-lg" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div className="font-semibold text-slate-900 dark:text-white">{product.name || 'Unnamed Product'}</div>
+                                      <div className="text-xs text-slate-500 break-all">{product.productId}</div>
+                                      <div className="mt-2 flex flex-wrap gap-2">
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border ${verificationMeta.statusClass}`}>
+                                          {verificationMeta.label}
+                                        </span>
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                          {product.stages?.length ? product.stages[product.stages.length - 1] : 'No stage'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="min-w-[160px]">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className={`inline-flex items-center px-3 py-1 rounded-full border text-sm font-semibold ${getRiskColor(product.verification?.riskScore || 0)}`}>
+                                        {product.verification?.riskScore ?? 0}
+                                      </span>
+                                      <span className="text-xs text-slate-500">/ 100</span>
+                                    </div>
+                                    <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${verificationMeta.riskClass}`}
+                                        style={{ width: `${Math.min(100, Number(product.verification?.riskScore || 0))}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="space-y-2">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${verificationMeta.reviewClass}`}>
+                                      {product.verification?.status || 'flagged'} / {product.verification?.reviewState || 'pending_review'}
+                                    </span>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                      {Array.isArray(product.verification?.issues) && product.verification.issues.length > 0
+                                        ? `${product.verification.issues.length} issue${product.verification.issues.length === 1 ? '' : 's'} detected`
+                                        : 'No issues detected'}
+                                    </p>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          }) : (
+                            <tr>
+                              <td colSpan={3} className="px-4 py-10 text-center text-slate-500">
+                                No products match the selected moderation filter.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedReviewProduct ? (
+                      <AnimatedCard className="p-5 sm:p-6 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg sticky top-6">
+                        <div className="flex items-center justify-between gap-3 mb-4">
+                          <div>
+                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Selected product</p>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedReviewProduct.name}</h3>
+                          </div>
+                          <button onClick={() => setSelectedReviewProduct(null)} className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm">
+                            Close
+                          </button>
+                        </div>
+
+                        <div className="space-y-3 text-sm">
+                          {selectedReviewLoading ? (
+                            <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3 text-blue-700 dark:text-blue-200 text-sm font-semibold">
+                              Loading latest product verification details...
+                            </div>
+                          ) : null}
+
+                          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-3">
+                            <p className="text-slate-500 text-xs uppercase tracking-wide">Product ID</p>
+                            <p className="font-medium text-slate-900 dark:text-white break-all">{selectedReviewProduct.productId}</p>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-3">
+                              <p className="text-slate-500 text-xs uppercase tracking-wide">Manufacturer</p>
+                              <p className="font-medium text-slate-900 dark:text-white">{selectedReviewProduct.manufacturer || 'Not provided'}</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-3">
+                              <p className="text-slate-500 text-xs uppercase tracking-wide">Origin</p>
+                              <p className="font-medium text-slate-900 dark:text-white">{selectedReviewProduct.origin || 'Not provided'}</p>
+                            </div>
+                          </div>
+
+                          <VerificationResultPanel
+                            verification={selectedReviewProduct.verification}
+                            title="Moderation Verification Summary"
+                          />
+
+                          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-3">
+                            <h4 className="font-semibold mb-2 text-slate-900 dark:text-white">Verification Timeline</h4>
+                            <VerificationTimeline
+                              product={selectedReviewProduct}
+                              verification={selectedReviewProduct.verification}
+                              title="Moderation Timeline"
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'approve')} className="px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold disabled:opacity-60 hover:bg-emerald-700">
+                              <FaClipboardCheck className="inline mr-2" />Approve
+                            </button>
+                            <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'reject')} className="px-4 py-2 rounded-lg bg-amber-500 text-white font-semibold disabled:opacity-60 hover:bg-amber-600">
+                              <FaBell className="inline mr-2" />Reject
+                            </button>
+                            <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'remove')} className="px-4 py-2 rounded-lg bg-rose-600 text-white font-semibold disabled:opacity-60 hover:bg-rose-700">
+                              <FaTrash className="inline mr-2" />Remove
+                            </button>
+                          </div>
+                        </div>
+                      </AnimatedCard>
+                    ) : (
+                      <AnimatedCard className="p-5 sm:p-6 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg min-h-[18rem] flex items-center justify-center text-center">
+                        <div>
+                          <FaSearchPlus className="mx-auto text-3xl text-slate-400 mb-3" />
+                          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Inspect a product</h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                            Choose an item from the moderation queue to view its review details, risk score, and action options.
+                          </p>
+                        </div>
+                      </AnimatedCard>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 p-4">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      <FaHistory /> Recent Admin Actions
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{adminActionLogs.length} entries</span>
+                  </div>
+
+                  {adminActionLogs.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-xs uppercase text-slate-500 dark:text-slate-400">
+                            <th className="py-2 pr-4">Time</th>
+                            <th className="py-2 pr-4">Admin</th>
+                            <th className="py-2 pr-4">Action</th>
+                            <th className="py-2 pr-4">Product</th>
+                            <th className="py-2">Reason</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {adminActionLogs.map((log) => (
+                            <tr key={log._id} className="border-t border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                              <td className="py-2 pr-4 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
+                              <td className="py-2 pr-4 whitespace-nowrap">{log.adminEmail}</td>
+                              <td className="py-2 pr-4">
+                                <span className="px-2 py-1 rounded-full text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                                  {log.action}
+                                </span>
+                              </td>
+                              <td className="py-2 pr-4 font-mono text-xs">{log.productId}</td>
+                              <td className="py-2">{log.reason || 'No reason provided'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500 dark:text-slate-400">No admin actions recorded yet.</p>
+                  )}
+                </div>
+              </AnimatedCard>
+            </motion.div>
+          ) : null}
+
           {/* Tab System */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -344,6 +985,108 @@ function AdminDashboard() {
               </button>
             </div>
           </motion.div>
+
+          {isAdmin && selectedReviewProduct ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
+              <AnimatedCard className="p-6 sm:p-8 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/30 dark:shadow-slate-950/30">
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Product Review</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">Full details and moderation actions for the selected product.</p>
+                  </div>
+                  <button onClick={closeReviewPanel} className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm">
+                    Close
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/70 p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h4 className="text-2xl font-bold text-slate-900 dark:text-white">{selectedReviewProduct.name}</h4>
+                          <p className="mt-1 text-sm text-slate-500 break-all">{selectedReviewProduct.productId}</p>
+                        </div>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${reviewSummary?.statusClass || 'bg-amber-100 text-amber-700 border-amber-200'}`}>
+                          {reviewSummary?.label || 'Flagged'}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3">
+                          <p className="text-slate-500 text-xs uppercase tracking-wide">Manufacturer</p>
+                          <p className="font-medium text-slate-900 dark:text-white">{selectedReviewProduct.manufacturer || 'Not provided'}</p>
+                        </div>
+                        <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3">
+                          <p className="text-slate-500 text-xs uppercase tracking-wide">Origin</p>
+                          <p className="font-medium text-slate-900 dark:text-white">{selectedReviewProduct.origin || 'Not provided'}</p>
+                        </div>
+                        <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3">
+                          <p className="text-slate-500 text-xs uppercase tracking-wide">Risk Score</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">{selectedReviewProduct.verification?.riskScore ?? 0}</p>
+                        </div>
+                        <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3">
+                          <p className="text-slate-500 text-xs uppercase tracking-wide">Review State</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">{selectedReviewProduct.verification?.reviewState || 'pending_review'}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                          <span>Risk level</span>
+                          <span>{selectedReviewProduct.verification?.riskScore ?? 0}/100</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${reviewSummary?.riskClass || 'bg-amber-500'}`}
+                            style={{ width: `${Math.min(100, Number(selectedReviewProduct.verification?.riskScore || 0))}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/80">
+                      <h4 className="font-semibold mb-3 text-slate-900 dark:text-white">Issues Detected</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {(selectedReviewProduct.verification?.issues || []).length > 0 ? (
+                          selectedReviewProduct.verification.issues.map((issue, index) => (
+                            <span key={index} className="px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                              {issue}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-sm text-slate-500">No verification issues recorded.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/80">
+                      <h4 className="font-semibold mb-2 text-slate-900 dark:text-white">Verification Pipeline</h4>
+                      <pre className="text-xs whitespace-pre-wrap break-words max-h-80 overflow-auto text-slate-700 dark:text-slate-200">{JSON.stringify(selectedReviewProduct.verification?.pipeline || {}, null, 2)}</pre>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'approve')} className="px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold disabled:opacity-60 hover:bg-emerald-700">
+                        <FaClipboardCheck className="inline mr-2" />Approve
+                      </button>
+                      <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'reject')} className="px-4 py-2 rounded-lg bg-amber-500 text-white font-semibold disabled:opacity-60 hover:bg-amber-600">
+                        <FaBell className="inline mr-2" />Reject
+                      </button>
+                      <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'remove')} className="px-4 py-2 rounded-lg bg-rose-600 text-white font-semibold disabled:opacity-60 hover:bg-rose-700">
+                        <FaTrash className="inline mr-2" />Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </AnimatedCard>
+            </motion.div>
+          ) : null}
 
           {/* Controls */}
           <motion.div
@@ -515,10 +1258,10 @@ function AdminDashboard() {
                         </div>
                         
                         {/* Certificate Link */}
-                        {product.certFile && (
+                        {getLatestDocumentFile(product) && (
                           <div className="mb-4">
                             <a
-                              href={getFullUrl(product.certFile)}
+                              href={getFullUrl(getLatestDocumentFile(product))}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"

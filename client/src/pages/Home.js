@@ -12,6 +12,10 @@ import StatisticsPanel from '../components/UI/StatisticsPanel';
 import ProductSearch from '../components/ProductSearch';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
 
+function isDatabaseProduct(product) {
+  return Boolean(product && typeof product === 'object' && product._id);
+}
+
 function Home() {
   const navigate = useNavigate();
   const [productId, setProductId] = useState('');
@@ -66,9 +70,22 @@ function Home() {
       
       // Import the API config utility
       const apiConfig = await import('../utils/apiConfig');
-      const apiUrl = apiConfig.buildAPIURL('/api/recent-products?limit=6');
-      
-      const response = await fetch(apiUrl);
+      const token = localStorage.getItem('token');
+      const isPrivilegedUser = user && (user.role === 'producer' || user.role === 'admin');
+      const endpoint = isPrivilegedUser
+        ? '/api/my-products?page=1&limit=6'
+        : '/api/recent-products?limit=6';
+      const apiUrl = apiConfig.buildAPIURL(endpoint);
+
+      const response = await fetch(apiUrl, {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          : {},
+        cache: 'no-store'
+      });
       
       console.log('Response status:', response.status);
       console.log('Response OK:', response.ok);
@@ -77,41 +94,25 @@ function Home() {
         throw new Error(`Failed to fetch recent products: ${response.status} ${response.statusText}`);
       }
       
-      const data = await response.json();
-      console.log('API Response:', data);
-      
+      const payload = await response.json();
+      const data = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : null);
+      console.log('API Response:', payload);
+
       if (Array.isArray(data)) {
-        setRecentProducts(data);
-        if (data.length === 0) {
+        const dbProducts = data.filter(isDatabaseProduct);
+        setRecentProducts(dbProducts);
+        if (dbProducts.length === 0) {
           console.log('No recent products found in database');
         } else {
-          console.log(`Retrieved ${data.length} recent products`);
+          console.log(`Retrieved ${dbProducts.length} recent products`);
         }
       } else {
-        console.error('Unexpected response format:', data);
+        console.error('Unexpected response format:', payload);
         setRecentProductsError('Unexpected response format from server');
       }
     } catch (error) {
       console.error('Error fetching recent products:', error);
       setRecentProductsError(error.message);
-      
-      // Try with API config as fallback
-      try {
-        console.log('Trying with API config...');
-        const apiConfig = await import('../utils/apiConfig');
-        const apiUrl = apiConfig.buildAPIURL('/api/recent-products?limit=6');
-        console.log('API URL:', apiUrl);
-        
-        const fallbackResponse = await fetch(apiUrl);
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json();
-          setRecentProducts(fallbackData);
-          setRecentProductsError(null);
-          console.log('Fallback API call successful');
-        }
-      } catch (fallbackError) {
-        console.error('Fallback API call also failed:', fallbackError);
-      }
     } finally {
       setRecentProductsLoading(false);
     }

@@ -22,6 +22,22 @@ exports.register = async (req, res) => {
     }
     
     const { email, password, role } = req.body;
+    const requestedRole = String(role || 'producer').toLowerCase();
+    const allowAdminRegistration = String(process.env.ALLOW_ADMIN_REGISTRATION || '').toLowerCase() === 'true';
+
+    if (requestedRole === 'admin' && !allowAdminRegistration) {
+      return res.status(403).json({
+        error: 'Admin registration is restricted',
+        message: 'Admin accounts must be provisioned by bootstrap or an existing administrator.'
+      });
+    }
+
+    if (!['producer', 'consumer', 'admin'].includes(requestedRole)) {
+      return res.status(400).json({
+        error: 'Invalid role',
+        message: 'Role must be producer, consumer, or admin.'
+      });
+    }
     
     // Validate input
     if (!email || !password) {
@@ -35,7 +51,7 @@ exports.register = async (req, res) => {
     }
     
     const hashed = await bcrypt.hash(password, 10);
-    const user = new User({ email, password: hashed, role: role || 'producer' });
+    const user = new User({ email, password: hashed, role: requestedRole || 'producer' });
     await user.save();
     
     console.log('✅ User registered successfully:', email);
@@ -57,7 +73,8 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    console.log('🔐 Login attempt:', { email: req.body.email });
+    const normalizedEmail = String(req.body && req.body.email ? req.body.email : '').trim().toLowerCase();
+    console.log('🔐 Login attempt:', { email: normalizedEmail });
     
     // Check MongoDB connection
     if (!isMongoConnected()) {
@@ -68,13 +85,13 @@ exports.login = async (req, res) => {
       });
     }
     
-    const { email, password } = req.body;
+    const { password } = req.body;
     
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
     
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -88,14 +105,21 @@ exports.login = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
     
-    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({
+        error: 'Server auth configuration error',
+        message: 'JWT_SECRET is not configured.'
+      });
+    }
+
+    const JWT_SECRET = process.env.JWT_SECRET;
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: '1d' }
     );
     
-    console.log('✅ Login successful:', email);
+    console.log('✅ Login successful:', normalizedEmail);
     res.json({ token, role: user.role, email: user.email });
   } catch (err) {
     console.error('❌ Login error:', err.message);

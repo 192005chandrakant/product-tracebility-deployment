@@ -18,7 +18,7 @@ const APIStatusIndicator = ({ showDetails = false }) => {
     
     try {
       // Test basic connectivity
-      const response = await fetch(buildAPIURL('/test'), {
+      const response = await fetch(buildAPIURL('/api/health'), {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
       });

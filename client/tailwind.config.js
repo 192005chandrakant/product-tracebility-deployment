@@ -1,8 +1,13 @@
 module.exports = {
   darkMode: 'class',
   content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-    "./public/index.html"
+    './src/**/*.{js,jsx,ts,tsx}',
+    './public/index.html'
+  ],
+  safelist: [
+    { pattern: /^bg-/, variants: ['hover', 'dark'] },
+    { pattern: /^text-/, variants: ['hover', 'dark'] },
+    { pattern: /^border-/, variants: ['hover', 'dark'] }
   ],
   theme: {
     extend: {
@@ -41,24 +46,4 @@ module.exports = {
   plugins: [
     // Add any required plugins here
   ],
-  // Production optimizations
-  ...(process.env.NODE_ENV === 'production' && {
-    purge: {
-      enabled: true,
-      content: [
-        "./src/**/*.{js,jsx,ts,tsx}",
-        "./public/index.html"
-      ],
-      options: {
-        safelist: [
-          // Preserve dynamic classes
-          /^bg-/,
-          /^text-/,
-          /^border-/,
-          /^hover:/,
-          /^dark:/,
-        ],
-      },
-    },
-  }),
 }; 

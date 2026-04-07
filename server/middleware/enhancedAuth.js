@@ -2,6 +2,33 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
+const AUTH_USER_CACHE_TTL_MS = 60 * 1000;
+const authUserCache = new Map();
+const AUTH_DEBUG_LOGS = String(process.env.AUTH_DEBUG_LOGS || '').toLowerCase() === 'true';
+
+function debugAuthLog(...args) {
+  if (AUTH_DEBUG_LOGS) {
+    console.log(...args);
+  }
+}
+
+function getCachedUser(userId) {
+  const cached = authUserCache.get(String(userId));
+  if (!cached) return null;
+  if (cached.expiresAt < Date.now()) {
+    authUserCache.delete(String(userId));
+    return null;
+  }
+  return cached.user;
+}
+
+function setCachedUser(userId, user) {
+  authUserCache.set(String(userId), {
+    user,
+    expiresAt: Date.now() + AUTH_USER_CACHE_TTL_MS
+  });
+}
+
 // Role-based permissions map
 const PERMISSIONS = {
   admin: [
@@ -44,9 +71,18 @@ exports.auth = async (req, res, next) => {
   
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Get fresh user data (in case roles/permissions have changed)
-    const user = await User.findById(decoded.id);
+
+    // Use a short-lived cache to reduce repeated DB reads on hot API paths.
+    let user = getCachedUser(decoded.id);
+    if (!user) {
+      user = await User.findById(decoded.id)
+        .select('email role firstName lastName isActive')
+        .lean();
+      if (user) {
+        setCachedUser(decoded.id, user);
+      }
+    }
+
     if (!user || !user.isActive) {
       return res.status(401).json({ 
         error: 'Invalid account', 
@@ -59,16 +95,13 @@ exports.auth = async (req, res, next) => {
     
     // Attach user and permissions to request
     req.user = {
-      id: user._id,
+      id: user._id || decoded.id,
       email: user.email,
       role: user.role,
       permissions,
       firstName: user.firstName,
       lastName: user.lastName
     };
-    
-    // Log authentication
-    console.log(`🔐 User authenticated: ${user.email} (${user.role})`);
     
     next();
   } catch (err) {
@@ -92,7 +125,7 @@ exports.requireRole = (roles) => (req, res, next) => {
   const allowedRoles = Array.isArray(roles) ? roles : [roles];
   
   if (!allowedRoles.includes(req.user.role)) {
-    console.log(`🚫 Access denied: ${req.user.email} (${req.user.role}) attempted to access resource requiring ${allowedRoles.join(', ')}`);
+    debugAuthLog(`🚫 Access denied: ${req.user.email} (${req.user.role}) attempted to access resource requiring ${allowedRoles.join(', ')}`);
     return res.status(403).json({ 
       error: 'Access denied', 
       message: `This action requires ${allowedRoles.join(' or ')} role`
@@ -120,7 +153,7 @@ exports.requirePermission = (requiredPermissions) => (req, res, next) => {
   );
   
   if (!hasAllPermissions) {
-    console.log(`🚫 Permission denied: ${req.user.email} attempted to perform action requiring ${permissionsToCheck.join(', ')}`);
+    debugAuthLog(`🚫 Permission denied: ${req.user.email} attempted to perform action requiring ${permissionsToCheck.join(', ')}`);
     return res.status(403).json({ 
       error: 'Permission denied', 
       message: 'You do not have permission to perform this action'
@@ -145,14 +178,14 @@ exports.requireSecondaryAuth = async (req, res, next) => {
     password = req.fields.password;
   }
   
-  // Debug logging
-  console.log('🔍 Secondary auth check - password provided:', !!password);
-  console.log('🔍 Request body type:', typeof req.body);
-  console.log('🔍 Request body keys:', req.body ? Object.keys(req.body) : 'no body');
-  console.log('🔍 Request fields keys:', req.fields ? Object.keys(req.fields) : 'no fields');
+  // Debug logging is opt-in to avoid hot-path log noise.
+  debugAuthLog('🔍 Secondary auth check - password provided:', !!password);
+  debugAuthLog('🔍 Request body type:', typeof req.body);
+  debugAuthLog('🔍 Request body keys:', req.body ? Object.keys(req.body) : 'no body');
+  debugAuthLog('🔍 Request fields keys:', req.fields ? Object.keys(req.fields) : 'no fields');
   
   if (!password) {
-    console.log('❌ No password provided for secondary authentication');
+    debugAuthLog('❌ No password provided for secondary authentication');
     return res.status(400).json({ 
       error: 'Secondary authentication required', 
       message: 'Please provide your password to confirm this sensitive operation'
@@ -171,7 +204,7 @@ exports.requireSecondaryAuth = async (req, res, next) => {
     const passwordMatch = await bcrypt.compare(password, user.password);
     
     if (!passwordMatch) {
-      console.log('❌ Invalid password for secondary authentication');
+      debugAuthLog('❌ Invalid password for secondary authentication');
       return res.status(401).json({ 
         error: 'Invalid password', 
         message: 'The password you entered is incorrect'
@@ -179,7 +212,7 @@ exports.requireSecondaryAuth = async (req, res, next) => {
     }
     
     // Password confirmed, proceed
-    console.log(`🔒 Secondary authentication successful for ${user.email}`);
+    debugAuthLog(`🔒 Secondary authentication successful for ${user.email}`);
     next();
   } catch (err) {
     console.error('Secondary authentication error:', err.message);

@@ -6,7 +6,9 @@ exports.getStatistics = async (req, res) => {
   try {
     console.log('📊 Statistics request for user:', req.user.email);
     
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id)
+      .select('email role')
+      .lean();
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -20,6 +22,7 @@ exports.getStatistics = async (req, res) => {
         Product.find({ createdByWallet: user.email })
           .select('stages productId name createdAt updatedAt origin manufacturer description')
           .sort({ updatedAt: -1 }) // Sort by most recently updated
+          .lean()
       ]);
       
       const totalUpdates = userProducts.reduce((sum, product) => 
@@ -52,6 +55,7 @@ exports.getStatistics = async (req, res) => {
           .select('stages productId name createdAt updatedAt origin manufacturer')
           .sort({ updatedAt: -1 })
           .limit(10)
+          .lean()
       ]);
       
       const totalScans = Math.floor(totalProducts * 0.15 + Math.random() * 5);
@@ -73,6 +77,7 @@ exports.getStatistics = async (req, res) => {
           .select('stages productId name createdAt updatedAt createdByWallet origin manufacturer')
           .sort({ updatedAt: -1 }) // Sort by most recently updated
           .limit(15) // Get more for admin view
+          .lean()
       ]);
       
       const totalUpdates = await Product.aggregate([
@@ -109,7 +114,9 @@ exports.getStatistics = async (req, res) => {
 // Get live dashboard data
 exports.getDashboardData = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id)
+      .select('role')
+      .lean();
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -121,21 +128,37 @@ exports.getDashboardData = async (req, res) => {
     ]);
 
     // Get recent activity
-    const recentProducts = await Product.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('productId name createdAt createdByWallet stages');
+    const [recentProducts, stageAgg] = await Promise.all([
+      Product.find()
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('productId name createdAt createdByWallet stages')
+        .lean(),
+      Product.aggregate([
+        {
+          $project: {
+            currentStage: {
+              $arrayElemAt: [
+                '$stages',
+                {
+                  $subtract: [
+                    { $size: { $ifNull: ['$stages', []] } },
+                    1
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        { $match: { currentStage: { $ne: null } } },
+        { $group: { _id: '$currentStage', count: { $sum: 1 } } }
+      ])
+    ]);
 
-    // Calculate stage distribution
-    const allProducts = await Product.find().select('stages');
-    const stageDistribution = {};
-    
-    allProducts.forEach(product => {
-      if (product.stages && product.stages.length > 0) {
-        const currentStage = product.stages[product.stages.length - 1];
-        stageDistribution[currentStage] = (stageDistribution[currentStage] || 0) + 1;
-      }
-    });
+    const stageDistribution = stageAgg.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
 
     // Mock real-time metrics (in production, these would come from actual tracking)
     const realTimeMetrics = {

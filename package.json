@@ -1,5 +1,9 @@
 {
   "scripts": {
+    "build:frontend": "npm --prefix client run build:prod",
+    "build:frontend:clean": "npm --prefix client run build:clean",
+    "build:frontend:deploy": "npm --prefix client run build:deploy",
+    "preview:frontend": "npm --prefix client run preview",
     "deploy-contract": "npx hardhat run scripts/deploy.js --network sepolia",
     "verify-contract": "npx hardhat verify --network sepolia",
     "test-blockchain": "node test-blockchain-connection.js",
