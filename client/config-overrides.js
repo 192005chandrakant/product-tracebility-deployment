@@ -15,7 +15,7 @@ module.exports = function override(config, env) {
     /DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE/,
     /DEP0060/,
   ];
-  
+
   // Suppress source map loader warnings for MediaPipe
   config.module.rules.forEach((rule) => {
     if (rule.oneOf) {
@@ -44,7 +44,7 @@ module.exports = function override(config, env) {
   if (env === 'production') {
     // CRITICAL: Set absolute public path to prevent relative path issues
     config.output.publicPath = 'https://blockchain-product-traceability.netlify.app/';
-    
+
     // Optimize bundle splitting with more reliable chunking
     config.optimization = {
       ...config.optimization,
@@ -104,7 +104,7 @@ module.exports = function override(config, env) {
       maxEntrypointSize: 512000, // 512KB
       maxAssetSize: 512000, // 512KB
     };
-    
+
     // Ensure proper asset loading with absolute paths
     config.output = {
       ...config.output,
