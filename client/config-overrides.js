@@ -1,6 +1,6 @@
 const path = require('path');
 
-module.exports = function override(config, env) {
+function webpackOverride(config, env) {
   // Suppress source map warnings for MediaPipe and other packages
   config.ignoreWarnings = [
     {
@@ -125,4 +125,45 @@ module.exports = function override(config, env) {
   }
 
   return config;
+}
+
+function devServerOverride(configFunction) {
+  return (proxy, allowedHost) => {
+    const config = configFunction(proxy, allowedHost);
+    const before = config.onBeforeSetupMiddleware;
+    const after = config.onAfterSetupMiddleware;
+
+    // Map legacy CRA dev-server https option to webpack-dev-server v5 schema.
+    if (Object.prototype.hasOwnProperty.call(config, 'https')) {
+      const httpsOption = config.https;
+      if (httpsOption === true) {
+        config.server = 'https';
+      } else if (httpsOption && typeof httpsOption === 'object') {
+        config.server = { type: 'https', options: httpsOption };
+      }
+      delete config.https;
+    }
+
+    if (typeof before === 'function' || typeof after === 'function') {
+      config.setupMiddlewares = (middlewares, devServer) => {
+        if (typeof before === 'function') {
+          before(devServer);
+        }
+        if (typeof after === 'function') {
+          after(devServer);
+        }
+        return middlewares;
+      };
+
+      delete config.onBeforeSetupMiddleware;
+      delete config.onAfterSetupMiddleware;
+    }
+
+    return config;
+  };
+}
+
+module.exports = {
+  webpack: webpackOverride,
+  devServer: devServerOverride,
 };
