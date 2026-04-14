@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { memo, useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -141,6 +141,25 @@ const useDebounce = (value, delay) => {
   
   return debouncedValue;
 };
+
+const UpdateProductDecorativeBackground = memo(function UpdateProductDecorativeBackground() {
+  return (
+    <>
+      {/* 3D Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+        <Scene3D />
+      </div>
+
+      {/* Particle Background */}
+      <div className="pointer-events-none" aria-hidden="true">
+        <ParticleBackground />
+      </div>
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20 z-10 pointer-events-none" aria-hidden="true"></div>
+    </>
+  );
+});
 
 function UpdateProduct() {
   // Real-time statistics hook
@@ -422,16 +441,7 @@ function UpdateProduct() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* 3D Background */}
-      <div className="absolute inset-0 z-0">
-        <Scene3D />
-      </div>
-      
-      {/* Particle Background */}
-      <ParticleBackground />
-      
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20 z-10"></div>
+      <UpdateProductDecorativeBackground />
       
       <div className="relative z-20 min-h-screen p-4 flex flex-col items-center">
         <ToastContainer position="top-center" />

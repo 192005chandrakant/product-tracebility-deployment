@@ -1,18 +1,23 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-const ParticleBackground = ({ count = 50 }) => {
-  const particles = Array.from({ length: count }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 4 + 1,
-    duration: Math.random() * 20 + 10,
-    delay: Math.random() * 2,
-  }));
+const ParticleBackground = memo(function ParticleBackground({ count = 50 }) {
+  // Keep particle positions stable between parent re-renders so typing stays responsive.
+  const particles = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        size: Math.random() * 4 + 1,
+        duration: Math.random() * 20 + 10,
+        delay: Math.random() * 2,
+      })),
+    [count]
+  );
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
       {particles.map((particle) => (
         <motion.div
           key={particle.id}
@@ -39,6 +44,6 @@ const ParticleBackground = ({ count = 50 }) => {
       ))}
     </div>
   );
-};
+});
 
 export default ParticleBackground;

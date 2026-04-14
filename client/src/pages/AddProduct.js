@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
@@ -110,12 +110,47 @@ function validateRegistrationDocuments(documents = []) {
   };
 }
 
+const AddProductDecorativeBackground = memo(function AddProductDecorativeBackground() {
+  return (
+    <>
+      {/* 3D Background */}
+      <div className="absolute inset-0 z-0 opacity-20 dark:opacity-40 transition-opacity duration-1000 pointer-events-none" aria-hidden="true">
+        <Scene3D />
+      </div>
+
+      {/* Particle Background */}
+      <div className="opacity-30 dark:opacity-60 transition-opacity duration-1000 pointer-events-none" aria-hidden="true">
+        <ParticleBackground />
+      </div>
+
+      {/* Light Mode: Emerald gradient overlay */}
+      <div className="absolute inset-0 z-10 opacity-100 dark:opacity-0 transition-opacity duration-1000 pointer-events-none bg-gradient-to-br from-emerald-100/30 via-teal-100/20 to-cyan-100/30" aria-hidden="true"></div>
+
+      {/* Dark Mode: Tech grid pattern */}
+      <div
+        className="absolute inset-0 z-10 opacity-0 dark:opacity-30 transition-opacity duration-1000 pointer-events-none"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px'
+        }}
+        aria-hidden="true"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 via-teal-900/20 to-cyan-900/30"></div>
+      </div>
+    </>
+  );
+});
+
 function AddProduct() {
   const [form, setForm] = useState({
     productId: '',
     name: '',
     origin: '',
     manufacturer: '',
+    certificationType: '',
     description: '',
     blockchainRefHash: '',
     password: '', // Add password field for secondary authentication
@@ -210,8 +245,30 @@ function AddProduct() {
     console.log('Image file:', imageFile);
     
     try {
+      const documentValidation = validateRegistrationDocuments(stageDocuments);
+      if (documentValidation.issues.length > 0) {
+        setDocumentValidationErrors(documentValidation.issues);
+        throw new Error(documentValidation.issues[0]);
+      }
+
+      const documentsWithFiles = documentValidation.docsWithFiles.map((doc) => ({ ...doc }));
+      const certificationType = String(
+        form.certificationType || documentsWithFiles[0]?.standardCode || ''
+      ).trim();
+
+      if (!certificationType) {
+        throw new Error(
+          'Certification type is required. Enter it in the form or add a standard code in the first registration document.'
+        );
+      }
+
+      const normalizedForm = {
+        ...form,
+        certificationType
+      };
+
       const data = new FormData();
-      Object.entries(form).forEach(([k, v]) => {
+      Object.entries(normalizedForm).forEach(([k, v]) => {
         data.append(k, v);
         console.log(`Adding to FormData: ${k} = ${v}`);
       });
@@ -221,14 +278,6 @@ function AddProduct() {
         data.append('imageFile', imageFile);
         console.log('Added imageFile to FormData:', imageFile.name);
       }
-
-      const documentValidation = validateRegistrationDocuments(stageDocuments);
-      if (documentValidation.issues.length > 0) {
-        setDocumentValidationErrors(documentValidation.issues);
-        throw new Error(documentValidation.issues[0]);
-      }
-
-      const documentsWithFiles = documentValidation.docsWithFiles.map((doc) => ({ ...doc }));
 
       const stageDocumentsMeta = documentsWithFiles.map((doc, index) => ({
         stage: 'Registered',
@@ -396,32 +445,7 @@ function AddProduct() {
     <div className="min-h-screen relative overflow-hidden transition-all duration-1000
       bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 
       dark:bg-gradient-to-br dark:from-slate-900 dark:via-emerald-950 dark:to-teal-950">
-      
-      {/* 3D Background */}
-      <div className="absolute inset-0 z-0 opacity-20 dark:opacity-40 transition-opacity duration-1000">
-        <Scene3D />
-      </div>
-      
-      {/* Particle Background */}
-      <div className="opacity-30 dark:opacity-60 transition-opacity duration-1000">
-        <ParticleBackground />
-      </div>
-      
-      {/* Light Mode: Emerald gradient overlay */}
-      <div className="absolute inset-0 z-10 opacity-100 dark:opacity-0 transition-opacity duration-1000
-        bg-gradient-to-br from-emerald-100/30 via-teal-100/20 to-cyan-100/30"></div>
-      
-      {/* Dark Mode: Tech grid pattern */}
-      <div className="absolute inset-0 z-10 opacity-0 dark:opacity-30 transition-opacity duration-1000"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '40px 40px'
-        }}>
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 via-teal-900/20 to-cyan-900/30"></div>
-      </div>
+      <AddProductDecorativeBackground />
       
       <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
         <ToastContainer position="top-center" theme="auto" />
@@ -521,6 +545,7 @@ function AddProduct() {
                         name: '',
                         origin: '',
                         manufacturer: '',
+                        certificationType: '',
                         description: '',
                         blockchainRefHash: '',
                         password: ''
@@ -692,6 +717,37 @@ function AddProduct() {
                           name="manufacturer"
                           placeholder="Enter manufacturer name"
                           value={form.manufacturer}
+                          onChange={handleChange}
+                          required
+                          className="w-full pl-12 pr-4 py-4 rounded-xl transition-all duration-300 font-medium input-enhanced
+                            bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500
+                            focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-200/50
+                            hover:border-gray-300 hover:bg-gray-50/80
+                            dark:bg-slate-700/50 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400
+                            dark:focus:bg-slate-700/80 dark:focus:border-emerald-400 dark:focus:ring-emerald-400/30
+                            dark:hover:border-slate-500 dark:hover:bg-slate-700/70
+                            shadow-sm hover:shadow-md focus:shadow-lg hover-lift
+                            dark:shadow-slate-800/50 dark:focus:shadow-emerald-500/20"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Certification Type */}
+                    <div className="relative group md:col-span-2">
+                      <label className="block text-sm font-semibold mb-3 transition-all duration-300
+                        text-gray-700 group-focus-within:text-emerald-600 
+                        dark:text-slate-300 dark:group-focus-within:text-emerald-400">
+                        Certification Type
+                      </label>
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-300
+                          text-gray-400 group-focus-within:text-emerald-500 dark:group-focus-within:text-emerald-400">
+                          <FaCertificate className="text-lg" />
+                        </div>
+                        <input
+                          name="certificationType"
+                          placeholder="Enter certification type (for example: ISO 22000, Organic, HACCP)"
+                          value={form.certificationType}
                           onChange={handleChange}
                           required
                           className="w-full pl-12 pr-4 py-4 rounded-xl transition-all duration-300 font-medium input-enhanced

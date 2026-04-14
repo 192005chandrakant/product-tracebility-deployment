@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect, useRef } from 'react';
+import React, { Suspense, memo, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Stars } from '@react-three/drei';
 import FloatingCube from './FloatingCube';
@@ -29,7 +29,7 @@ class Scene3DErrorBoundary extends React.Component {
   }
 }
 
-const Scene3D = ({ variant = "hero" }) => {
+const Scene3D = memo(function Scene3D({ variant = "hero" }) {
   const [webGLAvailable, setWebGLAvailable] = useState(true);
   const [contextLostCount, setContextLostCount] = useState(0);
   const [renderQuality, setRenderQuality] = useState('high');
@@ -195,7 +195,7 @@ const Scene3D = ({ variant = "hero" }) => {
 
   return (
     <Scene3DErrorBoundary variant={variant}>
-      <div className="w-full h-full">
+      <div className="w-full h-full pointer-events-none" aria-hidden="true">
         <Suspense fallback={<FallbackScene3D variant={variant} />}>
           <Canvas
             ref={canvasRef}
@@ -264,6 +264,6 @@ const Scene3D = ({ variant = "hero" }) => {
       </div>
     </Scene3DErrorBoundary>
   );
-};
+});
 
 export default Scene3D;
