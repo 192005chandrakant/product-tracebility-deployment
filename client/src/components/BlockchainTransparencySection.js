@@ -179,10 +179,22 @@ function BlockchainTransparencySection({ product, user }) {
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Signed Verification Badge</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-200">
-            <p><span className="font-semibold">Contract:</span> {verificationBadge.contractAddress || 'N/A'}</p>
-            <p><span className="font-semibold">Latest TX:</span> {verificationBadge.latestTxHash || txHash || 'N/A'}</p>
-            <p><span className="font-semibold">Proof Hash:</span> {verificationBadge.proofHash || 'N/A'}</p>
-            <p><span className="font-semibold">Signature:</span> {verificationBadge.signature || 'Not signed (set TRANSPARENCY_AUDIT_SIGNING_KEY)'}</p>
+            <div className="min-w-0">
+              <span className="font-semibold">Contract:</span>
+              <p className="mt-1 font-mono break-all">{verificationBadge.contractAddress || 'N/A'}</p>
+            </div>
+            <div className="min-w-0">
+              <span className="font-semibold">Latest TX:</span>
+              <p className="mt-1 font-mono break-all">{verificationBadge.latestTxHash || txHash || 'N/A'}</p>
+            </div>
+            <div className="min-w-0">
+              <span className="font-semibold">Proof Hash:</span>
+              <p className="mt-1 font-mono break-all">{verificationBadge.proofHash || 'N/A'}</p>
+            </div>
+            <div className="min-w-0">
+              <span className="font-semibold">Signature:</span>
+              <p className="mt-1 break-all">{verificationBadge.signature || 'Not signed (set TRANSPARENCY_AUDIT_SIGNING_KEY)'}</p>
+            </div>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
             Generated: {formatDate(verificationBadge.generatedAt)} | Algorithm: {verificationBadge.algorithm || 'SHA256'}
@@ -283,9 +295,9 @@ function BlockchainTransparencySection({ product, user }) {
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">Stage: {event.stage}</p>
                 ) : null}
                 {event.initiatedBy ? (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 flex items-center gap-1">
-                    <FaUserShield className="text-slate-500" />
-                    Initiated by: {canViewOperatorDetails ? event.initiatedBy : maskValue(event.initiatedBy)}
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 flex items-start gap-1 min-w-0">
+                    <FaUserShield className="text-slate-500 mt-0.5 shrink-0" />
+                    <span className="min-w-0 break-all">Initiated by: {canViewOperatorDetails ? event.initiatedBy : maskValue(event.initiatedBy)}</span>
                   </p>
                 ) : null}
                 {canViewOperatorDetails && event.initiatedByRole ? (

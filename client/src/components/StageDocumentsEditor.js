@@ -11,7 +11,15 @@ const DOCUMENT_TYPES = [
   { value: 'other', label: 'Other' }
 ];
 
+const createLocalDocumentId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `doc-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const DEFAULT_DOCUMENT = (stage) => ({
+  localId: createLocalDocumentId(),
   stage: stage || '',
   documentType: 'certificate',
   title: '',
@@ -33,6 +41,19 @@ const DEFAULT_DOCUMENT = (stage) => ({
   fileName: ''
 });
 
+const normalizeDocuments = (documents, stage) => {
+  if (!Array.isArray(documents)) {
+    return [];
+  }
+
+  return documents.map((document, index) => ({
+    ...DEFAULT_DOCUMENT(stage),
+    ...document,
+    localId: document?.localId || document?._id || `doc-${index}`,
+    stage: document?.stage || stage || ''
+  }));
+};
+
 function StageDocumentsEditor({
   stage,
   documents = [],
@@ -41,34 +62,92 @@ function StageDocumentsEditor({
   description = 'Attach optional supporting documents for verification at this stage.',
   optionalLabel = 'Documents are optional, but if you add one it will be verified when possible.'
 }) {
-  const normalizedDocuments = Array.isArray(documents) ? documents : [];
+  const [draftDocuments, setDraftDocuments] = React.useState(() => normalizeDocuments(documents, stage));
+  const syncTimerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    setDraftDocuments(normalizeDocuments(documents, stage));
+  }, [documents, stage]);
+
+  React.useEffect(() => {
+    return () => {
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+      }
+    };
+  }, []);
+
+  const syncToParent = React.useCallback((nextDocuments, immediate = false) => {
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+    }
+
+    if (immediate) {
+      onChange(nextDocuments);
+      return;
+    }
+
+    syncTimerRef.current = setTimeout(() => {
+      onChange(nextDocuments);
+      syncTimerRef.current = null;
+    }, 120);
+  }, [onChange]);
+
+  const flushPendingSync = React.useCallback(() => {
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+      onChange(draftDocuments);
+    }
+  }, [draftDocuments, onChange]);
 
   const updateDocument = (index, patch) => {
-    const nextDocuments = normalizedDocuments.map((document, currentIndex) => {
-      if (currentIndex !== index) {
-        return document;
-      }
-      return {
-        ...document,
-        ...patch
-      };
+    setDraftDocuments((currentDocuments) => {
+      const nextDocuments = currentDocuments.map((document, currentIndex) => {
+        if (currentIndex !== index) {
+          return document;
+        }
+        return {
+          ...document,
+          ...patch
+        };
+      });
+      syncToParent(nextDocuments);
+      return nextDocuments;
     });
-    onChange(nextDocuments);
   };
 
   const addDocument = () => {
-    onChange([...normalizedDocuments, DEFAULT_DOCUMENT(stage)]);
+    setDraftDocuments((currentDocuments) => {
+      const nextDocuments = [...currentDocuments, DEFAULT_DOCUMENT(stage)];
+      syncToParent(nextDocuments, true);
+      return nextDocuments;
+    });
   };
 
   const removeDocument = (index) => {
-    const nextDocuments = normalizedDocuments.filter((_, currentIndex) => currentIndex !== index);
-    onChange(nextDocuments);
+    setDraftDocuments((currentDocuments) => {
+      const nextDocuments = currentDocuments.filter((_, currentIndex) => currentIndex !== index);
+      syncToParent(nextDocuments, true);
+      return nextDocuments;
+    });
   };
 
   const handleFileChange = (index, file) => {
-    updateDocument(index, {
-      file: file || null,
-      fileName: file ? file.name : ''
+    setDraftDocuments((currentDocuments) => {
+      const nextDocuments = currentDocuments.map((document, currentIndex) => {
+        if (currentIndex !== index) {
+          return document;
+        }
+        return {
+          ...document,
+          file: file || null,
+          fileName: file ? file.name : ''
+        };
+      });
+      syncToParent(nextDocuments, true);
+      return nextDocuments;
     });
   };
 
@@ -95,14 +174,14 @@ function StageDocumentsEditor({
 
       <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{optionalLabel}</p>
 
-      {normalizedDocuments.length === 0 ? (
+      {draftDocuments.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-5 text-sm text-slate-600 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-800/60">
           No documents added yet. Use <span className="font-semibold">Add Document</span> to attach a certificate, report, or other supporting file for this stage.
         </div>
       ) : (
-        <div className="space-y-5">
-          {normalizedDocuments.map((document, index) => (
-            <article key={`${index}-${document.documentReference || document.title || 'doc'}`} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-800/70 p-4 sm:p-5">
+        <div className="space-y-5" onBlurCapture={flushPendingSync}>
+          {draftDocuments.map((document, index) => (
+            <article key={document.localId || document._id || `doc-${index}`} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-800/70 p-4 sm:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <div>
                   <h4 className="text-base font-semibold text-slate-900 dark:text-white">

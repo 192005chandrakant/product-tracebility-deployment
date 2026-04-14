@@ -41,9 +41,18 @@ function ProductStageEventsSection({ stageEvents, stages }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-slate-700 dark:text-slate-300">
-              <p className="flex items-center gap-2"><FaCalendarAlt className="text-slate-500" /> {toDisplayDate(event.timestamp || event.recordedAt)}</p>
-              <p className="flex items-center gap-2"><FaIndustry className="text-slate-500" /> {event.actor || event.updatedBy || 'system'}</p>
-              <p className="flex items-center gap-2"><FaMapMarkerAlt className="text-slate-500" /> {event.location || 'Not specified'}</p>
+              <div className="flex items-start gap-2 min-w-0">
+                <FaCalendarAlt className="text-slate-500 mt-0.5 shrink-0" />
+                <span className="min-w-0 break-words">{toDisplayDate(event.timestamp || event.recordedAt)}</span>
+              </div>
+              <div className="flex items-start gap-2 min-w-0">
+                <FaIndustry className="text-slate-500 mt-0.5 shrink-0" />
+                <span className="min-w-0 break-all">{event.actor || event.updatedBy || 'system'}</span>
+              </div>
+              <div className="flex items-start gap-2 min-w-0">
+                <FaMapMarkerAlt className="text-slate-500 mt-0.5 shrink-0" />
+                <span className="min-w-0 break-words">{event.location || 'Not specified'}</span>
+              </div>
             </div>
 
             {event.notes ? <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{event.notes}</p> : null}
