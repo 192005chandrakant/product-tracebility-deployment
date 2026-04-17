@@ -205,6 +205,34 @@ describe('productController.addProduct verification flow', () => {
     expect(blockchain.addProductOnChain).not.toHaveBeenCalled();
   });
 
+  test('blocks product creation when productId format is invalid', async () => {
+    const req = {
+      user: { email: 'producer@example.com', role: 'producer' },
+      body: {
+        productId: 'bad id with spaces',
+        name: 'Organic Turmeric Powder',
+        origin: 'India',
+        manufacturer: 'Walmart Foods Pvt Ltd',
+        certificationType: 'ISO 22000'
+      },
+      files: {
+        imageFile: [],
+        stageDocumentFiles: []
+      }
+    };
+    const res = createRes();
+
+    await productController.addProduct(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      status: 'blocked'
+    }));
+    expect(Product).not.toHaveBeenCalled();
+    expect(blockchain.addProductOnChain).not.toHaveBeenCalled();
+  });
+
   test('saves certificate and verification metadata on allowed product creation', async () => {
     const certificateFile = createCertificateFile();
     const req = {
@@ -270,6 +298,9 @@ describe('productController.addProduct verification flow', () => {
       reviewState: 'verified',
       lifecycleStatus: 'certificate_verified'
     }));
+    expect(savedProduct.verificationStatus).toBe('allowed');
+    expect(savedProduct.riskScore).toBe(4);
+    expect(savedProduct.issues).toEqual([]);
     expect(savedProduct.verification).toHaveProperty('decisionAt');
     expect(savedProduct.verification).toHaveProperty('verifiedAt');
     expect(blockchain.addProductOnChain).toHaveBeenCalledWith(expect.objectContaining({

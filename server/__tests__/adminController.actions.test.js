@@ -57,6 +57,10 @@ describe('adminController.productAction', () => {
 
     expect(product.verification.status).toBe('allowed');
     expect(product.verification.reviewState).toBe('verified');
+    expect(product.verificationStatus).toBe('allowed');
+    expect(product.reviewedByAdmin).toBe('admin@example.com');
+    expect(product.riskScore).toBe(72);
+    expect(product.issues).toEqual(['mismatch']);
     expect(product.isActive).toBe(true);
     expect(product.save).toHaveBeenCalledTimes(1);
     expect(AdminActionLog.create).toHaveBeenCalledTimes(1);
@@ -87,6 +91,8 @@ describe('adminController.productAction', () => {
 
     expect(product.verification.status).toBe('blocked');
     expect(product.verification.reviewState).toBe('rejected');
+    expect(product.verificationStatus).toBe('blocked');
+    expect(product.reviewedByAdmin).toBe('admin@example.com');
     expect(product.isActive).toBe(true);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       success: true,
@@ -114,6 +120,8 @@ describe('adminController.productAction', () => {
 
     expect(product.verification.status).toBe('blocked');
     expect(product.verification.reviewState).toBe('rejected');
+    expect(product.verificationStatus).toBe('blocked');
+    expect(product.reviewedByAdmin).toBe('admin@example.com');
     expect(product.isActive).toBe(false);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       success: true,

@@ -24,6 +24,7 @@ const {
 
 const REGISTRATION_STAGE = 'Registered';
 const VALID_STAGES = ['Harvested', 'Processed', 'Packaged', 'Shipped', 'Delivered', 'Sold'];
+const PRODUCT_ID_PATTERN = /^[A-Za-z0-9._-]{3,120}$/;
 
 const getStorageService = () => StorageFactory.getStorageService();
 
@@ -140,6 +141,28 @@ function pickPrimaryCertificateFile(documents = []) {
   return preferredDocument && preferredDocument.file ? preferredDocument.file : null;
 }
 
+function buildCompatibilityVerificationFields(verification = {}) {
+  return {
+    verificationStatus: verification.status || 'flagged',
+    riskScore: Number(verification.riskScore || 0),
+    issues: Array.isArray(verification.issues) ? verification.issues : []
+  };
+}
+
+function logVerificationDecision(details = {}) {
+  const safeIssues = Array.isArray(details.issues) ? details.issues : [];
+  console.log('Verification decision:', {
+    productId: details.productId || 'unknown',
+    stage: details.stage || 'unknown',
+    documentType: details.documentType || 'unknown',
+    status: details.status || 'flagged',
+    reviewState: details.reviewState || 'pending_review',
+    riskScore: Number(details.riskScore || 0),
+    issuesCount: safeIssues.length,
+    aiFailed: Boolean(details.aiFailed)
+  });
+}
+
 async function runCertificateVerification({ file, productContext = {}, required = true }) {
   if (!file) {
     if (required) {
@@ -253,6 +276,15 @@ async function runCertificateVerification({ file, productContext = {}, required 
     },
     fieldMatch
   };
+
+  logVerificationDecision({
+    stage: REGISTRATION_STAGE,
+    status: decision.status,
+    reviewState: decision.reviewState,
+    riskScore: riskResult.riskScore,
+    issues: riskResult.issues,
+    aiFailed
+  });
 
   return {
     blocked: decision.status === 'blocked',
@@ -398,6 +430,17 @@ async function processStageDocuments({
         aiVerification: verificationResult.aiVerification
       })
     });
+
+    logVerificationDecision({
+      productId,
+      stage: resolvedStage,
+      documentType: meta.documentType,
+      status: verificationResult.decision.status,
+      reviewState: verificationResult.decision.reviewState,
+      riskScore: verificationResult.riskResult.riskScore,
+      issues: verificationResult.riskResult.issues,
+      aiFailed: verificationResult.aiFailed
+    });
   }
 
   return {
@@ -522,6 +565,19 @@ exports.addProduct = async (req, res) => {
     if (!req.user || !req.user.email) {
       return res.status(401).json({ error: 'Secondary authentication required. Please log in again.' });
     }
+
+    const normalizedProductId = sanitizeText(req.body && req.body.productId, 120);
+    if (!PRODUCT_ID_PATTERN.test(normalizedProductId || '')) {
+      return res.status(400).json({
+        success: false,
+        status: 'blocked',
+        riskScore: 100,
+        issues: ['Invalid productId format. Use 3-120 characters: letters, numbers, dot, underscore, hyphen.'],
+        message: 'Product ID is invalid.'
+      });
+    }
+
+    req.body.productId = normalizedProductId;
 
     const imageFile = req.files && req.files.imageFile && req.files.imageFile[0];
     const stageDocumentFiles = (req.files && req.files.stageDocumentFiles) || [];
@@ -739,7 +795,12 @@ exports.addProduct = async (req, res) => {
         verifiedAt: verificationDecisionAt,
         decisionAt: verificationDecisionAt,
         lifecycleStatus
-      }
+      },
+      ...buildCompatibilityVerificationFields({
+        status: stageVerificationSummary.status,
+        riskScore: stageVerificationSummary.riskScore,
+        issues: stageVerificationSummary.issues
+      })
     });
 
     await product.save();
@@ -926,8 +987,17 @@ exports.updateProduct = async (req, res) => {
             source: 'stage_documents',
             stage,
             documentsProcessed: docsProcessing.verificationResults.length
-          }
+          },
+          lifecycleStatus: getLifecycleStatusFromVerification(verificationSummary)
         }
+      : null;
+
+    const compatibilityUpdate = hasVerificationInputs
+      ? buildCompatibilityVerificationFields({
+          status: verificationSummary.status,
+          riskScore: verificationSummary.riskScore,
+          issues: verificationSummary.issues
+        })
       : null;
 
     const stageDocuments = [...docsProcessing.docs];
@@ -939,7 +1009,8 @@ exports.updateProduct = async (req, res) => {
           blockchainTx: txHash,
           blockchainStatus: blockchainEvent.status,
           blockchainUpdatedAt: blockchainEvent.recordedAt,
-          ...(verificationUpdate ? { verification: verificationUpdate } : {})
+          ...(verificationUpdate ? { verification: verificationUpdate } : {}),
+          ...(compatibilityUpdate || {})
         },
         $push: {
           stages: stage,

@@ -163,6 +163,22 @@ const ProductSchema = new mongoose.Schema({
   certificationHash: String, // Store certification hash separately for searching
   createdByWallet: String,
   isActive: { type: Boolean, default: true },
+  // Backward-compatible aliases for external consumers expecting top-level verification fields.
+  verificationStatus: {
+    type: String,
+    enum: ['allowed', 'flagged', 'blocked', 'skipped'],
+    default: 'flagged'
+  },
+  riskScore: {
+    type: Number,
+    default: 100
+  },
+  issues: {
+    type: [String],
+    default: []
+  },
+  reviewedByAdmin: String,
+  reviewedAt: Date,
   stageEvents: [StageEventSchema],
   verification: {
     status: {

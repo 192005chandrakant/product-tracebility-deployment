@@ -243,6 +243,13 @@ function mapAuditRecordToCsv(record) {
   };
 }
 
+function sanitizeModerationText(value, maxLength = 300) {
+  return String(value || '')
+    .replace(/[\x00-\x1F\x7F]/g, ' ')
+    .trim()
+    .slice(0, maxLength);
+}
+
 async function logAdminAction(req, action, productId, reason, metadata = {}) {
   await AdminActionLog.create({
     adminEmail: req.user.email,
@@ -525,8 +532,10 @@ exports.productAction = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, reason } = req.body || {};
+    const normalizedAction = sanitizeModerationText(action, 20).toLowerCase();
+    const normalizedReason = sanitizeModerationText(reason, 500);
 
-    if (!['approve', 'reject', 'remove'].includes(action)) {
+    if (!['approve', 'reject', 'remove'].includes(normalizedAction)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid admin action. Allowed: approve, reject, remove.'
@@ -544,33 +553,40 @@ exports.productAction = async (req, res) => {
     let reviewState = product.verification?.reviewState || 'pending_review';
     let status = product.verification?.status || 'flagged';
     let isActive = product.isActive !== false;
+    const reviewedAt = new Date();
+    const reviewerEmail = sanitizeModerationText(req.user && req.user.email, 180).toLowerCase();
 
-    if (action === 'approve') {
+    if (normalizedAction === 'approve') {
       reviewState = 'verified';
       status = 'allowed';
       isActive = true;
     }
 
-    if (action === 'reject') {
+    if (normalizedAction === 'reject') {
       reviewState = 'rejected';
       status = 'blocked';
       isActive = true;
     }
 
-    if (action === 'remove') {
+    if (normalizedAction === 'remove') {
       reviewState = 'rejected';
       status = 'blocked';
       isActive = false;
     }
 
     product.isActive = isActive;
+    product.verificationStatus = status;
+    product.riskScore = Number(product.verification?.riskScore || 0);
+    product.issues = Array.isArray(product.verification?.issues) ? product.verification.issues : [];
+    product.reviewedByAdmin = reviewerEmail || null;
+    product.reviewedAt = reviewedAt;
     product.verification = {
       ...(product.verification || {}),
       status,
       reviewState,
-      verifiedAt: new Date(),
-      decisionAt: new Date(),
-      lifecycleStatus: action === 'approve'
+      verifiedAt: reviewedAt,
+      decisionAt: reviewedAt,
+      lifecycleStatus: normalizedAction === 'approve'
         ? (String(product.blockchainStatus || '').toLowerCase() === 'confirmed' ? 'on_chain_verified' : 'certificate_verified')
         : 'failed',
       issues: product.verification?.issues || [],
@@ -579,20 +595,24 @@ exports.productAction = async (req, res) => {
 
     await product.save();
 
-    await logAdminAction(req, action, id, reason || '', {
+    await logAdminAction(req, normalizedAction, id, normalizedReason || '', {
       status,
       reviewState,
-      riskScore: product.verification?.riskScore || null
+      riskScore: product.verification?.riskScore || null,
+      reviewedByAdmin: reviewerEmail || null,
+      reviewedAt
     });
 
     res.json({
       success: true,
-      message: `Product ${action}d successfully`,
+      message: `Product ${normalizedAction}d successfully`,
       data: {
         productId: product.productId,
         status,
         reviewState,
-        isActive
+        isActive,
+        reviewedByAdmin: product.reviewedByAdmin,
+        reviewedAt: product.reviewedAt
       }
     });
   } catch (error) {
