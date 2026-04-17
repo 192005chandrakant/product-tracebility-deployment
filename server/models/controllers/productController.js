@@ -24,10 +24,6 @@ const {
 
 const REGISTRATION_STAGE = 'Registered';
 const VALID_STAGES = ['Harvested', 'Processed', 'Packaged', 'Shipped', 'Delivered', 'Sold'];
-const REQUIRE_REGISTRATION_DOCS = String(process.env.VERIFICATION_REQUIRE_REGISTRATION_DOCS || '').toLowerCase() === 'true';
-const STRICT_REGISTRATION_CERT_REQUIRED = String(
-  process.env.VERIFICATION_STRICT_REGISTRATION_CERT_REQUIRED || 'false'
-).toLowerCase() !== 'false';
 
 const getStorageService = () => StorageFactory.getStorageService();
 
@@ -114,6 +110,34 @@ function validateRequiredVerificationContext(productContext = {}) {
     valid: issues.length === 0,
     issues
   };
+}
+
+function getLifecycleStatusFromVerification(verificationSummary = {}) {
+  const status = String(verificationSummary.status || 'flagged').toLowerCase();
+  const reviewState = String(verificationSummary.reviewState || 'pending_review').toLowerCase();
+
+  if (status === 'blocked' || reviewState === 'rejected') {
+    return 'failed';
+  }
+
+  if (status === 'allowed' && reviewState === 'verified') {
+    return 'certificate_verified';
+  }
+
+  if (status === 'flagged' || reviewState === 'pending_review') {
+    return 'flagged';
+  }
+
+  return 'pending';
+}
+
+function pickPrimaryCertificateFile(documents = []) {
+  if (!Array.isArray(documents) || documents.length === 0) {
+    return null;
+  }
+
+  const preferredDocument = documents.find((document) => document && document.requiresVerification) || documents[0];
+  return preferredDocument && preferredDocument.file ? preferredDocument.file : null;
 }
 
 async function runCertificateVerification({ file, productContext = {}, required = true }) {
@@ -542,7 +566,7 @@ exports.addProduct = async (req, res) => {
       stage: REGISTRATION_STAGE,
       documentsMeta: stageDocumentsMeta,
       documentFiles: stageDocumentFiles,
-      requireAtLeastOneFile: REQUIRE_REGISTRATION_DOCS || STRICT_REGISTRATION_CERT_REQUIRED,
+      requireAtLeastOneFile: true,
       enforceRequiredFields: true
     });
 
@@ -583,6 +607,12 @@ exports.addProduct = async (req, res) => {
       },
       uploader: req.user.email
     });
+
+    const primaryCertificateFile = pickPrimaryCertificateFile(docsProcessing.docs);
+    const verificationDecisionAt = new Date();
+    const criticalFailures = [...new Set(
+      docsProcessing.verificationResults.flatMap((result) => result.riskResult.criticalFailures || [])
+    )];
 
     const blockedDoc = docsProcessing.verificationResults.find((result) => result.blocked);
     if (blockedDoc) {
@@ -667,6 +697,7 @@ exports.addProduct = async (req, res) => {
     }
 
     const stageVerificationSummary = summarizeStageVerification(docsProcessing.verificationResults);
+    const lifecycleStatus = getLifecycleStatusFromVerification(stageVerificationSummary);
     const registrationDecision = {
       status: stageVerificationSummary.status,
       reviewState: stageVerificationSummary.reviewState,
@@ -676,6 +707,7 @@ exports.addProduct = async (req, res) => {
     const product = new Product({
       ...req.body,
       imageFile: imageFileData,
+      certFile: primaryCertificateFile,
       blockchainRefHash: blockchainRefHash || `mock-hash-${Date.now()}`,
       blockchainTx: txHash,
       blockchainStatus: blockchainEvent.status,
@@ -697,14 +729,16 @@ exports.addProduct = async (req, res) => {
         reviewState: stageVerificationSummary.reviewState,
         riskScore: stageVerificationSummary.riskScore,
         issues: stageVerificationSummary.issues,
-        criticalFailures: [],
+        criticalFailures,
         aiModel: null,
         reason: stageVerificationSummary.reason,
         pipeline: {
           source: 'stage_documents',
           documentsProcessed: docsProcessing.verificationResults.length
         },
-        verifiedAt: new Date()
+        verifiedAt: verificationDecisionAt,
+        decisionAt: verificationDecisionAt,
+        lifecycleStatus
       }
     });
 
@@ -877,6 +911,24 @@ exports.updateProduct = async (req, res) => {
     }
 
     const verificationSummary = summarizeStageVerification(docsProcessing.verificationResults);
+    const hasVerificationInputs = docsProcessing.verificationResults.length > 0;
+
+    const verificationUpdate = hasVerificationInputs
+      ? {
+          status: verificationSummary.status,
+          reviewState: verificationSummary.reviewState,
+          riskScore: verificationSummary.riskScore,
+          issues: verificationSummary.issues,
+          reason: verificationSummary.reason,
+          verifiedAt: new Date(),
+          decisionAt: new Date(),
+          pipeline: {
+            source: 'stage_documents',
+            stage,
+            documentsProcessed: docsProcessing.verificationResults.length
+          }
+        }
+      : null;
 
     const stageDocuments = [...docsProcessing.docs];
 
@@ -886,7 +938,8 @@ exports.updateProduct = async (req, res) => {
         $set: {
           blockchainTx: txHash,
           blockchainStatus: blockchainEvent.status,
-          blockchainUpdatedAt: blockchainEvent.recordedAt
+          blockchainUpdatedAt: blockchainEvent.recordedAt,
+          ...(verificationUpdate ? { verification: verificationUpdate } : {})
         },
         $push: {
           stages: stage,

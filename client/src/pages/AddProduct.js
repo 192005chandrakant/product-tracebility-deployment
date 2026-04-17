@@ -110,6 +110,24 @@ function validateRegistrationDocuments(documents = []) {
   };
 }
 
+function getVerificationOutcomeText(verification) {
+  const status = String(verification?.status || verification?.decision?.status || '').toLowerCase();
+
+  if (status === 'blocked') {
+    return 'Blocked';
+  }
+
+  if (status === 'flagged') {
+    return 'Pending Review';
+  }
+
+  if (status === 'allowed') {
+    return 'Allowed';
+  }
+
+  return 'Verification Result';
+}
+
 const AddProductDecorativeBackground = memo(function AddProductDecorativeBackground() {
   return (
     <>
@@ -471,6 +489,12 @@ function AddProduct() {
                 <h3 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-4">
                   Product Registered Successfully!
                 </h3>
+
+                {verificationFeedback && (
+                  <div className="inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-semibold mb-4 bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200">
+                    Verification: {String(verificationFeedback.status || verificationFeedback.decision?.status || 'flagged')}
+                  </div>
+                )}
                 
                 <p className="text-gray-600 dark:text-gray-300 mb-8">
                   Your product has been added to the blockchain. Scan or download the QR code below:
@@ -531,6 +555,15 @@ function AddProduct() {
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {verificationFeedback && (
+                  <div className="text-left mb-6">
+                    <VerificationResultPanel
+                      verification={verificationFeedback}
+                      title={getVerificationOutcomeText(verificationFeedback)}
+                    />
                   </div>
                 )}
                 
@@ -764,6 +797,15 @@ function AddProduct() {
                     </div>
                   </div>
 
+
+                {verificationFeedback && (
+                  <div className="text-left mb-6">
+                    <VerificationResultPanel
+                      verification={verificationFeedback}
+                      title={getVerificationOutcomeText(verificationFeedback)}
+                    />
+                  </div>
+                )}
                   {/* Description */}
                   <div className="relative group">
                     <label className="block text-sm font-semibold mb-3 transition-all duration-300
@@ -813,11 +855,25 @@ function AddProduct() {
                   <StageDocumentationForm
                     stage="Registered"
                     title="Registration Stage Documentation"
-                    subtitle="Upload optional compliance documents for registration. If you add a file, it is validated and AI-verified before the product is created."
+                    subtitle="Upload the registration certificate for validation. The file is checked first, then Gemini analyzes it, and the system decides whether the product is allowed, flagged, or blocked."
                     validationErrors={documentValidationErrors}
                     documents={stageDocuments}
                     setDocuments={setStageDocuments}
                   />
+
+                  {verificationFeedback && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="mt-6"
+                    >
+                      <VerificationResultPanel
+                        verification={verificationFeedback}
+                        title={getVerificationOutcomeText(verificationFeedback)}
+                      />
+                    </motion.div>
+                  )}
 
                   {/* Blockchain Reference Hash */}
                   <div className="relative group">
@@ -945,32 +1001,6 @@ function AddProduct() {
                       className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4 text-red-700 dark:text-red-300"
                     >
                       {error}
-                    </motion.div>
-                  )}
-
-                  {verificationFeedback && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                    >
-                      <VerificationResultPanel
-                        verification={verificationFeedback}
-                        title="Verification Feedback"
-                      />
-                      {Array.isArray(verificationFeedback.stageDocumentation?.details) && verificationFeedback.stageDocumentation.details.length > 0 && (
-                        <div className="mt-4 rounded-xl border border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-900/20 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-300 mb-2">
-                            Document Checks
-                          </p>
-                          <ul className="list-disc ml-5 text-sm text-cyan-800 dark:text-cyan-100 space-y-1">
-                            {verificationFeedback.stageDocumentation.details.slice(0, 4).map((item, index) => (
-                              <li key={index}>
-                                {item.title || item.documentType || 'Document'}: {item.reason || item.decision?.reason || 'verified'}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
                     </motion.div>
                   )}
 

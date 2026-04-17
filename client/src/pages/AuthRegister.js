@@ -144,8 +144,6 @@ function AuthRegister() {
                     className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/80 dark:bg-slate-700/80 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 backdrop-blur-sm"
                   >
                     <option value="producer">Producer</option>
-                    <option value="distributor">Distributor</option>
-                    <option value="retailer">Retailer</option>
                     <option value="consumer">Consumer</option>
                   </select>
                 </div>
