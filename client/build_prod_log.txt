@@ -1,0 +1,46 @@
+
+> product-traceability-client@0.1.0 build:prod
+> set NODE_ENV=production && npm run build:enhanced
+
+
+> product-traceability-client@0.1.0 build:enhanced
+> set GENERATE_SOURCEMAP=false && set CI= && set NODE_OPTIONS=--max-old-space-size=4096 && react-app-rewired build
+
+Creating an optimized production build...
+
+Treating warnings as errors because process.env.CI = true.
+Most CI servers set it automatically.
+
+Compiled with the following type errors (you may want to check these before deploying your app):
+
+asset size limit: The following asset(s) exceed the recommended size limit (500 KiB).
+This can impact web performance.
+Assets: 
+  static/css/main-05747d24.7c4c8910.css (12.2 MiB)
+  static/js/three-6783b88e.ae7eb02a.js (685 KiB)
+
+entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (500 KiB). This can impact web performance.
+Entrypoints:
+  main (13.6 MiB)
+      static/js/runtime.3a2cf551.js
+      static/js/react-2594363e.b0d5b606.js
+      static/js/react-e5bca7e4.346fdd72.js
+      static/js/three-51475a68.5f688721.js
+      static/js/three-6783b88e.ae7eb02a.js
+      static/js/vendors-49d0a293.4f6a7b43.js
+      static/js/vendors-32266432.a5272038.js
+      static/js/vendors-8731da8d.fc49c516.js
+      static/js/vendors-e9105a8c.d692675d.js
+      static/js/vendors-f82e0cd2.801c2cd2.js
+      static/js/vendors-c5c7ab89.924e2092.js
+      static/js/vendors-c1b46ba6.3d19c4fd.js
+      static/css/vendors-e8ee3528.d25db9d6.css
+      static/js/vendors-e8ee3528.b14db1b5.js
+      static/js/vendors-27545368.899a8ccd.js
+      static/js/vendors-229eafb5.c9137865.js
+      static/css/main-4f064d56.8b603c16.css
+      static/js/main-4f064d56.ab876422.js
+      static/js/main-05747d24.3095826e.js
+      static/css/main-05747d24.7c4c8910.css
+
+

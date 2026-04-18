@@ -220,7 +220,6 @@ function UpdateProduct() {
     if (documentValidationErrors.length > 0) {
       setDocumentValidationErrors([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageDocuments]);
 
   // Search products by ID or name

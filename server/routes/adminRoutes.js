@@ -5,6 +5,7 @@ const requireAdminAuth = require('../middleware/requireAdminAuth');
 const adminController = require('../models/controllers/adminController');
 
 router.get('/overview', requireAdminAuth, adminController.getOverview);
+router.get('/dashboard', requireAdminAuth, adminController.getOverview);
 router.get('/actions', requireAdminAuth, adminController.getActionLogs);
 router.get('/transparency-export', requireAdminAuth, adminController.exportTransparencyAudit);
 router.get('/products/flagged', requireAdminAuth, adminController.getFlaggedProducts);

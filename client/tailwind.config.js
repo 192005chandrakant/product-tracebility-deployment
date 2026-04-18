@@ -4,11 +4,6 @@ module.exports = {
     './src/**/*.{js,jsx,ts,tsx}',
     './public/index.html'
   ],
-  safelist: [
-    { pattern: /^bg-/, variants: ['hover', 'dark'] },
-    { pattern: /^text-/, variants: ['hover', 'dark'] },
-    { pattern: /^border-/, variants: ['hover', 'dark'] }
-  ],
   theme: {
     extend: {
       colors: {

@@ -1,10 +1,22 @@
 import React, { useRef, useCallback, Suspense, Component } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaArrowLeft, FaUpload, FaQrcode, FaCamera, FaExclamationTriangle } from 'react-icons/fa';
+import {
+  FaArrowLeft,
+  FaUpload,
+  FaQrcode,
+  FaCamera,
+  FaExclamationTriangle,
+  FaShieldAlt,
+  FaCheckCircle,
+  FaQuestionCircle,
+  FaBolt,
+  FaSun,
+  FaMoon,
+  FaSpinner,
+} from 'react-icons/fa';
 import jsQR from 'jsqr';
 import ParticleBackground from '../components/UI/ParticleBackground';
-import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
@@ -58,6 +70,10 @@ function QRScan() {
   const [scanResult, setScanResult] = React.useState(null);
   const [error, setError] = React.useState(null);
   const [isScanning, setIsScanning] = React.useState(false);
+  const [scannerState, setScannerState] = React.useState('idle'); // idle | scanning | processing | verified | flagged | failed
+  const [flashEnabled, setFlashEnabled] = React.useState(false);
+  const [flashUnsupported, setFlashUnsupported] = React.useState(false);
+  const [showHelp, setShowHelp] = React.useState(false);
   const [permissionState, setPermissionState] = React.useState('pending'); // 'pending', 'granted', 'denied', 'unavailable'
   
   const fileInputRef = useRef();
@@ -65,6 +81,36 @@ function QRScan() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const scanIntervalRef = useRef(null);
+
+  const triggerHapticFeedback = useCallback((duration = 40) => {
+    if (navigator && navigator.vibrate) {
+      navigator.vibrate(duration);
+    }
+  }, []);
+
+  const updateTorch = useCallback(async (enabled) => {
+    if (!streamRef.current) return;
+
+    const videoTrack = streamRef.current.getVideoTracks()[0];
+    if (!videoTrack || typeof videoTrack.getCapabilities !== 'function') {
+      setFlashUnsupported(true);
+      return;
+    }
+
+    const capabilities = videoTrack.getCapabilities();
+    if (!capabilities.torch) {
+      setFlashUnsupported(true);
+      return;
+    }
+
+    try {
+      await videoTrack.applyConstraints({ advanced: [{ torch: enabled }] });
+      setFlashUnsupported(false);
+    } catch (torchError) {
+      console.log('Torch toggle failed:', torchError);
+      setFlashUnsupported(true);
+    }
+  }, []);
   
   // Function to stop the camera
   const stopCamera = useCallback(() => {
@@ -161,6 +207,8 @@ function QRScan() {
         
         // Stop scanning
         setIsScanning(false);
+        setScannerState('processing');
+        triggerHapticFeedback(70);
         
         // Set result
         setScanResult(code.data);
@@ -173,9 +221,11 @@ function QRScan() {
           
           if (productId) {
             console.log('Navigating to product page:', `/product/${productId}`);
+            setScannerState('verified');
             navigate(`/product/${productId}`);
           } else {
             setError('Invalid QR code format. Could not extract product ID.');
+            setScannerState('failed');
             stopCamera();
           }
         }, 1500);
@@ -249,7 +299,7 @@ function QRScan() {
         scanIntervalRef.current = requestAnimationFrame(scanVideoForQR);
       }
     }
-  }, [isScanning, stopCamera, navigate]);
+  }, [isScanning, stopCamera, navigate, triggerHapticFeedback]);
 
   // Function to start the camera - defined after scanVideoForQR to avoid circular reference
   const startCamera = useCallback(async () => {
@@ -313,6 +363,7 @@ function QRScan() {
           console.error('Both camera access attempts failed:', fallbackErr);
           setPermissionState('denied');
           setError('Camera access was denied. Please check your browser settings and try again.');
+          setScannerState('flagged');
           return;
         }
       }
@@ -378,12 +429,15 @@ function QRScan() {
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setPermissionState('denied');
         setError('Camera access was denied. Please enable camera permissions and try again.');
+        setScannerState('flagged');
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
         setPermissionState('unavailable');
         setError('No camera found on your device. Please use the upload option instead.');
+        setScannerState('flagged');
       } else {
         setPermissionState('unavailable');
         setError(`Camera error: ${err.message || 'Unknown error'}`);
+        setScannerState('failed');
       }
     }
   }, [isScanning, scanVideoForQR]);
@@ -394,12 +448,26 @@ function QRScan() {
       startCamera();
     } else {
       stopCamera();
+      setFlashEnabled(false);
     }
     
     return () => {
       stopCamera();
     };
   }, [isScanning, startCamera, stopCamera]);
+
+  React.useEffect(() => {
+    if (isScanning) {
+      setScannerState('scanning');
+    } else if (!scanResult && !error) {
+      setScannerState('idle');
+    }
+  }, [isScanning, scanResult, error]);
+
+  React.useEffect(() => {
+    if (!isScanning) return;
+    updateTorch(flashEnabled);
+  }, [flashEnabled, isScanning, updateTorch]);
 
   // Handle image upload and QR extraction
   const handleImageUpload = (e) => {
@@ -461,6 +529,8 @@ function QRScan() {
           if (code && code.data) {
             console.log('QR code found in uploaded image:', code.data);
             setScanResult(code.data);
+            setScannerState('processing');
+            triggerHapticFeedback(55);
             
             // Extract product ID from URL if it's a full URL
             const productId = extractProductId(code.data);
@@ -469,23 +539,28 @@ function QRScan() {
             if (productId) {
               console.log('Navigating to:', `/product/${productId}`);
               setTimeout(() => {
+                setScannerState('verified');
                 navigate(`/product/${productId}`);
               }, 1000);
             } else {
               setError('Invalid QR code format. Could not extract product ID.');
+              setScannerState('failed');
             }
           } else {
             setError('No QR code found in the image. Try uploading a clearer image or use camera scanning.');
+            setScannerState('failed');
           }
         } catch (err) {
           console.error('Error processing uploaded image:', err);
           setError('Error processing image. Please try a different image.');
+          setScannerState('failed');
         }
       };
       
       img.onerror = function(err) {
         console.error('Failed to load uploaded image:', err);
         setError('Failed to load image. The file might be corrupted or not a valid image.');
+        setScannerState('failed');
       };
       
       img.src = ev.target.result;
@@ -494,6 +569,7 @@ function QRScan() {
     reader.onerror = function(err) {
       console.error('Failed to read file:', err);
       setError('Failed to read file. Please try again.');
+      setScannerState('failed');
     };
     
     reader.readAsDataURL(file);
@@ -506,19 +582,66 @@ function QRScan() {
       setIsScanning(false);
       setError(null);
       setScanResult(null);
+      setScannerState('idle');
     } else {
       // Start scanning (permissions will be requested in the effect)
       setIsScanning(true);
       setError(null);
       setScanResult(null);
+      setScannerState('scanning');
     }
   };
 
+  const toggleFlash = () => {
+    setFlashEnabled((prev) => !prev);
+  };
+
+  const statusMeta = {
+    idle: {
+      title: 'Align QR code within frame',
+      subtitle: 'Scanning will start automatically once the camera is active.',
+      className: 'border-cyan-200/70 bg-cyan-50/70 text-cyan-900 dark:border-cyan-800/70 dark:bg-cyan-950/40 dark:text-cyan-100',
+      icon: <FaQrcode className="text-cyan-500" />,
+    },
+    scanning: {
+      title: 'Scanning in progress',
+      subtitle: 'Hold steady and keep the QR fully visible for fastest detection.',
+      className: 'border-blue-200/70 bg-blue-50/70 text-blue-900 dark:border-blue-800/70 dark:bg-blue-950/40 dark:text-blue-100',
+      icon: <FaCamera className="text-blue-500" />,
+    },
+    processing: {
+      title: 'Verifying product...',
+      subtitle: 'AI and blockchain checks are running.',
+      className: 'border-indigo-200/70 bg-indigo-50/70 text-indigo-900 dark:border-indigo-800/70 dark:bg-indigo-950/40 dark:text-indigo-100',
+      icon: <FaSpinner className="text-indigo-500 animate-spin" />,
+    },
+    verified: {
+      title: 'Product verified',
+      subtitle: 'Authenticity confirmed. Opening product profile now.',
+      className: 'border-emerald-200/80 bg-emerald-50/80 text-emerald-900 dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-100',
+      icon: <FaCheckCircle className="text-emerald-500" />,
+    },
+    flagged: {
+      title: 'Scanning access needs attention',
+      subtitle: 'Enable camera permissions or use image upload fallback.',
+      className: 'border-amber-200/80 bg-amber-50/80 text-amber-900 dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-100',
+      icon: <FaExclamationTriangle className="text-amber-500" />,
+    },
+    failed: {
+      title: 'Verification failed',
+      subtitle: 'Try again with better lighting or a clearer QR image.',
+      className: 'border-rose-200/80 bg-rose-50/80 text-rose-900 dark:border-rose-800/80 dark:bg-rose-950/40 dark:text-rose-100',
+      icon: <FaExclamationTriangle className="text-rose-500" />,
+    },
+  };
+
+  const activeStatus = statusMeta[scannerState] || statusMeta.idle;
+
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden font-['Sora','Segoe_UI',sans-serif]">
       {/* 3D Background - wrapped in ErrorBoundary */}
       <div className="absolute inset-0 z-0">
-        <ErrorBoundary fallback={<div className="w-full h-full bg-gradient-to-br from-blue-900 to-purple-900"></div>}>
+        <ErrorBoundary fallback={<div className="w-full h-full bg-gradient-to-br from-cyan-900 via-slate-900 to-blue-900"></div>}>
           <Suspense fallback={<div>Loading 3D scene...</div>}>
             <Scene3D suppressErrors={true} />
           </Suspense>
@@ -533,9 +656,9 @@ function QRScan() {
       </ErrorBoundary>
       
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20 z-10"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.32),transparent_40%),radial-gradient(circle_at_80%_20%,rgba(34,197,94,0.25),transparent_38%),radial-gradient(circle_at_50%_80%,rgba(14,165,233,0.28),transparent_48%)] z-10"></div>
       
-      <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
+      <div className="relative z-20 min-h-screen p-4 sm:p-6 lg:p-8">
         <ErrorBoundary fallback={
           <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl max-w-md w-full">
             <h2 className="text-2xl text-white font-bold mb-4">QR Code Scanner</h2>
@@ -548,128 +671,239 @@ function QRScan() {
             </button>
           </div>
         }>
-        <AnimatedCard className="w-full max-w-md">
-          <div className="p-8">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="relative inline-block mb-4">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FaQrcode className="text-white text-3xl" />
-                </div>
-                {/* FloatingCubeWrapper - wrapped in ErrorBoundary */}
-                <div className="absolute -top-2 -right-2">
-                  <ErrorBoundary fallback={null}>
-                    <Suspense fallback={null}>
-                      <FloatingCubeWrapper size={0.5} className="w-12 h-12" />
-                    </Suspense>
-                  </ErrorBoundary>
-                </div>
+        <AnimatedCard className="w-full max-w-5xl mx-auto">
+          <div className="rounded-[2rem] border border-white/35 dark:border-slate-700/70 bg-white/75 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_70px_-20px_rgba(8,47,73,0.75)] p-4 sm:p-6 lg:p-8">
+            <div className="flex items-center justify-between gap-3 mb-5">
+              <button
+                onClick={() => navigate('/')}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-sm font-semibold hover:scale-[1.02] transition"
+              >
+                <FaArrowLeft />
+                Back
+              </button>
+
+              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
+                <FaSun className="text-amber-500 dark:hidden" />
+                <FaMoon className="text-cyan-300 hidden dark:block" />
+                Adaptive Light and Dark
               </div>
-              <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                QR Code Scanner
-              </h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                Scan a QR code to view product details
+            </div>
+
+            <div className="text-center mb-6 lg:mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white mb-3 shadow-xl">
+                <FaQrcode className="text-3xl" />
+              </div>
+              <div className="relative inline-block ml-2 align-top">
+                <ErrorBoundary fallback={null}>
+                  <Suspense fallback={null}>
+                    <FloatingCubeWrapper size={0.45} className="w-10 h-10" />
+                  </Suspense>
+                </ErrorBoundary>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+                Scan Product QR Code
+              </h1>
+              <p className="mt-2 text-sm sm:text-base text-slate-700 dark:text-slate-300 font-medium">
+                Verify authenticity using AI + Blockchain
+              </p>
+
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50/85 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm font-semibold">
+                  <FaShieldAlt />
+                  Secure scanning
+                </span>
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-cyan-200 dark:border-cyan-800 bg-cyan-50/85 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-200 text-xs sm:text-sm font-semibold">
+                  <FaCheckCircle />
+                  Verified system
+                </span>
+              </div>
+
+              <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+                Safe scanning: this scanner only reads QR payloads needed for product verification and redirects you to the trusted product profile.
               </p>
             </div>
 
-            {/* QR Scanner */}
-            <div className="space-y-6">
-              <div className="relative">
-                <div className="w-full h-72 rounded-2xl overflow-hidden border-2 border-blue-200 dark:border-blue-800 shadow-lg bg-gray-900">
-                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                    {/* Video element for camera feed - visible when scanning */}
-                    <video
-                      ref={videoRef}
-                      style={{ 
-                        display: isScanning ? 'block' : 'none',
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                      playsInline
-                      muted
-                      autoPlay
-                    ></video>
-                    
-                    {/* Canvas for QR detection overlay - positioned over video */}
-                    <canvas 
-                      ref={canvasRef}
-                      style={{ 
-                        display: isScanning ? 'block' : 'none',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%', 
-                        height: '100%',
-                        objectFit: 'cover',
-                        pointerEvents: 'none', // Allow clicks to pass through
-                        zIndex: 10
-                      }}
-                    ></canvas>
-                    
-                    {/* Placeholder when not scanning */}
-                    {!isScanning && (
-                      <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-800">
-                        <div className="text-center">
-                          {permissionState === 'denied' ? (
-                            <>
-                              <FaExclamationTriangle className="mx-auto text-4xl text-yellow-500 mb-4" />
-                              <p className="text-yellow-400">Camera access denied</p>
-                              <p className="text-gray-400 text-sm mt-2">Please enable camera access in your browser settings</p>
-                            </>
-                          ) : permissionState === 'unavailable' ? (
-                            <>
-                              <FaExclamationTriangle className="mx-auto text-4xl text-yellow-500 mb-4" />
-                              <p className="text-yellow-400">Camera not available</p>
-                              <p className="text-gray-400 text-sm mt-2">Please use the upload option below</p>
-                            </>
-                          ) : (
-                            <>
-                              <FaCamera className="mx-auto text-4xl text-gray-500 mb-4" />
-                              <p className="text-gray-400">Camera will appear here when scanning</p>
-                            </>
-                          )}
-                        </div>
-                      </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4 lg:gap-6">
+              <div className="relative rounded-3xl border border-white/40 dark:border-slate-700/70 bg-slate-950/90 overflow-hidden min-h-[360px] sm:min-h-[420px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                <video
+                  ref={videoRef}
+                  style={{
+                    display: isScanning ? 'block' : 'none',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                  className="absolute inset-0"
+                  playsInline
+                  muted
+                  autoPlay
+                ></video>
+
+                <canvas
+                  ref={canvasRef}
+                  style={{
+                    display: isScanning ? 'block' : 'none',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    pointerEvents: 'none',
+                    zIndex: 18,
+                  }}
+                ></canvas>
+
+                {!isScanning && (
+                  <div className="absolute inset-0 z-10 grid place-items-center px-6 text-center bg-gradient-to-b from-slate-900/85 via-slate-900/95 to-slate-950">
+                    {permissionState === 'denied' ? (
+                      <>
+                        <FaExclamationTriangle className="text-5xl text-amber-400 mb-4" />
+                        <p className="text-amber-300 text-lg font-semibold">Camera access denied</p>
+                        <p className="text-slate-300 text-sm mt-2 max-w-sm">Enable camera permissions to scan instantly, or upload a QR image from your gallery.</p>
+                      </>
+                    ) : permissionState === 'unavailable' ? (
+                      <>
+                        <FaExclamationTriangle className="text-5xl text-amber-400 mb-4" />
+                        <p className="text-amber-300 text-lg font-semibold">Camera unavailable</p>
+                        <p className="text-slate-300 text-sm mt-2 max-w-sm">No compatible camera detected. Upload a product QR image instead.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-slate-200 text-lg font-semibold">Ready to scan</p>
+                        <p className="text-slate-300 text-sm mt-2 max-w-sm">Tap Start Camera Scan, then center the QR inside the frame.</p>
+                      </>
                     )}
                   </div>
-                </div>
-                
-                {/* Scanning overlay */}
-                {isScanning && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute top-2 left-2 right-2 z-20 flex justify-between items-center"
-                  >
-                    <div className="bg-green-600/90 text-white px-3 py-1 rounded-lg text-sm font-medium">
-                      🔍 Scanning for QR Code...
-                    </div>
-                    <div className="bg-blue-600/90 text-white px-3 py-1 rounded-lg text-sm font-medium">
-                      📱 Position QR in frame
-                    </div>
-                  </motion.div>
                 )}
+
+                <div className="absolute inset-0 z-20 pointer-events-none">
+                  <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(3,7,18,0.35),rgba(3,7,18,0.65))]"></div>
+
+                  <div className="scanner-frame absolute left-1/2 top-1/2 w-[74%] max-w-[310px] aspect-square -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/60 bg-white/10 backdrop-blur-[1.5px] shadow-[0_0_0_9999px_rgba(2,6,23,0.45)]">
+                    <span className="scanner-corner scanner-corner-tl"></span>
+                    <span className="scanner-corner scanner-corner-tr"></span>
+                    <span className="scanner-corner scanner-corner-bl"></span>
+                    <span className="scanner-corner scanner-corner-br"></span>
+                    {!isScanning && permissionState !== 'denied' && permissionState !== 'unavailable' ? (
+                      <span className="scanner-idle-icon" aria-hidden="true">
+                        <FaCamera />
+                      </span>
+                    ) : null}
+                    {isScanning ? <span className="scanner-line"></span> : null}
+                  </div>
+
+                  <div className="absolute top-3 left-3 right-3 flex justify-between items-center gap-2">
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/55 text-cyan-100 border border-cyan-400/30 text-xs sm:text-sm font-semibold backdrop-blur-md">
+                      <FaShieldAlt />
+                      Safe scanning
+                    </span>
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/55 text-emerald-100 border border-emerald-400/30 text-xs sm:text-sm font-semibold backdrop-blur-md">
+                      <FaCheckCircle />
+                      Verified by AI system
+                    </span>
+                  </div>
+
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[88%] rounded-2xl px-4 py-2.5 bg-black/55 border border-white/20 text-center backdrop-blur-md">
+                    <p className="text-white text-sm font-semibold">Align QR code within frame</p>
+                    <p className="text-cyan-100/90 text-xs mt-1">Scanning will start automatically</p>
+                  </div>
+                </div>
               </div>
 
-              {/* Upload Option */}
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-4 mb-4">
-                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
-                  <span className="text-gray-500 dark:text-gray-400 text-sm">or</span>
-                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
-                </div>
-                
-                <GlowingButton
-                  onClick={() => fileInputRef.current.click()}
-                  className="w-full py-3 font-semibold"
-                  glowColor="purple"
+              <div className="space-y-4">
+                <motion.section
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`rounded-2xl border p-4 sm:p-5 shadow-sm ${activeStatus.className}`}
                 >
-                  <FaUpload className="mr-2" />
-                  Upload QR Image
-                </GlowingButton>
-                
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 text-lg">{activeStatus.icon}</div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold">{activeStatus.title}</h3>
+                      <p className="text-xs sm:text-sm mt-1 opacity-90">{activeStatus.subtitle}</p>
+                    </div>
+
+                    {scannerState === 'processing' ? (
+                      <div className="ml-auto inline-flex items-center gap-2 text-xs font-semibold px-2.5 py-1 rounded-full bg-white/65 dark:bg-slate-800/70 border border-indigo-200 dark:border-indigo-700">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        AI + Blockchain
+                      </div>
+                    ) : null}
+                  </div>
+                </motion.section>
+
+                {scanResult && scannerState !== 'failed' ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/35 p-4"
+                  >
+                    <p className="text-sm font-bold text-emerald-900 dark:text-emerald-200">Verification token captured</p>
+                    <p className="text-xs font-mono break-all mt-2 text-emerald-700 dark:text-emerald-300">{scanResult}</p>
+                    <p className="text-xs mt-3 text-emerald-700 dark:text-emerald-300">Preparing secure redirect to product profile...</p>
+                  </motion.div>
+                ) : null}
+
+                {error ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border border-rose-200 dark:border-rose-800 bg-rose-50/80 dark:bg-rose-950/35 p-4"
+                  >
+                    <p className="text-sm font-bold text-rose-900 dark:text-rose-200">Verification issue</p>
+                    <p className="text-xs mt-2 text-rose-700 dark:text-rose-300">{error}</p>
+                  </motion.div>
+                ) : null}
+
+                {flashUnsupported && isScanning ? (
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/85 dark:bg-amber-950/35 p-3 text-xs text-amber-800 dark:text-amber-200">
+                    Flash control is not supported by this device/browser camera stream.
+                  </div>
+                ) : null}
+
+                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-2.5 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.8)]">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button
+                      onClick={handleScanButtonClick}
+                      disabled={permissionState === 'unavailable'}
+                      className="inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs sm:text-sm font-semibold shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105 active:scale-[0.99] transition"
+                    >
+                      <FaCamera />
+                      {isScanning ? 'Stop' : 'Start'}
+                    </button>
+
+                    <button
+                      onClick={toggleFlash}
+                      disabled={!isScanning}
+                      className={`inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition active:scale-[0.99] ${
+                        flashEnabled
+                          ? 'bg-amber-400/90 text-slate-900 border-amber-300'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      <FaBolt />
+                      Flash
+                    </button>
+
+                    <button
+                      onClick={() => fileInputRef.current.click()}
+                      className="inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-[0.99] transition"
+                    >
+                      <FaUpload />
+                      Upload
+                    </button>
+
+                    <button
+                      onClick={() => setShowHelp((prev) => !prev)}
+                      className="inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-[0.99] transition"
+                    >
+                      <FaQuestionCircle />
+                      Help
+                    </button>
+                  </div>
+                </div>
+
                 <input
                   type="file"
                   accept="image/*"
@@ -677,64 +911,128 @@ function QRScan() {
                   className="hidden"
                   onChange={handleImageUpload}
                 />
-              </div>
 
-              {/* Results */}
-              {scanResult && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
-                >
-                  <p className="text-green-800 dark:text-green-200 text-sm">
-                    <strong>Scanned Successfully:</strong>
-                  </p>
-                  <p className="text-green-600 dark:text-green-300 font-mono text-xs break-all mt-1">
-                    {scanResult}
-                  </p>
-                  <div className="mt-3 flex items-center text-green-600 dark:text-green-400 text-sm">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    Redirecting to product page...
-                  </div>
-                </motion.div>
-              )}
+                {showHelp ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 p-4"
+                  >
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Quick help</h4>
+                    <ul className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 space-y-1.5">
+                      <li>1. Start camera scan and center the QR inside the square.</li>
+                      <li>2. Use flash in low-light environments for faster recognition.</li>
+                      <li>3. If camera access fails, upload a clear QR image from gallery.</li>
+                    </ul>
+                  </motion.div>
+                ) : null}
 
-              {/* Error */}
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800"
-                >
-                  <p className="text-red-800 dark:text-red-200 text-sm">
-                    <strong>Error:</strong> {error}
-                  </p>
-                </motion.div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex space-x-4">
-                <GlowingButton
-                  onClick={() => navigate('/')}
-                  variant="secondary"
-                  className="flex-1 py-3 font-semibold"
-                  glowColor="blue"
-                >
-                  <FaArrowLeft className="mr-2" />
-                  Back to Home
-                </GlowingButton>
-                
-                <GlowingButton
-                  onClick={handleScanButtonClick}
-                  className="flex-1 py-3 font-semibold"
-                  glowColor="green"
-                  disabled={permissionState === 'unavailable'}
-                >
-                  <FaCamera className="mr-2" />
-                  {isScanning ? 'Stop Scan' : 'Start Camera Scan'}
-                </GlowingButton>
+                <div className="text-xs text-slate-600 dark:text-slate-400 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 p-3">
+                  Safe scanning note: QR content is used only to identify the product record and run authenticity verification.
+                </div>
               </div>
             </div>
+
+            <div className="mt-4 sm:mt-6 flex justify-center">
+              <button
+                onClick={() => navigate('/')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-white/70 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-white dark:hover:bg-slate-700 transition"
+              >
+                <FaArrowLeft />
+                Back to Home
+              </button>
+            </div>
+
+            <style>{`
+              .scanner-frame {
+                position: relative;
+              }
+
+              .scanner-corner {
+                position: absolute;
+                width: 28px;
+                height: 28px;
+                border-color: rgba(255, 255, 255, 0.95);
+                border-style: solid;
+                filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+              }
+
+              .scanner-corner-tl {
+                top: -1px;
+                left: -1px;
+                border-width: 4px 0 0 4px;
+                border-top-left-radius: 18px;
+              }
+
+              .scanner-corner-tr {
+                top: -1px;
+                right: -1px;
+                border-width: 4px 4px 0 0;
+                border-top-right-radius: 18px;
+              }
+
+              .scanner-corner-bl {
+                left: -1px;
+                bottom: -1px;
+                border-width: 0 0 4px 4px;
+                border-bottom-left-radius: 18px;
+              }
+
+              .scanner-corner-br {
+                right: -1px;
+                bottom: -1px;
+                border-width: 0 4px 4px 0;
+                border-bottom-right-radius: 18px;
+              }
+
+              .scanner-line {
+                position: absolute;
+                left: 6%;
+                right: 6%;
+                top: 16%;
+                height: 3px;
+                border-radius: 999px;
+                background: linear-gradient(90deg, rgba(16, 185, 129, 0), rgba(16, 185, 129, 0.95), rgba(16, 185, 129, 0));
+                box-shadow: 0 0 14px rgba(16, 185, 129, 0.9);
+                animation: scannerSweep 2s ease-in-out infinite;
+              }
+
+              .scanner-idle-icon {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 64px;
+                height: 64px;
+                border-radius: 16px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: rgba(165, 243, 252, 0.95);
+                font-size: 30px;
+                background: linear-gradient(135deg, rgba(8, 145, 178, 0.5), rgba(14, 116, 144, 0.32));
+                border: 1px solid rgba(165, 243, 252, 0.45);
+                box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35), 0 10px 25px rgba(8, 47, 73, 0.5);
+                z-index: 2;
+              }
+
+              @keyframes scannerSweep {
+                0% {
+                  top: 14%;
+                  opacity: 0.35;
+                }
+
+                50% {
+                  top: 84%;
+                  opacity: 1;
+                }
+
+                100% {
+                  top: 14%;
+                  opacity: 0.35;
+                }
+              }
+            `}</style>
           </div>
         </AnimatedCard>
         </ErrorBoundary>

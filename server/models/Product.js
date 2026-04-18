@@ -166,7 +166,7 @@ const ProductSchema = new mongoose.Schema({
   // Backward-compatible aliases for external consumers expecting top-level verification fields.
   verificationStatus: {
     type: String,
-    enum: ['allowed', 'flagged', 'blocked', 'skipped'],
+    enum: ['pending', 'verified', 'flagged', 'failed', 'allowed', 'blocked', 'skipped'],
     default: 'flagged'
   },
   riskScore: {
@@ -178,6 +178,15 @@ const ProductSchema = new mongoose.Schema({
     default: []
   },
   reviewedByAdmin: String,
+  reviewedByAdminFlag: {
+    type: Boolean,
+    default: false
+  },
+  adminAction: {
+    type: String,
+    enum: ['approved', 'rejected', 'removed', 'none'],
+    default: 'none'
+  },
   reviewedAt: Date,
   stageEvents: [StageEventSchema],
   verification: {
@@ -209,6 +218,12 @@ const ProductSchema = new mongoose.Schema({
     decisionAt: Date
   },
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+ProductSchema.pre('save', function updateTimestamp(next) {
+  this.updatedAt = new Date();
+  next();
 });
 
 module.exports = mongoose.model('Product', ProductSchema); 

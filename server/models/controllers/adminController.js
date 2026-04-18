@@ -12,6 +12,27 @@ const LIFECYCLE_LABELS = {
   flagged: 'Flagged'
 };
 
+async function findProductByIdentifier(identifier, { lean = false } = {}) {
+  const id = sanitizeModerationText(identifier, 120);
+  if (!id) {
+    return null;
+  }
+
+  const findOne = (query) => (lean ? Product.findOne(query).lean() : Product.findOne(query));
+
+  const byProductId = await findOne({ productId: id });
+  if (byProductId) {
+    return byProductId;
+  }
+
+  // Backward-compatible fallback for datasets that may reference Mongo _id.
+  if (/^[a-f0-9]{24}$/i.test(id)) {
+    return findOne({ _id: id });
+  }
+
+  return null;
+}
+
 function getRiskBand(riskScore) {
   const score = Number(riskScore || 0);
   if (score >= 75) return 'high';
@@ -155,7 +176,9 @@ function getVerificationView(product) {
     criticalFailures: Array.isArray(verification.criticalFailures) ? verification.criticalFailures : [],
     aiModel: verification.aiModel || null,
     pipeline: verification.pipeline || null,
+    reason: verification.reason || null,
     verifiedAt: verification.verifiedAt || null,
+    decisionAt: verification.decisionAt || null,
     timeline: buildVerificationTimeline(product, verification)
   };
 }
@@ -267,7 +290,9 @@ exports.getFlaggedProducts = async (req, res) => {
       $or: [
         { 'verification.status': 'flagged' },
         { 'verification.reviewState': 'pending_review' },
-        { 'verification.riskScore': { $gte: FLAG_THRESHOLD } }
+        { 'verification.riskScore': { $gte: FLAG_THRESHOLD } },
+        { verificationStatus: 'flagged' },
+        { riskScore: { $gte: FLAG_THRESHOLD } }
       ]
     })
       .sort({ updatedAt: -1, createdAt: -1 })
@@ -292,7 +317,7 @@ exports.getFlaggedProducts = async (req, res) => {
 exports.getProductReview = async (req, res) => {
   try {
     const { id } = req.params;
-    const product = await Product.findOne({ productId: id }).lean();
+    const product = await findProductByIdentifier(id, { lean: true });
 
     if (!product) {
       return res.status(404).json({
@@ -325,11 +350,23 @@ exports.getOverview = async (req, res) => {
         $or: [
           { 'verification.status': 'flagged' },
           { 'verification.reviewState': 'pending_review' },
-          { 'verification.riskScore': { $gte: FLAG_THRESHOLD } }
+          { 'verification.riskScore': { $gte: FLAG_THRESHOLD } },
+          { verificationStatus: 'flagged' },
+          { riskScore: { $gte: FLAG_THRESHOLD } }
         ]
       }),
-      Product.countDocuments({ 'verification.status': 'allowed', 'verification.reviewState': 'verified' }),
-      Product.countDocuments({ 'verification.status': 'blocked' })
+      Product.countDocuments({
+        $or: [
+          { 'verification.status': 'allowed', 'verification.reviewState': 'verified' },
+          { verificationStatus: { $in: ['verified', 'allowed'] } }
+        ]
+      }),
+      Product.countDocuments({
+        $or: [
+          { 'verification.status': 'blocked' },
+          { verificationStatus: { $in: ['failed', 'blocked'] } }
+        ]
+      })
     ]);
 
     res.json({
@@ -338,6 +375,7 @@ exports.getOverview = async (req, res) => {
         totalProducts,
         flaggedProducts,
         verifiedProducts,
+        failedProducts: blockedProducts,
         blockedProducts,
         flagThreshold: FLAG_THRESHOLD
       }
@@ -542,7 +580,7 @@ exports.productAction = async (req, res) => {
       });
     }
 
-    const product = await Product.findOne({ productId: id });
+    const product = await findProductByIdentifier(id);
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -579,11 +617,18 @@ exports.productAction = async (req, res) => {
     product.riskScore = Number(product.verification?.riskScore || 0);
     product.issues = Array.isArray(product.verification?.issues) ? product.verification.issues : [];
     product.reviewedByAdmin = reviewerEmail || null;
+    product.reviewedByAdminFlag = Boolean(reviewerEmail);
+    product.adminAction = normalizedAction === 'approve'
+      ? 'approved'
+      : normalizedAction === 'reject'
+        ? 'rejected'
+        : 'removed';
     product.reviewedAt = reviewedAt;
     product.verification = {
       ...(product.verification || {}),
       status,
       reviewState,
+      reason: normalizedReason || product.verification?.reason || null,
       verifiedAt: reviewedAt,
       decisionAt: reviewedAt,
       lifecycleStatus: normalizedAction === 'approve'
@@ -603,9 +648,15 @@ exports.productAction = async (req, res) => {
       reviewedAt
     });
 
+    const successMessageByAction = {
+      approve: 'Product approved successfully',
+      reject: 'Product rejected successfully',
+      remove: 'Product removed successfully'
+    };
+
     res.json({
       success: true,
-      message: `Product ${normalizedAction}d successfully`,
+      message: successMessageByAction[normalizedAction] || 'Admin action applied successfully',
       data: {
         productId: product.productId,
         status,

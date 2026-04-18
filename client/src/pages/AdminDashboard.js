@@ -22,7 +22,11 @@ import {
   FaClipboardCheck,
   FaBell,
   FaSearchPlus,
-  FaHistory
+  FaHistory,
+  FaSignOutAlt,
+  FaUserShield,
+  FaClipboardList,
+  FaFlag
 } from 'react-icons/fa';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import GlowingButton from '../components/UI/GlowingButton';
@@ -33,7 +37,7 @@ import { buildAPIURL } from '../utils/apiConfig';
 import AIInsightsPanel from '../components/AIInsightsPanel';
 import VerificationTimeline from '../components/VerificationTimeline';
 import VerificationResultPanel from '../components/VerificationResultPanel';
-import { getAdminOverview, getFlaggedProducts, getAdminActionLogs, getAdminProduct, takeAdminAction } from '../utils/adminApi';
+import { getAdminDashboard, getAdminOverview, getFlaggedProducts, getAdminActionLogs, getAdminProduct, takeAdminAction } from '../utils/adminApi';
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/400x200?text=No+Image';
 
@@ -140,6 +144,10 @@ function AdminDashboard() {
   const [selectedReviewLoading, setSelectedReviewLoading] = useState(false);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [moderationFilter, setModerationFilter] = useState('all');
+  const [moderationSearch, setModerationSearch] = useState('');
+  const [moderationError, setModerationError] = useState('');
+  const [lastModerationSync, setLastModerationSync] = useState(null);
+  const [adminIdentity, setAdminIdentity] = useState({ email: '', role: '' });
   const [adminActionLogs, setAdminActionLogs] = useState([]);
   const reviewSelectionCounterRef = useRef(0);
   const navigate = useNavigate();
@@ -150,11 +158,16 @@ function AdminDashboard() {
       try {
         const decoded = jwtDecode(token);
         setIsAdmin(decoded.role === 'admin');
+        setAdminIdentity({
+          email: decoded.email || '',
+          role: decoded.role || ''
+        });
         if (decoded.role === 'admin') {
           setActiveTab('all-products');
         }
       } catch (error) {
         setIsAdmin(false);
+        setAdminIdentity({ email: '', role: '' });
       }
     }
 
@@ -166,6 +179,18 @@ function AdminDashboard() {
     if (isAdmin) {
       loadAdminData();
     }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      loadAdminData({ silent: true });
+    }, 3000);
+
+    return () => window.clearInterval(intervalId);
   }, [isAdmin]);
 
   useEffect(() => {
@@ -223,11 +248,14 @@ function AdminDashboard() {
     }
   };
 
-  const loadAdminData = async () => {
+  const loadAdminData = async ({ silent = false } = {}) => {
     try {
-      setModerationLoading(true);
+      if (!silent) {
+        setModerationLoading(true);
+      }
+      setModerationError('');
       const [overviewResult, flaggedResult, actionLogsResult] = await Promise.allSettled([
-        getAdminOverview(),
+        getAdminDashboard().catch(() => getAdminOverview()),
         getFlaggedProducts(),
         getAdminActionLogs(20)
       ]);
@@ -243,15 +271,51 @@ function AdminDashboard() {
       if (actionLogsResult.status === 'fulfilled' && actionLogsResult.value?.success) {
         setAdminActionLogs(actionLogsResult.value.data || []);
       }
+
+      const failedSegments = [
+        overviewResult.status === 'rejected' ? 'overview' : null,
+        flaggedResult.status === 'rejected' ? 'flagged queue' : null,
+        actionLogsResult.status === 'rejected' ? 'action logs' : null
+      ].filter(Boolean);
+
+      if (failedSegments.length > 0) {
+        setModerationError(`Partial sync issue in ${failedSegments.join(', ')}. Data shown may be stale.`);
+      }
+
+      setLastModerationSync(new Date());
     } catch (error) {
       console.error('Admin data load failed:', error);
+      setModerationError('Unable to sync moderation data right now. Please retry.');
     } finally {
-      setModerationLoading(false);
+      if (!silent) {
+        setModerationLoading(false);
+      }
     }
   };
 
+  const handleAdminLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/auth/login');
+  };
+
   const handleAdminAction = async (productId, action) => {
-    const reason = window.prompt(`Enter reason for ${action} action (optional):`, '') || '';
+    const confirmationByAction = {
+      approve: 'Approve this product and mark verification as trusted?',
+      reject: 'Reject this product and mark it as failed moderation?',
+      remove: 'Remove this product from active visibility?'
+    };
+
+    const confirmed = window.confirm(confirmationByAction[action] || 'Proceed with this moderation action?');
+    if (!confirmed) {
+      return;
+    }
+
+    const reason = window.prompt(`Enter reason for ${action} action:`, '') || '';
+    if ((action === 'reject' || action === 'remove') && !reason.trim()) {
+      window.alert('Reason is required for reject/remove actions.');
+      return;
+    }
+
     try {
       setReviewBusy(true);
       const response = await takeAdminAction(productId, action, reason);
@@ -266,10 +330,6 @@ function AdminDashboard() {
     } finally {
       setReviewBusy(false);
     }
-  };
-
-  const closeReviewPanel = () => {
-    setSelectedReviewProduct(null);
   };
 
   const handleSelectReviewProduct = async (product) => {
@@ -389,22 +449,27 @@ function AdminDashboard() {
     }, { verified: 0, flagged: 0, blocked: 0 });
   }, [flaggedProducts]);
 
-  const reviewSummary = selectedReviewProduct ? getVerificationMeta(selectedReviewProduct.verification) : null;
-
   const filteredModerationQueue = useMemo(() => {
     const queue = flaggedProducts || [];
 
-    if (moderationFilter === 'all') {
-      return queue;
-    }
-
     return queue.filter((product) => {
       const status = product?.verification?.status || 'flagged';
-      if (moderationFilter === 'verified') return status === 'allowed';
-      if (moderationFilter === 'blocked') return status === 'blocked';
-      return status === 'flagged';
+      const matchesStatus = moderationFilter === 'all'
+        ? true
+        : moderationFilter === 'verified'
+          ? status === 'allowed'
+          : moderationFilter === 'blocked'
+            ? status === 'blocked'
+            : status === 'flagged';
+
+      const query = moderationSearch.trim().toLowerCase();
+      const matchesSearch = !query
+        ? true
+        : (product?.name || '').toLowerCase().includes(query) || (product?.productId || '').toLowerCase().includes(query);
+
+      return matchesStatus && matchesSearch;
     });
-  }, [flaggedProducts, moderationFilter]);
+  }, [flaggedProducts, moderationFilter, moderationSearch]);
 
   useEffect(() => {
     if (!filteredModerationQueue.length) {
@@ -472,7 +537,7 @@ function AdminDashboard() {
     },
     {
       label: 'Blocked Products',
-      value: adminOverview?.blockedProducts ?? allProducts.filter((product) => product.verification?.status === 'blocked').length,
+      value: adminOverview?.failedProducts ?? adminOverview?.blockedProducts ?? allProducts.filter((product) => product.verification?.status === 'blocked').length,
       icon: FaTimesCircle,
       color: 'from-red-50 to-red-100'
     }
@@ -484,33 +549,55 @@ function AdminDashboard() {
       dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
       
       <div className="min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="w-full px-2 sm:px-4 py-6 sm:py-8">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
+              <div className="flex items-start sm:items-center gap-4">
                 <GlowingButton
                   onClick={() => navigate('/')}
                   variant="secondary"
-                  className="p-3"
+                  className="p-3 mt-1 sm:mt-0"
                   glowColor="blue"
                 >
                   <FaArrowLeft className="w-4 h-4" />
                 </GlowingButton>
                 <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
                     Admin Dashboard
                   </h1>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Manage your products and track their lifecycle
+                  <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
+                    Real-time moderation, lifecycle visibility, and product governance in one place.
                   </p>
+                  {isAdmin ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
+                        <FaUserShield /> {adminIdentity.email || 'admin'}
+                      </span>
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold uppercase">
+                        Role: {adminIdentity.role || 'admin'}
+                      </span>
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                        Live sync: {lastModerationSync ? new Date(lastModerationSync).toLocaleTimeString() : 'Not synced yet'}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 self-start lg:self-auto">
+                {isAdmin ? (
+                  <button
+                    type="button"
+                    onClick={handleAdminLogout}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    <FaSignOutAlt /> Logout
+                  </button>
+                ) : null}
                 <div className="relative">
                   <FloatingCubeWrapper size={0.8} className="w-20 h-20" />
                 </div>
@@ -616,12 +703,13 @@ function AdminDashboard() {
 
           {isAdmin ? (
             <motion.div
+              id="admin-overview"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.12 }}
               className="mb-10"
             >
-              <AnimatedCard className="p-6 sm:p-8 border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 shadow-2xl shadow-slate-200/40 dark:shadow-slate-950/30">
+              <AnimatedCard className="p-5 sm:p-8 border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 shadow-2xl shadow-slate-200/40 dark:shadow-slate-950/30">
                 <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6 mb-6">
                   <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold mb-3">
@@ -644,7 +732,7 @@ function AdminDashboard() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-3 xl:items-end">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
                       <div className="min-w-[140px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-4 py-3">
                         <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Queue size</p>
                         <p className="text-2xl font-bold text-slate-900 dark:text-white">{moderationStats.flagged}</p>
@@ -675,18 +763,18 @@ function AdminDashboard() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                   {adminCards.map((card) => {
                     const Icon = card.icon;
                     return (
-                      <div key={card.label} className={`rounded-2xl border p-4 bg-gradient-to-br ${card.color} shadow-sm`}>
+                      <div key={card.label} className={`rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-gradient-to-br ${card.color} dark:from-slate-800 dark:to-slate-900 shadow-sm`}>
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-sm text-slate-600 font-medium">{card.label}</p>
-                            <p className="text-3xl font-bold text-slate-900 dark:text-slate-950">{card.value}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">{card.label}</p>
+                            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">{card.value}</p>
                           </div>
-                          <div className="w-12 h-12 rounded-xl bg-white/80 flex items-center justify-center shadow-sm">
-                            <Icon className="text-slate-700" />
+                          <div className="w-12 h-12 rounded-xl bg-white/80 dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700">
+                            <Icon className="text-slate-700 dark:text-slate-200" />
                           </div>
                         </div>
                       </div>
@@ -694,8 +782,29 @@ function AdminDashboard() {
                   })}
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] gap-6">
-                  <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                {moderationError ? (
+                  <div className="mb-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                    {moderationError}
+                  </div>
+                ) : null}
+
+                <div id="moderation-queue" className="grid grid-cols-1 2xl:grid-cols-[220px_1.05fr_0.95fr] gap-6">
+                  <aside className="hidden 2xl:block rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/70 p-4 h-fit sticky top-24">
+                    <h3 className="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-3">Control Center</h3>
+                    <div className="space-y-2 text-sm">
+                      <a href="#admin-overview" className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                        <FaClipboardList /> Dashboard
+                      </a>
+                      <a href="#moderation-queue" className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                        <FaFlag /> Flagged Items
+                      </a>
+                      <a href="#admin-action-logs" className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                        <FaHistory /> Reports
+                      </a>
+                    </div>
+                  </aside>
+
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col min-h-[32rem]">
                     <div className="flex flex-col gap-4 px-4 sm:px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80">
                       <div className="flex items-center justify-between gap-4">
                         <div>
@@ -737,13 +846,31 @@ function AdminDashboard() {
                           );
                         })}
                       </div>
+
+                      <div className="relative">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                        <input
+                          type="text"
+                          value={moderationSearch}
+                          onChange={(event) => setModerationSearch(event.target.value)}
+                          placeholder="Search moderation queue by product or ID"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-9 pr-3 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
                     </div>
 
-                    <div className="overflow-x-auto max-h-[36rem]">
+                    {moderationLoading ? (
+                      <div className="px-4 py-10 text-center text-slate-500 dark:text-slate-300 text-sm">
+                        Loading moderation queue...
+                      </div>
+                    ) : null}
+
+                    <div className="hidden md:block flex-1 min-h-0 overflow-auto">
                       <table className="min-w-full">
                         <thead className="bg-slate-50 dark:bg-slate-800 sticky top-0 z-10">
                           <tr>
                             <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">Product</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">Manufacturer</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">Risk</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">Status</th>
                           </tr>
@@ -792,6 +919,9 @@ function AdminDashboard() {
                                     </div>
                                   </div>
                                 </td>
+                                <td className="px-4 py-4 text-sm text-slate-700 dark:text-slate-300">
+                                  {product.manufacturer || 'Unknown'}
+                                </td>
                                 <td className="px-4 py-4">
                                   <div className="min-w-[160px]">
                                     <div className="flex items-center justify-between mb-2">
@@ -824,7 +954,7 @@ function AdminDashboard() {
                             );
                           }) : (
                             <tr>
-                              <td colSpan={3} className="px-4 py-10 text-center text-slate-500">
+                              <td colSpan={4} className="px-4 py-10 text-center text-slate-500">
                                 No products match the selected moderation filter.
                               </td>
                             </tr>
@@ -832,11 +962,64 @@ function AdminDashboard() {
                         </tbody>
                       </table>
                     </div>
+
+                    <div className="md:hidden flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                      {filteredModerationQueue.length > 0 ? filteredModerationQueue.map((product) => {
+                        const verificationMeta = getVerificationMeta(product.verification);
+                        const isSelected = selectedReviewProduct?.productId === product.productId;
+
+                        return (
+                          <button
+                            key={product.productId}
+                            type="button"
+                            onClick={() => handleSelectReviewProduct(product)}
+                            className={`w-full text-left p-4 transition-colors ${isSelected ? 'bg-slate-100 dark:bg-slate-800/80' : 'bg-white dark:bg-slate-900'}`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-700">
+                                {isValidImage(product.imageFile) ? (
+                                  <img
+                                    src={getFullUrl(product.imageFile)}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(event) => {
+                                      event.target.onerror = null;
+                                      event.target.src = PLACEHOLDER_IMG;
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                    <FaBoxOpen className="text-sm" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-slate-900 dark:text-white truncate">{product.name || 'Unnamed Product'}</p>
+                                <p className="text-xs text-slate-500 truncate">{product.productId}</p>
+                                <p className="text-xs text-slate-500 truncate mt-1">{product.manufacturer || 'Unknown manufacturer'}</p>
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border ${verificationMeta.statusClass}`}>
+                                    {verificationMeta.label}
+                                  </span>
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[11px] font-semibold ${getRiskColor(product.verification?.riskScore || 0)}`}>
+                                    Risk {product.verification?.riskScore ?? 0}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      }) : (
+                        <div className="px-4 py-10 text-center text-slate-500 dark:text-slate-300 text-sm">
+                          No products match the selected moderation filter.
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div id="product-review" className="space-y-4">
                     {selectedReviewProduct ? (
-                      <AnimatedCard className="p-5 sm:p-6 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg sticky top-6">
+                      <AnimatedCard className="p-5 sm:p-6 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg sticky top-24">
                         <div className="flex items-center justify-between gap-3 mb-4">
                           <div>
                             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Selected product</p>
@@ -910,7 +1093,7 @@ function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 p-4">
+                <div id="admin-action-logs" className="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 p-4">
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                       <FaHistory /> Recent Admin Actions
@@ -962,10 +1145,10 @@ function AdminDashboard() {
             transition={{ delay: 0.15 }}
             className="mb-6"
           >
-            <div className="flex space-x-1 bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm rounded-lg p-1">
+            <div className="flex flex-col sm:flex-row sm:space-x-1 gap-1 sm:gap-0 bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('my-products')}
-                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 text-left sm:text-center ${
                   activeTab === 'my-products'
                     ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -975,7 +1158,7 @@ function AdminDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab('all-products')}
-                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 text-left sm:text-center ${
                   activeTab === 'all-products'
                     ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -985,108 +1168,6 @@ function AdminDashboard() {
               </button>
             </div>
           </motion.div>
-
-          {isAdmin && selectedReviewProduct ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8"
-            >
-              <AnimatedCard className="p-6 sm:p-8 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/30 dark:shadow-slate-950/30">
-                <div className="flex items-center justify-between gap-4 mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Product Review</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">Full details and moderation actions for the selected product.</p>
-                  </div>
-                  <button onClick={closeReviewPanel} className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm">
-                    Close
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/70 p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h4 className="text-2xl font-bold text-slate-900 dark:text-white">{selectedReviewProduct.name}</h4>
-                          <p className="mt-1 text-sm text-slate-500 break-all">{selectedReviewProduct.productId}</p>
-                        </div>
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${reviewSummary?.statusClass || 'bg-amber-100 text-amber-700 border-amber-200'}`}>
-                          {reviewSummary?.label || 'Flagged'}
-                        </span>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                        <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3">
-                          <p className="text-slate-500 text-xs uppercase tracking-wide">Manufacturer</p>
-                          <p className="font-medium text-slate-900 dark:text-white">{selectedReviewProduct.manufacturer || 'Not provided'}</p>
-                        </div>
-                        <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3">
-                          <p className="text-slate-500 text-xs uppercase tracking-wide">Origin</p>
-                          <p className="font-medium text-slate-900 dark:text-white">{selectedReviewProduct.origin || 'Not provided'}</p>
-                        </div>
-                        <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3">
-                          <p className="text-slate-500 text-xs uppercase tracking-wide">Risk Score</p>
-                          <p className="font-semibold text-slate-900 dark:text-white">{selectedReviewProduct.verification?.riskScore ?? 0}</p>
-                        </div>
-                        <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3">
-                          <p className="text-slate-500 text-xs uppercase tracking-wide">Review State</p>
-                          <p className="font-semibold text-slate-900 dark:text-white">{selectedReviewProduct.verification?.reviewState || 'pending_review'}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-                          <span>Risk level</span>
-                          <span>{selectedReviewProduct.verification?.riskScore ?? 0}/100</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${reviewSummary?.riskClass || 'bg-amber-500'}`}
-                            style={{ width: `${Math.min(100, Number(selectedReviewProduct.verification?.riskScore || 0))}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/80">
-                      <h4 className="font-semibold mb-3 text-slate-900 dark:text-white">Issues Detected</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {(selectedReviewProduct.verification?.issues || []).length > 0 ? (
-                          selectedReviewProduct.verification.issues.map((issue, index) => (
-                            <span key={index} className="px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
-                              {issue}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-sm text-slate-500">No verification issues recorded.</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/80">
-                      <h4 className="font-semibold mb-2 text-slate-900 dark:text-white">Verification Pipeline</h4>
-                      <pre className="text-xs whitespace-pre-wrap break-words max-h-80 overflow-auto text-slate-700 dark:text-slate-200">{JSON.stringify(selectedReviewProduct.verification?.pipeline || {}, null, 2)}</pre>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'approve')} className="px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold disabled:opacity-60 hover:bg-emerald-700">
-                        <FaClipboardCheck className="inline mr-2" />Approve
-                      </button>
-                      <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'reject')} className="px-4 py-2 rounded-lg bg-amber-500 text-white font-semibold disabled:opacity-60 hover:bg-amber-600">
-                        <FaBell className="inline mr-2" />Reject
-                      </button>
-                      <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'remove')} className="px-4 py-2 rounded-lg bg-rose-600 text-white font-semibold disabled:opacity-60 hover:bg-rose-700">
-                        <FaTrash className="inline mr-2" />Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </AnimatedCard>
-            </motion.div>
-          ) : null}
 
           {/* Controls */}
           <motion.div

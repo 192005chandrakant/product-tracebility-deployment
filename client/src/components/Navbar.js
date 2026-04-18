@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaHome, FaQrcode, FaPlus, FaHistory, FaUser, FaSignOutAlt, FaBars, FaTimes, FaUserCircle, FaUserAlt, FaRobot } from 'react-icons/fa';
 
@@ -13,25 +13,73 @@ function stringToColor(str) {
   return `hsl(${h}, 70%, 80%)`;
 }
 
-const navLinks = [
-  { to: '/', label: 'Home', icon: FaHome, roles: ['admin', 'producer', 'customer'] },
-  { to: '/scan', label: 'Scan QR', icon: FaQrcode, roles: ['admin', 'producer', 'customer'] },
-  { to: '/admin/dashboard', label: 'Dashboard', icon: FaUser, roles: ['admin', 'producer'] },
-  { to: '/admin/add', label: 'Add Product', icon: FaPlus, roles: ['producer'] },
-  { to: '/admin/update', label: 'Update Product', icon: FaHistory, roles: ['producer'] },
-  { to: '/ai', label: 'AI Console', icon: FaRobot, roles: ['admin', 'producer', 'customer', 'consumer', 'user'] },
+const navLinkTemplates = [
+  { key: 'home', label: 'Home', icon: FaHome, guestTo: '/', userTo: '/home', roles: ['admin', 'producer', 'customer', 'consumer', 'user'] },
+  { key: 'scan', label: 'Scan QR', icon: FaQrcode, guestTo: '/scan', userTo: '/scan', roles: ['admin', 'producer', 'customer', 'consumer', 'user'] },
+  { key: 'dashboard', label: 'Dashboard', icon: FaUser, guestTo: null, userTo: '/admin/dashboard', roles: ['admin', 'producer'] },
+  { key: 'add', label: 'Add Product', icon: FaPlus, guestTo: null, userTo: '/admin/add', roles: ['producer'] },
+  { key: 'update', label: 'Update Product', icon: FaHistory, guestTo: null, userTo: '/admin/update', roles: ['producer'] },
+  { key: 'ai', label: 'AI Console', icon: FaRobot, guestTo: null, userTo: '/ai', roles: ['admin', 'producer', 'customer', 'consumer', 'user'] },
 ];
 
 function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const profileMenuRef = useRef(null);
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+    setIsMobileMenuOpen((open) => !open);
   };
 
-  const filteredNavLinks = navLinks.filter(l => !user || l.roles.includes(user.role));
+  const filteredNavLinks = useMemo(() => {
+    return navLinkTemplates
+      .filter((link) => (user ? link.roles.includes(user.role) : Boolean(link.guestTo)))
+      .map((link) => ({
+        key: link.key,
+        label: link.label,
+        icon: link.icon,
+        to: user ? link.userTo : link.guestTo,
+      }))
+      .filter((link) => Boolean(link.to));
+  }, [user]);
+
+  useEffect(() => {
+    const closeMenuOnResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const closeOnOutsideClick = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') {
+        setProfileOpen(false);
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', closeMenuOnResize);
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    window.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      window.removeEventListener('resize', closeMenuOnResize);
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setProfileOpen(false);
+    }
+  }, [user]);
 
   // Profile dropdown menu
   const profileMenu = (
@@ -46,14 +94,12 @@ function Navbar({ user, onLogout }) {
         >
           <div className="py-2 min-w-0">
             <div className="px-4 py-2 text-gray-700 dark:text-gray-200 text-sm font-semibold break-all whitespace-normal min-w-0 bg-gray-50 dark:bg-slate-700 rounded-t-xl">
-              {user && user.email}
+                {user && user.email}
             </div>
             <div className="border-t border-gray-200 dark:border-slate-600 my-1" />
             <button
               className="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors"
               onClick={() => {
-                console.log('Profile button clicked');
-                console.log('Current user:', user);
                 setProfileOpen(false);
                 navigate('/profile');
               }}
@@ -93,7 +139,7 @@ function Navbar({ user, onLogout }) {
             whileHover={{ scale: 1.05, rotate: -2 }}
             whileTap={{ scale: 0.95 }}
             className="flex items-center space-x-3 cursor-pointer group"
-            onClick={() => navigate('/')}
+            onClick={() => navigate(user ? '/home' : '/')}
           >
             <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg
               bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 
@@ -117,22 +163,23 @@ function Navbar({ user, onLogout }) {
           <div className="hidden md:flex items-center space-x-2">
             {filteredNavLinks.map((link) => (
               <motion.div
-                key={link.to}
+                key={link.key}
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Link
+                <NavLink
                   to={link.to}
-                  className="flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 group
-                    text-gray-700 hover:text-indigo-600 hover:bg-indigo-50/80 hover:shadow-lg
-                    dark:text-slate-300 dark:hover:text-cyan-300 dark:hover:bg-slate-700/50 
-                    dark:hover:shadow-[0_4px_15px_rgba(0,255,255,0.15)]
-                    border border-transparent hover:border-indigo-200/50 
-                    dark:hover:border-cyan-400/30"
+                  className={({ isActive }) =>
+                    `flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 group border ${
+                      isActive
+                        ? 'text-indigo-700 bg-indigo-50 border-indigo-200 shadow-md dark:text-cyan-200 dark:bg-slate-700/70 dark:border-cyan-400/40'
+                        : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50/80 hover:shadow-lg dark:text-slate-300 dark:hover:text-cyan-300 dark:hover:bg-slate-700/50 dark:hover:shadow-[0_4px_15px_rgba(0,255,255,0.15)] border-transparent hover:border-indigo-200/50 dark:hover:border-cyan-400/30'
+                    }`
+                  }
                 >
                   <link.icon className="w-5 h-5 transition-all duration-300 group-hover:scale-110" />
                   <span className="tracking-wide">{link.label}</span>
-                </Link>
+                </NavLink>
               </motion.div>
             ))}
           </div>
@@ -142,11 +189,14 @@ function Navbar({ user, onLogout }) {
             {user ? (
               <>
                 {/* Google-style profile icon */}
-                <div className="relative">
+                <div className="relative" ref={profileMenuRef}>
                   <button
                     className="w-10 h-10 rounded-full flex items-center justify-center shadow-md border-2 border-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     style={{ background: user.email ? stringToColor(user.email) : '#eee' }}
                     onClick={() => setProfileOpen((open) => !open)}
+                    aria-label="Open profile menu"
+                    aria-expanded={profileOpen}
+                    aria-haspopup="menu"
                   >
                     {user && user.email ? (
                       <span className="text-lg font-bold text-white uppercase">
@@ -178,6 +228,8 @@ function Navbar({ user, onLogout }) {
               whileTap={{ scale: 0.95 }}
               onClick={toggleMobileMenu}
               className="p-2 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200"
+              aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? <FaTimes className="w-6 h-6" /> : <FaBars className="w-6 h-6" />}
             </motion.button>
@@ -197,15 +249,21 @@ function Navbar({ user, onLogout }) {
           >
             <div className="px-4 py-6 space-y-4">
               {filteredNavLinks.map((link) => (
-                <Link
-                  key={link.to}
+                <NavLink
+                  key={link.key}
                   to={link.to}
-                  className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200"
+                  className={({ isActive }) =>
+                    `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-slate-700 dark:text-cyan-200 dark:border-cyan-400/30'
+                        : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/20 dark:hover:bg-gray-800/50'
+                    }`
+                  }
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <link.icon className="w-5 h-5" />
                   <span className="font-medium">{link.label}</span>
-                </Link>
+                </NavLink>
               ))}
               
               {user ? (
@@ -230,11 +288,7 @@ function Navbar({ user, onLogout }) {
                     <Link
                       to="/profile"
                       className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-600 dark:text-blue-400 border border-blue-500/30 transition-all duration-200"
-                      onClick={() => {
-                        console.log('Mobile profile link clicked');
-                        console.log('Current user:', user);
-                        setIsMobileMenuOpen(false);
-                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <FaUser className="w-5 h-5" />
                       <span>Profile</span>

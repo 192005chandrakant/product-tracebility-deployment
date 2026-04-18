@@ -4,6 +4,10 @@ export async function getAdminOverview() {
   return apiRequest('/api/admin/overview', { method: 'GET' });
 }
 
+export async function getAdminDashboard() {
+  return apiRequest('/api/admin/dashboard', { method: 'GET' });
+}
+
 export async function getFlaggedProducts() {
   return apiRequest('/api/admin/products/flagged', { method: 'GET' });
 }
