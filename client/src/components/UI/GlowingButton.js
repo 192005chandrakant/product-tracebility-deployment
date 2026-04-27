@@ -13,25 +13,19 @@ const GlowingButton = ({
 }) => {
   const variants = {
     primary: `relative overflow-hidden group
-      bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600
-      hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500
-      dark:from-cyan-500 dark:via-blue-500 dark:to-purple-500
-      dark:hover:from-cyan-400 dark:hover:via-blue-400 dark:hover:to-purple-400
+      bg-gradient-to-r from-[#A855F7] via-purple-500 to-[#2DD4BF]
+      hover:from-purple-400 hover:via-[#A855F7] hover:to-teal-300
       text-white font-semibold shadow-xl
-      shadow-indigo-500/30 hover:shadow-purple-500/50
-      dark:shadow-cyan-500/40 dark:hover:shadow-blue-500/60
-      border-0 focus:ring-4 focus:ring-purple-300 dark:focus:ring-cyan-300
+      shadow-purple-500/30 hover:shadow-purple-500/50
+      border border-white/10 focus:ring-4 focus:ring-purple-300/40
       before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300`,
     
     secondary: `relative overflow-hidden group
-      bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500
-      hover:from-emerald-400 hover:via-teal-400 hover:to-cyan-400
-      dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400
-      dark:hover:from-emerald-300 dark:hover:via-teal-300 dark:hover:to-cyan-300
+      bg-gradient-to-r from-[#2DD4BF] via-teal-400 to-cyan-300
+      hover:from-teal-300 hover:via-cyan-300 hover:to-[#A855F7]
       text-white font-semibold shadow-xl
-      shadow-emerald-500/30 hover:shadow-teal-500/50
-      dark:shadow-emerald-400/40 dark:hover:shadow-teal-400/60
-      border-0 focus:ring-4 focus:ring-emerald-300 dark:focus:ring-teal-300
+      shadow-teal-500/30 hover:shadow-teal-400/50
+      border border-white/10 focus:ring-4 focus:ring-teal-300/40
       before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300`,
     
     accent: `relative overflow-hidden group
@@ -46,26 +40,20 @@ const GlowingButton = ({
       before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300`,
     
     ghost: `relative overflow-hidden group
-      bg-white/80 hover:bg-white/95 border-2 border-gray-300/50 hover:border-indigo-400/50
-      dark:bg-slate-800/50 dark:hover:bg-slate-700/70 dark:border-slate-600/50 dark:hover:border-cyan-400/70
-      text-gray-700 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-cyan-300
+      bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/60
+      text-slate-200 hover:text-white
       font-semibold shadow-lg hover:shadow-xl backdrop-blur-sm
-      shadow-gray-300/20 hover:shadow-indigo-300/30
-      dark:shadow-slate-700/30 dark:hover:shadow-cyan-400/20
-      focus:ring-4 focus:ring-indigo-200 dark:focus:ring-cyan-300/30
-      before:absolute before:inset-0 before:bg-gradient-to-r before:from-indigo-50 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300
-      dark:before:from-cyan-900/20`,
+      shadow-purple-950/20 hover:shadow-purple-400/20
+      focus:ring-4 focus:ring-purple-300/30
+      before:absolute before:inset-0 before:bg-gradient-to-r before:from-purple-500/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300`,
       
     outline: `relative overflow-hidden group
-      bg-transparent border-2 border-indigo-500 hover:border-indigo-400
-      dark:border-cyan-400 dark:hover:border-cyan-300
-      text-indigo-600 hover:text-white dark:text-cyan-400 dark:hover:text-slate-900
+      bg-transparent border border-purple-400/70 hover:border-teal-300
+      text-purple-200 hover:text-white
       font-semibold shadow-lg hover:shadow-xl
-      shadow-indigo-200/30 hover:shadow-indigo-400/40
-      dark:shadow-cyan-400/20 dark:hover:shadow-cyan-300/40
-      focus:ring-4 focus:ring-indigo-200 dark:focus:ring-cyan-300/30
-      before:absolute before:inset-0 before:bg-gradient-to-r before:from-indigo-500 before:to-purple-500 before:scale-x-0 hover:before:scale-x-100 before:transition-transform before:duration-300 before:origin-left
-      dark:before:from-cyan-400 dark:before:to-blue-400`
+      shadow-purple-400/20 hover:shadow-purple-300/40
+      focus:ring-4 focus:ring-purple-300/30
+      before:absolute before:inset-0 before:bg-gradient-to-r before:from-purple-500 before:to-teal-400 before:scale-x-0 hover:before:scale-x-100 before:transition-transform before:duration-300 before:origin-left`
   };
 
   const sizes = {
@@ -81,9 +69,9 @@ const GlowingButton = ({
         scale: 1.02,
         y: -2,
         boxShadow: variant === 'primary' 
-          ? "0 20px 40px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)" 
+          ? "0 20px 40px rgba(168, 85, 247, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.1)" 
           : variant === 'secondary'
-          ? "0 20px 40px rgba(16, 185, 129, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)"
+          ? "0 20px 40px rgba(45, 212, 191, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.1)"
           : variant === 'accent'
           ? "0 20px 40px rgba(236, 72, 153, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)"
           : "0 10px 30px rgba(148, 163, 184, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)"

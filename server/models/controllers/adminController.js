@@ -674,3 +674,116 @@ exports.productAction = async (req, res) => {
     });
   }
 };
+
+/**
+ * Sync pending blockchain transactions with on-chain state
+ */
+exports.syncBlockchainEvents = async (req, res) => {
+  try {
+    const blockchainEventListener = req.app.locals.blockchainEventListener;
+    if (!blockchainEventListener) {
+      return res.status(503).json({
+        success: false,
+        message: 'Blockchain event listener not initialized'
+      });
+    }
+
+    const result = await blockchainEventListener.syncPendingProducts();
+
+    await logAdminAction(
+      req,
+      'blockchain_sync',
+      null,
+      'Manual blockchain event sync',
+      result
+    );
+
+    res.json({
+      success: true,
+      message: 'Blockchain sync completed',
+      data: result
+    });
+  } catch (error) {
+    console.error('Blockchain sync error:', error.message || error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Unable to sync blockchain events'
+    });
+  }
+};
+
+/**
+ * Get blockchain event listener statistics
+ */
+exports.getBlockchainListenerStats = async (req, res) => {
+  try {
+    const blockchainEventListener = req.app.locals.blockchainEventListener;
+    if (!blockchainEventListener) {
+      return res.status(503).json({
+        success: false,
+        message: 'Blockchain event listener not initialized'
+      });
+    }
+
+    const stats = blockchainEventListener.getStats();
+    
+    // Get count of pending products
+    const pendingCount = await Product.countDocuments({
+      blockchainStatus: 'pending'
+    });
+
+    const confirmedCount = await Product.countDocuments({
+      blockchainStatus: 'confirmed'
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ...stats,
+        pendingProductCount: pendingCount,
+        confirmedProductCount: confirmedCount
+      }
+    });
+  } catch (error) {
+    console.error('Blockchain stats error:', error.message || error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Unable to fetch blockchain listener stats'
+    });
+  }
+};
+
+/**
+ * Reset blockchain event listener
+ */
+exports.resetBlockchainListener = async (req, res) => {
+  try {
+    const blockchainEventListener = req.app.locals.blockchainEventListener;
+    if (!blockchainEventListener) {
+      return res.status(503).json({
+        success: false,
+        message: 'Blockchain event listener not initialized'
+      });
+    }
+
+    blockchainEventListener.reset();
+
+    await logAdminAction(
+      req,
+      'blockchain_listener_reset',
+      null,
+      'Blockchain event listener reset'
+    );
+
+    res.json({
+      success: true,
+      message: 'Blockchain event listener reset successfully'
+    });
+  } catch (error) {
+    console.error('Blockchain listener reset error:', error.message || error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Unable to reset blockchain listener'
+    });
+  }
+};

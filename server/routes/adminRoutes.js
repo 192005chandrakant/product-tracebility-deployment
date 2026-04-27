@@ -12,4 +12,9 @@ router.get('/products/flagged', requireAdminAuth, adminController.getFlaggedProd
 router.get('/product/:id', requireAdminAuth, adminController.getProductReview);
 router.post('/product/:id/action', requireAdminAuth, adminController.productAction);
 
+// Blockchain event listener management
+router.post('/blockchain-listener/sync', requireAdminAuth, adminController.syncBlockchainEvents);
+router.get('/blockchain-listener/stats', requireAdminAuth, adminController.getBlockchainListenerStats);
+router.post('/blockchain-listener/reset', requireAdminAuth, adminController.resetBlockchainListener);
+
 module.exports = router;

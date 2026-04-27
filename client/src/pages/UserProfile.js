@@ -42,6 +42,18 @@ function isDatabaseProduct(product) {
   return Boolean(product && typeof product === 'object' && product._id);
 }
 
+const PROFILE_DRAFT_KEY = 'tracechain:draft:user-profile-edit';
+
+function readProfileDraft() {
+  try {
+    const raw = localStorage.getItem(PROFILE_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.warn('Unable to read profile draft:', error);
+    return {};
+  }
+}
+
 function UserProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -78,7 +90,7 @@ function UserProfile() {
         recentActivity: []
       };
       setUser(userData);
-      setEditForm(userData);
+      setEditForm({ ...userData, ...readProfileDraft() });
       fetchProducts();
       fetchUserStats();
     } catch (error) {
@@ -86,6 +98,19 @@ function UserProfile() {
       navigate('/auth/login');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (!isEditing || !editForm || Object.keys(editForm).length === 0) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const { id, role, createdAt, lastLogin, productsAdded, scansPerformed, totalProducts, recentActivity, ...safeDraft } = editForm;
+      localStorage.setItem(PROFILE_DRAFT_KEY, JSON.stringify(safeDraft));
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [editForm, isEditing]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -131,6 +156,7 @@ function UserProfile() {
 
   const handleSave = () => {
     setUser({ ...user, ...editForm });
+    localStorage.removeItem(PROFILE_DRAFT_KEY);
     setIsEditing(false);
     toast.success('Profile updated successfully!');
   };
@@ -175,23 +201,23 @@ function UserProfile() {
 
   if (!user) {
     return (
-      <div className="min-h-screen relative overflow-hidden">
+      <div className="min-h-screen relative overflow-hidden cyber-page">
         <div className="absolute inset-0 z-0">
           <Scene3D />
         </div>
         <ParticleBackground />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20 z-10"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.20),transparent_34rem)] z-10"></div>
         
         <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
           <AnimatedCard className="max-w-md w-full">
             <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <FaUser className="text-white text-2xl" />
               </div>
-              <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-rose-400 to-purple-300 bg-clip-text text-transparent">
                 Access Denied
               </h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
+              <p className="text-slate-300 mb-6">
                 You must be logged in to view your profile.
               </p>
               <GlowingButton
@@ -216,7 +242,7 @@ function UserProfile() {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden cyber-page">
       {/* 3D Background */}
       <div className="absolute inset-0 z-0">
         <Scene3D />
@@ -226,7 +252,7 @@ function UserProfile() {
       <ParticleBackground />
       
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20 z-10"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.20),transparent_34rem)] z-10"></div>
       
       <div className="relative z-20 min-h-screen">
         <ToastContainer position="top-center" />
@@ -249,10 +275,10 @@ function UserProfile() {
                   <FaArrowLeft className="w-4 h-4" />
                 </GlowingButton>
                 <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] bg-clip-text text-transparent">
                     User Profile
                   </h1>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-slate-300">
                     Manage your profile and track your products
                   </p>
                 </div>
@@ -311,7 +337,7 @@ function UserProfile() {
               <AnimatedCard className="overflow-hidden">
                 <div className="relative">
                   {/* Profile Background */}
-                  <div className="h-24 bg-gradient-to-r from-blue-500 to-purple-600 relative">
+                  <div className="h-24 bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] relative">
                     <div className="absolute inset-0 bg-black/20"></div>
                     <div className="absolute top-2 right-2">
                       <FloatingCubeWrapper size={0.3} className="w-8 h-8" />
@@ -322,7 +348,7 @@ function UserProfile() {
                   <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
                     <div className="relative">
                       <div
-                        className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg border-4 border-white dark:border-gray-800"
+                        className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg border-4 border-[#1C1926]"
                         style={{ background: stringToColor(user.email) }}
                       >
                         {user.fullName[0].toUpperCase()}
@@ -547,7 +573,7 @@ function UserProfile() {
                       
                       {/* Stats Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl p-6 text-white">
+                        <div className="bg-gradient-to-r from-[#A855F7] to-purple-600 rounded-xl p-6 text-white">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-blue-100 text-sm">Products Added</p>
@@ -557,7 +583,7 @@ function UserProfile() {
                           </div>
                         </div>
                         
-                        <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-xl p-6 text-white">
+                        <div className="bg-gradient-to-r from-[#2DD4BF] to-teal-500 rounded-xl p-6 text-white">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-green-100 text-sm">Scans Performed</p>
@@ -567,7 +593,7 @@ function UserProfile() {
                           </div>
                         </div>
                         
-                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-6 text-white">
+                        <div className="bg-gradient-to-r from-purple-500 to-[#A855F7] rounded-xl p-6 text-white">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-purple-100 text-sm">Total Products</p>

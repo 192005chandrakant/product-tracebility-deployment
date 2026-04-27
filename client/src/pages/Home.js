@@ -121,13 +121,11 @@ function Home() {
   // Show loading state with consistent background
   if (loading) {
     return (
-      <div className="min-h-screen transition-all duration-300
-        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
-        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+      <div className="min-h-screen transition-all duration-300 cyber-page">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
+            <p className="text-slate-300">Loading...</p>
           </div>
         </div>
       </div>
@@ -137,10 +135,7 @@ function Home() {
   // Dashboard for logged-in users
   if (user) {
     return (
-      <div className="min-h-screen relative overflow-hidden
-        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
-        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900
-        transition-all duration-500">
+      <div className="min-h-screen relative overflow-hidden cyber-page transition-all duration-500">
         
         {/* Subtle Background Effects - Professional */}
         <div className="absolute inset-0 opacity-20 dark:opacity-30">
@@ -168,15 +163,14 @@ function Home() {
             className="text-center mb-12"
           >
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 leading-tight
-              text-gray-900 dark:text-white">
+              text-white">
               Welcome back, 
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 
-                dark:from-blue-400 dark:to-indigo-400 
+              <span className="bg-gradient-to-r from-[#A855F7] to-[#2DD4BF]
                 bg-clip-text text-transparent block mt-2">
                 {user.email ? user.email.split('@')[0] : 'User'}!
               </span>
             </h1>
-            <p className="text-xl max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
+            <p className="text-xl max-w-2xl mx-auto text-slate-300">
               Manage your product traceability with enterprise-grade blockchain technology
             </p>
           </motion.div>
@@ -194,17 +188,16 @@ function Home() {
               onClick={() => navigate('/scan')}
             >
               <div className="p-6 rounded-xl transition-all duration-300 shadow-lg 
-                bg-white hover:bg-gray-50 border border-gray-200
-                dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-600
-                hover:shadow-xl transform hover:-translate-y-1">
+                cyber-glass hover:bg-white/10
+                hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transform hover:-translate-y-1">
                 <div className="w-12 h-12 rounded-lg mb-4 flex items-center justify-center 
-                  bg-gradient-to-r from-blue-500 to-indigo-500 
+                  bg-gradient-to-r from-[#A855F7] to-purple-500
                   group-hover:scale-105 transition-transform duration-300">
                   <FaQrcode className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2
-                  text-gray-800 dark:text-white">Scan QR Code</h3>
-                <p className="text-gray-600 dark:text-gray-300">Quickly verify product authenticity</p>
+                  text-white">Scan QR Code</h3>
+                <p className="text-slate-300">Quickly verify product authenticity</p>
               </div>
             </AnimatedCard>
 
@@ -215,17 +208,16 @@ function Home() {
                 onClick={() => navigate('/admin/add')}
               >
                 <div className="p-6 rounded-xl transition-all duration-300 shadow-lg
-                  bg-white hover:bg-gray-50 border border-gray-200
-                  dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-600
-                  hover:shadow-xl transform hover:-translate-y-1">
+                  cyber-glass hover:bg-white/10
+                  hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transform hover:-translate-y-1">
                   <div className="w-12 h-12 rounded-lg mb-4 flex items-center justify-center
-                    bg-gradient-to-r from-green-500 to-emerald-500
+                    bg-gradient-to-r from-[#2DD4BF] to-emerald-400
                     group-hover:scale-105 transition-transform duration-300">
                     <FaPlus className="text-white text-xl" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2
-                    text-gray-800 dark:text-white">Add Product</h3>
-                  <p className="text-gray-600 dark:text-gray-300">Register new products on blockchain</p>
+                    text-white">Add Product</h3>
+                  <p className="text-slate-300">Register new products on blockchain</p>
                 </div>
               </AnimatedCard>
             )}
@@ -236,17 +228,16 @@ function Home() {
               onClick={() => navigate('/admin/dashboard')}
             >
               <div className="p-6 rounded-xl transition-all duration-300 shadow-lg
-                bg-white hover:bg-gray-50 border border-gray-200
-                dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-600
-                hover:shadow-xl transform hover:-translate-y-1">
+                cyber-glass hover:bg-white/10
+                hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transform hover:-translate-y-1">
                 <div className="w-12 h-12 rounded-lg mb-4 flex items-center justify-center
-                  bg-gradient-to-r from-purple-500 to-pink-500
+                  bg-gradient-to-r from-[#A855F7] to-[#2DD4BF]
                   group-hover:scale-105 transition-transform duration-300">
                   <FaChartLine className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2
-                  text-gray-800 dark:text-white">Dashboard</h3>
-                <p className="text-gray-600 dark:text-gray-300">View analytics and insights</p>
+                  text-white">Dashboard</h3>
+                <p className="text-slate-300">View analytics and insights</p>
               </div>
             </AnimatedCard>
           </div>
@@ -264,16 +255,15 @@ function Home() {
           {/* Recent Products Section */}
           <AnimatedCard delay={0.42} className="max-w-6xl mx-auto mb-12">
             <div className="p-8 rounded-xl shadow-lg transition-all duration-300
-              bg-white border border-gray-200
-              dark:bg-slate-800 dark:border-slate-600">
+              cyber-glass">
               
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                <h2 className="text-2xl font-bold text-white">
                   Recent Products
                 </h2>
                 <button 
                   onClick={fetchRecentProducts}
-                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-2 transition-colors"
+                  className="text-purple-300 hover:text-teal-200 flex items-center gap-2 transition-colors"
                 >
                   <span>Refresh</span>
                   <FaHistory className={recentProductsLoading ? "animate-spin" : ""} />
@@ -294,9 +284,9 @@ function Home() {
                   {recentProducts.map(product => (
                     <div 
                       key={product.productId || product._id}
-                      className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 flex flex-col"
+                      className="bg-[#1C1926]/85 rounded-xl overflow-hidden shadow-md hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-shadow border border-white/10 flex flex-col"
                     >
-                      <div className="h-40 bg-gray-100 dark:bg-gray-700 relative">
+                      <div className="h-40 bg-[#252131] relative">
                         {product.imageFile?.publicUrl ? (
                           <img 
                             src={product.imageFile.publicUrl} 
@@ -315,20 +305,20 @@ function Home() {
                         
                         {/* Stage badge */}
                         {product.stages && product.stages.length > 0 && (
-                          <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-full">
+                          <div className="absolute top-2 right-2 bg-purple-500/90 text-white text-xs font-bold py-1 px-2 rounded-full">
                             {product.stages[product.stages.length - 1] || product.stage || 'Created'}
                           </div>
                         )}
                       </div>
                       
                       <div className="p-4 flex-grow">
-                        <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1 truncate">
+                        <h3 className="font-semibold text-white mb-1 truncate">
                           {product.name || "Unnamed Product"}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 truncate">
+                        <p className="text-sm text-slate-300 mb-2 truncate">
                           ID: {product.productId || product._id || 'Unknown'}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mb-4">
+                        <p className="text-xs text-slate-500 mb-4">
                           {product.createdAt ? new Date(product.createdAt).toLocaleDateString() : 'Unknown date'}
                         </p>
                       </div>
@@ -336,7 +326,7 @@ function Home() {
                       <div className="p-4 pt-0 mt-auto">
                         <button
                           onClick={() => navigate(`/product/${product.productId}`)}
-                          className="w-full py-2 text-center bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                          className="w-full py-2 text-center bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
                         >
                           <FaEye />
                           <span>View Details</span>

@@ -60,8 +60,8 @@ const ProductSearch = ({ user }) => {
   }, [navigate]);
 
   return (
-    <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-gray-200/50 dark:border-cyan-500/30">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-cyan-100">
+    <div className="cyber-glass rounded-2xl shadow-xl p-6">
+      <h2 className="text-2xl font-bold mb-6 text-white">
         Find Product
       </h2>
       
@@ -73,8 +73,8 @@ const ProductSearch = ({ user }) => {
             onClick={() => setSearchType('productId')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               searchType === 'productId'
-                ? 'bg-blue-500 text-white shadow-lg'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-purple-500/80 text-white shadow-lg'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
             }`}
           >
             Product ID
@@ -84,8 +84,8 @@ const ProductSearch = ({ user }) => {
             onClick={() => setSearchType('certHash')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               searchType === 'certHash'
-                ? 'bg-blue-500 text-white shadow-lg'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-purple-500/80 text-white shadow-lg'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
             }`}
           >
             Certificate Hash
@@ -104,19 +104,19 @@ const ProductSearch = ({ user }) => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Enter ${searchType === 'certHash' ? 'certificate hash' : 'product ID'}...`}
-            className="w-full pl-10 pr-4 py-3 bg-white/70 dark:bg-gray-700/70 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+            className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200 text-slate-100 placeholder-slate-400"
             disabled={searchLoading}
           />
           {searchLoading && (
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-              <FaSpinner className="animate-spin text-blue-500" />
+              <FaSpinner className="animate-spin text-purple-300" />
             </div>
           )}
         </div>
         <button
           type="submit"
           disabled={!searchQuery.trim() || searchLoading}
-          className="w-full mt-3 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full mt-3 py-3 bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
         >
           {searchLoading ? (
             <>
@@ -145,22 +145,22 @@ const ProductSearch = ({ user }) => {
               <div
                 key={product.productId}
                 onClick={() => handleProductSelect(product)}
-                className="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer border border-gray-200 dark:border-gray-600"
+                className="bg-white/5 rounded-xl p-4 shadow-md hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-shadow cursor-pointer border border-white/10"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">
+                    <h3 className="font-semibold text-white mb-1">
                       {product.name || 'Unnamed Product'}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <p className="text-sm text-slate-300 mb-1">
                       ID: {product.productId}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500">
+                    <p className="text-xs text-slate-500">
                       {product.manufacturer} • {product.origin}
                     </p>
                     {product.stages && product.stages.length > 0 && (
                       <div className="mt-2">
-                        <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
+                        <span className="inline-block px-2 py-1 text-xs font-medium bg-teal-400/10 border border-teal-300/30 text-teal-200 rounded-full">
                           {product.stages[product.stages.length - 1]}
                         </span>
                       </div>
@@ -177,7 +177,7 @@ const ProductSearch = ({ user }) => {
                         }}
                       />
                     ) : (
-                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                      <div className="w-16 h-16 bg-[#252131] rounded-lg flex items-center justify-center">
                         <FaBox className="text-gray-400 text-xl" />
                       </div>
                     )}
@@ -190,10 +190,10 @@ const ProductSearch = ({ user }) => {
       </AnimatePresence>
 
       {/* QR Code Scanner Alternative */}
-      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+      <div className="mt-6 pt-6 border-t border-white/10">
         <button
           onClick={() => navigate('/scan')}
-          className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full py-3 bg-gradient-to-r from-purple-500 to-teal-400 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
         >
           <FaQrcode />
           Scan QR Code Instead

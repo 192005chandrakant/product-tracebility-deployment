@@ -4,53 +4,53 @@
 	--lp-font-body: 'Inter', 'Segoe UI', sans-serif;
 	--lp-bg: #f8fafc;
 	--lp-surface: #ffffff;
-	--lp-surface-soft: #eef2ff;
-	--lp-surface-emphasis: #e0e7ff;
-	--lp-text: #0f172a;
+	--lp-surface-soft: #f1f5f9;
+	--lp-surface-emphasis: #eef2ff;
+	--lp-text: #111827;
 	--lp-muted: #475569;
 	--lp-border: rgba(15, 23, 42, 0.12);
-	--lp-glass-bg: rgba(255, 255, 255, 0.7);
-	--lp-kicker: #4338ca;
-	--lp-chip-bg: rgba(79, 70, 229, 0.12);
-	--lp-chip-text: #3730a3;
+	--lp-glass-bg: rgba(255, 255, 255, 0.76);
+	--lp-kicker: #7e22ce;
+	--lp-chip-bg: rgba(168, 85, 247, 0.12);
+	--lp-chip-text: #581c87;
 	--lp-radius-card: 1.3rem;
 	--lp-radius-pill: 9999px;
 	--lp-space-section: clamp(5rem, 8vw, 7.5rem);
 	--lp-space-section-tight: clamp(3.5rem, 6vw, 5.5rem);
-	--lp-gradient-primary: linear-gradient(120deg, #4f46e5 0%, #2563eb 45%, #d946ef 100%);
-	--lp-gradient-soft: linear-gradient(135deg, rgba(79, 70, 229, 0.14), rgba(37, 99, 235, 0.1));
-	--lp-gradient-highlight: linear-gradient(125deg, rgba(79, 70, 229, 0.24), rgba(37, 99, 235, 0.16), rgba(217, 70, 239, 0.2));
-	--lp-glow: 0 20px 80px rgba(79, 70, 229, 0.25);
-	--lp-glow-soft: 0 8px 28px rgba(37, 99, 235, 0.2);
+	--lp-gradient-primary: linear-gradient(120deg, #A855F7 0%, #7c3aed 48%, #2DD4BF 100%);
+	--lp-gradient-soft: linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(45, 212, 191, 0.10));
+	--lp-gradient-highlight: linear-gradient(125deg, rgba(168, 85, 247, 0.24), rgba(45, 212, 191, 0.16));
+	--lp-glow: 0 20px 80px rgba(168, 85, 247, 0.28);
+	--lp-glow-soft: 0 8px 28px rgba(168, 85, 247, 0.2);
 	--lp-card-shadow: 0 12px 38px rgba(15, 23, 42, 0.08);
-	--lp-card-shadow-lg: 0 18px 45px rgba(15, 23, 42, 0.12);
+	--lp-card-shadow-lg: 0 18px 45px rgba(168, 85, 247, 0.22);
 }
 
 .dark .landing-shell {
-	--lp-bg: #0b0f1a;
-	--lp-surface: #111827;
-	--lp-surface-soft: #0f172a;
-	--lp-surface-emphasis: #1e293b;
-	--lp-text: #e2e8f0;
-	--lp-muted: #94a3b8;
-	--lp-border: rgba(148, 163, 184, 0.2);
-	--lp-glass-bg: rgba(15, 23, 42, 0.55);
-	--lp-kicker: #a5b4fc;
-	--lp-chip-bg: rgba(99, 102, 241, 0.26);
-	--lp-chip-text: #dbeafe;
-	--lp-gradient-primary: linear-gradient(120deg, #8b5cf6 0%, #3b82f6 45%, #ec4899 100%);
-	--lp-gradient-soft: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(59, 130, 246, 0.18));
-	--lp-gradient-highlight: linear-gradient(125deg, rgba(139, 92, 246, 0.28), rgba(59, 130, 246, 0.2), rgba(236, 72, 153, 0.24));
-	--lp-glow: 0 20px 90px rgba(99, 102, 241, 0.42);
-	--lp-glow-soft: 0 10px 28px rgba(59, 130, 246, 0.28);
+	--lp-bg: #13111C;
+	--lp-surface: #1C1926;
+	--lp-surface-soft: #252131;
+	--lp-surface-emphasis: #2b2440;
+	--lp-text: #f8fafc;
+	--lp-muted: #cbd5e1;
+	--lp-border: rgba(255, 255, 255, 0.10);
+	--lp-glass-bg: rgba(255, 255, 255, 0.05);
+	--lp-kicker: #c084fc;
+	--lp-chip-bg: rgba(168, 85, 247, 0.15);
+	--lp-chip-text: #ddd6fe;
+	--lp-gradient-primary: linear-gradient(120deg, #A855F7 0%, #7c3aed 48%, #2DD4BF 100%);
+	--lp-gradient-soft: linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(45, 212, 191, 0.10));
+	--lp-gradient-highlight: linear-gradient(125deg, rgba(168, 85, 247, 0.24), rgba(45, 212, 191, 0.16));
+	--lp-glow: 0 20px 90px rgba(168, 85, 247, 0.42);
+	--lp-glow-soft: 0 10px 28px rgba(45, 212, 191, 0.18);
 	--lp-card-shadow: 0 16px 42px rgba(2, 6, 23, 0.35);
 	--lp-card-shadow-lg: 0 20px 48px rgba(2, 6, 23, 0.42);
 }
 
 .landing-shell {
 	background: radial-gradient(circle at 10% 10%, rgba(79, 70, 229, 0.16), transparent 40%),
-		radial-gradient(circle at 90% 10%, rgba(37, 99, 235, 0.15), transparent 40%),
-		radial-gradient(circle at 50% 90%, rgba(236, 72, 153, 0.1), transparent 35%),
+		radial-gradient(circle at 90% 10%, rgba(168, 85, 247, 0.20), transparent 40%),
+		radial-gradient(circle at 50% 90%, rgba(45, 212, 191, 0.09), transparent 35%),
 		var(--lp-bg);
 	color: var(--lp-text);
 }
@@ -76,7 +76,7 @@
 }
 
 .dark .lp-card {
-	background: linear-gradient(140deg, #101a2e, var(--lp-surface));
+	background: linear-gradient(140deg, #252131, var(--lp-surface));
 }
 
 .lp-glass {
@@ -191,7 +191,7 @@
 .lp-blob-a {
 	width: 280px;
 	height: 280px;
-	background: rgba(139, 92, 246, 0.45);
+	background: rgba(168, 85, 247, 0.42);
 	top: -50px;
 	right: -20px;
 }
@@ -199,7 +199,7 @@
 .lp-blob-b {
 	width: 220px;
 	height: 220px;
-	background: rgba(37, 99, 235, 0.42);
+	background: rgba(45, 212, 191, 0.24);
 	bottom: -30px;
 	left: -20px;
 }
@@ -210,7 +210,7 @@
 	right: -1.5rem;
 	width: 3rem;
 	height: 2px;
-	background: linear-gradient(90deg, rgba(59, 130, 246, 0.45), rgba(236, 72, 153, 0.35));
+	background: linear-gradient(90deg, rgba(168, 85, 247, 0.45), rgba(45, 212, 191, 0.35));
 }
 
 @media (max-width: 767px) {

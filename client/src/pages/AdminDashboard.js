@@ -495,18 +495,16 @@ function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen transition-all duration-300
-        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
-        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+      <div className="min-h-screen transition-all duration-300 cyber-page">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#A855F7] to-[#2DD4BF] rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_28px_rgba(168,85,247,0.35)]">
               <FaChartBar className="text-white text-2xl" />
             </div>
-            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
+            <h2 className="text-2xl font-bold mb-4 text-white">
               Loading Dashboard
             </h2>
-            <p className="text-gray-600 dark:text-gray-300">
+            <p className="text-slate-300">
               Fetching products data...
             </p>
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mt-4"></div>
@@ -544,9 +542,7 @@ function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen transition-all duration-300
-      bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
-      dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+    <div className="min-h-screen transition-all duration-300 cyber-page">
       
       <div className="min-h-screen">
         <div className="w-full px-2 sm:px-4 py-6 sm:py-8">
@@ -570,7 +566,7 @@ function AdminDashboard() {
                   <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
                     Admin Dashboard
                   </h1>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
+                  <p className="text-slate-300 text-sm sm:text-base">
                     Real-time moderation, lifecycle visibility, and product governance in one place.
                   </p>
                   {isAdmin ? (
@@ -578,7 +574,7 @@ function AdminDashboard() {
                       <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
                         <FaUserShield /> {adminIdentity.email || 'admin'}
                       </span>
-                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold uppercase">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-semibold uppercase">
                         Role: {adminIdentity.role || 'admin'}
                       </span>
                       <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
@@ -593,7 +589,7 @@ function AdminDashboard() {
                   <button
                     type="button"
                     onClick={handleAdminLogout}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-semibold text-slate-200 hover:bg-white/10"
                   >
                     <FaSignOutAlt /> Logout
                   </button>
@@ -606,7 +602,7 @@ function AdminDashboard() {
 
             {/* Real-time Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <AnimatedCard className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/50 dark:to-blue-800/50 border-blue-200 dark:border-blue-700">
+              <AnimatedCard className="p-6 cyber-glass">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">My Products</p>
@@ -623,7 +619,7 @@ function AdminDashboard() {
                 </div>
               </AnimatedCard>
               
-              <AnimatedCard className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/50 dark:to-green-800/50 border-green-200 dark:border-green-700">
+              <AnimatedCard className="p-6 cyber-glass">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-green-600 dark:text-green-400 font-medium">Total Scans</p>
@@ -640,7 +636,7 @@ function AdminDashboard() {
                 </div>
               </AnimatedCard>
               
-              <AnimatedCard className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/50 dark:to-purple-800/50 border-purple-200 dark:border-purple-700">
+              <AnimatedCard className="p-6 cyber-glass">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Total Updates</p>
@@ -657,7 +653,7 @@ function AdminDashboard() {
                 </div>
               </AnimatedCard>
               
-              <AnimatedCard className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/50 dark:to-orange-800/50 border-orange-200 dark:border-orange-700">
+              <AnimatedCard className="p-6 cyber-glass">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">All Products</p>
@@ -709,7 +705,7 @@ function AdminDashboard() {
               transition={{ delay: 0.12 }}
               className="mb-10"
             >
-              <AnimatedCard className="p-5 sm:p-8 border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 shadow-2xl shadow-slate-200/40 dark:shadow-slate-950/30">
+              <AnimatedCard className="p-5 sm:p-8 cyber-glass">
                 <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6 mb-6">
                   <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold mb-3">
@@ -1145,13 +1141,13 @@ function AdminDashboard() {
             transition={{ delay: 0.15 }}
             className="mb-6"
           >
-            <div className="flex flex-col sm:flex-row sm:space-x-1 gap-1 sm:gap-0 bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm rounded-lg p-1">
+            <div className="flex flex-col sm:flex-row sm:space-x-1 gap-1 sm:gap-0 bg-white/5 border border-white/10 backdrop-blur-xl rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('my-products')}
                 className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 text-left sm:text-center ${
                   activeTab === 'my-products'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                    ? 'bg-purple-500/25 text-white shadow-[0_0_18px_rgba(168,85,247,0.18)]'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 My Products ({myProducts.length})
@@ -1160,8 +1156,8 @@ function AdminDashboard() {
                 onClick={() => setActiveTab('all-products')}
                 className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 text-left sm:text-center ${
                   activeTab === 'all-products'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                    ? 'bg-purple-500/25 text-white shadow-[0_0_18px_rgba(168,85,247,0.18)]'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 All Products ({allProducts.length})
@@ -1190,7 +1186,7 @@ function AdminDashboard() {
                       placeholder="Search products..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-white/50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent backdrop-blur-sm"
+                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm text-slate-100 placeholder-slate-400"
                     />
                   </div>
                   
@@ -1199,7 +1195,7 @@ function AdminDashboard() {
                     <select
                       value={selectedStage}
                       onChange={(e) => setSelectedStage(e.target.value)}
-                      className="w-full pl-3 pr-8 py-3 bg-white/50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent backdrop-blur-sm appearance-none"
+                      className="w-full pl-3 pr-8 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm appearance-none text-slate-100"
                     >
                       <option value="">All Stages</option>
                       {uniqueStages.map(stage => (
@@ -1216,7 +1212,7 @@ function AdminDashboard() {
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="w-full pl-3 pr-8 py-3 bg-white/50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent backdrop-blur-sm appearance-none"
+                      className="w-full pl-3 pr-8 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm appearance-none text-slate-100"
                     >
                       <option value="name">Sort by Name</option>
                       <option value="id">Sort by ID</option>
@@ -1287,7 +1283,7 @@ function AdminDashboard() {
                     <AnimatedCard className="overflow-hidden h-full flex flex-col">
                       <div className="relative">
                         {/* Product Image */}
-                        <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
+                      <div className="h-48 bg-gradient-to-br from-[#252131] to-[#13111C] flex items-center justify-center overflow-hidden">
                           {isValidImage(product.imageFile) ? (
                             <img
                               src={getFullUrl(product.imageFile)}
@@ -1321,18 +1317,18 @@ function AdminDashboard() {
                       </div>
                       
                       <div className="p-4 sm:p-6 flex flex-col flex-grow">
-                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 truncate">
+                        <h3 className="text-lg sm:text-xl font-bold text-white mb-2 truncate">
                           {product.name}
                         </h3>
                         
                         <div className="space-y-2 mb-4 flex-grow">
-                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                          <div className="flex items-center text-sm text-slate-300">
                             <FaQrcode className="w-4 h-4 mr-2 flex-shrink-0" />
                             <span className="font-mono truncate">{product.productId}</span>
                           </div>
                           
                           {product.description && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                            <p className="text-sm text-slate-300 line-clamp-2">
                               {product.description}
                             </p>
                           )}

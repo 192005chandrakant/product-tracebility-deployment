@@ -195,9 +195,10 @@ function buildBlockchainTransparencySnapshot(product = {}, onChain = null) {
   };
 }
 
-function buildBlockchainEventRecord({ action, stage, productId, actorEmail, actorRole, txResult, payload, error }) {
+function buildBlockchainEventRecord({ action, stage, productId, actorEmail, actorRole, txResult, payload, error, status, recordedAt }) {
   const txHash = getTxHash(txResult);
   const success = !error;
+  const resolvedStatus = status || (error ? 'failed' : txHash ? 'confirmed' : 'pending');
 
   return {
     action: String(action || 'unknown'),
@@ -205,7 +206,7 @@ function buildBlockchainEventRecord({ action, stage, productId, actorEmail, acto
     productId: productId || null,
     initiatedBy: actorEmail || null,
     initiatedByRole: actorRole || null,
-    status: success ? 'confirmed' : 'failed',
+    status: resolvedStatus,
     txHash: txHash || null,
     explorerUrl: txHash ? toExplorerUrl(txHash) : null,
     contractAddress: process.env.CONTRACT_ADDRESS || null,
@@ -215,7 +216,7 @@ function buildBlockchainEventRecord({ action, stage, productId, actorEmail, acto
     gasUsed: txResult && txResult.gasUsed != null ? String(txResult.gasUsed) : null,
     payload: payload || null,
     errorMessage: error ? String(error.message || error) : null,
-    recordedAt: new Date()
+    recordedAt: recordedAt || new Date()
   };
 }
 

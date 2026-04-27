@@ -10,9 +10,18 @@ import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import { optimizedAnimations } from '../utils/performanceOptimizations';
 import { buildAPIURL, apiRequest } from '../utils/apiConfig';
+import { usePersistentForm } from '../hooks/usePersistentForm';
+
+const LOGIN_INITIAL_FORM = { email: '', password: '' };
+
+function sanitizeLoginDraft(value) {
+  return { email: value?.email || '', password: '' };
+}
 
 function AuthLogin() {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = usePersistentForm('login-form', LOGIN_INITIAL_FORM, {
+    sanitize: sanitizeLoginDraft
+  });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -80,9 +89,7 @@ function AuthLogin() {
   }, [form, navigate]);
 
   return (
-    <div className="min-h-screen relative overflow-hidden transition-all duration-1000
-      bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 
-      dark:bg-gradient-to-br dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950">
+    <div className="min-h-screen relative overflow-hidden transition-all duration-1000 cyber-page">
       
       {/* 3D Background */}
       <div className="absolute inset-0 z-0 opacity-30 dark:opacity-60 transition-opacity duration-1000">
@@ -95,15 +102,15 @@ function AuthLogin() {
       </div>
       
       {/* Light Mode: Soft gradient overlay */}
-      <div className="absolute inset-0 z-10 opacity-100 dark:opacity-0 transition-opacity duration-1000
-        bg-gradient-to-br from-blue-100/30 via-purple-100/20 to-cyan-100/30"></div>
+      <div className="absolute inset-0 z-10 transition-opacity duration-1000
+        bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.20),transparent_34rem)]"></div>
       
       {/* Dark Mode: Cyberpunk grid pattern */}
-      <div className="absolute inset-0 z-10 opacity-0 dark:opacity-40 transition-opacity duration-1000"
+      <div className="absolute inset-0 z-10 opacity-40 transition-opacity duration-1000"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px)
+            linear-gradient(rgba(168, 85, 247, 0.10) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(45, 212, 191, 0.08) 1px, transparent 1px)
           `,
           backgroundSize: '50px 50px'
         }}>
@@ -113,10 +120,7 @@ function AuthLogin() {
       <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
         <ToastContainer position="top-center" />
         
-        <AnimatedCard className="w-full max-w-md backdrop-blur-xl border shadow-2xl transition-all duration-500
-          bg-white/95 border-gray-200/50 shadow-gray-300/20
-          dark:bg-slate-800/95 dark:border-cyan-400/30 dark:shadow-cyan-500/20
-          hover:shadow-3xl hover:border-indigo-300/60 dark:hover:border-cyan-300/50">
+        <AnimatedCard className="w-full max-w-md cyber-glass shadow-2xl transition-all duration-500 hover:border-purple-300/50">
           <div className="p-8">
             {/* Header */}
             <motion.div
@@ -125,23 +129,20 @@ function AuthLogin() {
             >
               <div className="flex justify-center mb-6">
                 <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-500
-                  bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500
-                  dark:bg-gradient-to-br dark:from-cyan-400 dark:via-blue-500 dark:to-purple-500
-                  dark:shadow-[0_0_30px_rgba(0,255,255,0.4)]
+                  bg-gradient-to-br from-[#A855F7] via-purple-500 to-[#2DD4BF]
+                  shadow-[0_0_30px_rgba(168,85,247,0.35)]
                   hover:scale-110 hover:rotate-6 hover:shadow-2xl">
                   <FaSignInAlt className="text-white text-3xl drop-shadow-lg" />
                 </div>
               </div>
               <h2 className="text-4xl font-bold mb-3 transition-all duration-500
-                bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 
-                dark:from-cyan-300 dark:via-blue-300 dark:to-purple-300 
+                bg-gradient-to-r from-[#A855F7] to-[#2DD4BF]
                 bg-clip-text text-transparent
                 dark:drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">
                 Welcome Back
               </h2>
               <p className="text-lg transition-all duration-500
-                text-gray-600 dark:text-cyan-100/80 
-                dark:drop-shadow-[0_0_5px_rgba(0,255,255,0.3)]">
+                text-slate-300">
                 Sign in to your account
               </p>
             </motion.div>

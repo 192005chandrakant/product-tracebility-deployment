@@ -4,19 +4,20 @@ const path = require('path');
 require('dotenv').config();
 
 const rpcUrl = process.env.SEPOLIA_RPC_URL || process.env.INFURA_API_URL;
-const privateKey = process.env.BLOCKCHAIN_PRIVATE_KEY || process.env.PRIVATE_KEY;
+const contractAddress = process.env.CONTRACT_ADDRESS;
 
 if (!rpcUrl) {
   throw new Error('Blockchain RPC URL is missing. Set SEPOLIA_RPC_URL or INFURA_API_URL.');
 }
 
-if (!privateKey || String(privateKey).includes('your-blockchain-private-key')) {
-  throw new Error('Blockchain private key is missing. Set BLOCKCHAIN_PRIVATE_KEY or PRIVATE_KEY.');
+if (!contractAddress) {
+  throw new Error('Blockchain contract address is missing. Set CONTRACT_ADDRESS.');
 }
 
-// Use ethers v6 syntax
 const provider = new ethers.JsonRpcProvider(rpcUrl);
-const wallet = new ethers.Wallet(privateKey, provider);
+const abiPath = path.join(__dirname, '../../contracts/ProductTraceability.abi.json');
+const abi = JSON.parse(fs.readFileSync(abiPath, 'utf-8'));
+const contractInterface = new ethers.Interface(abi);
 
 // Check provider connection at startup
 (async () => {
@@ -28,40 +29,34 @@ const wallet = new ethers.Wallet(privateKey, provider);
   }
 })();
 
-const contractAddress = process.env.CONTRACT_ADDRESS;
-const abiPath = path.join(__dirname, '../../contracts/ProductTraceability.abi.json');
-const abi = JSON.parse(fs.readFileSync(abiPath, 'utf-8'));
+const readContract = new ethers.Contract(contractAddress, abi, provider);
 
-const contract = new ethers.Contract(contractAddress, abi, wallet);
+async function buildTransactionRequest(methodName, args = []) {
+  const network = await provider.getNetwork();
+
+  return {
+    contractAddress,
+    chainId: Number(network.chainId),
+    to: contractAddress,
+    data: contractInterface.encodeFunctionData(methodName, args),
+    value: '0',
+    methodName,
+    args
+  };
+}
+
+exports.buildTransactionRequest = buildTransactionRequest;
 
 exports.addProductOnChain = async ({ productId, name, origin, manufacturer, certificationHash }) => {
-  const tx = await contract.addProduct(productId, name, origin, manufacturer, certificationHash);
-  await tx.wait();
-  return tx.hash;
+  return buildTransactionRequest('addProduct', [productId, name, origin, manufacturer, certificationHash]);
 };
 
 exports.updateStageOnChain = async (productId, stage) => {
-  try {
-    console.log('Calling blockchain contract to update stage:', { productId, stage });
-    
-    // Attempt to update stage on blockchain
-    const tx = await contract.updateStage(productId, stage);
-    console.log('Transaction sent, waiting for confirmation...');
-    
-    // Wait for transaction to be mined
-    const receipt = await tx.wait();
-    console.log('Transaction confirmed, hash:', receipt.hash);
-    
-    return receipt.hash;
-  } catch (error) {
-    console.error('Blockchain update stage error:', error);
-    // Throw a more user-friendly error that will be caught by the controller
-    throw new Error('Failed to update product stage on blockchain. Please try again.');
-  }
+  return buildTransactionRequest('updateStage', [productId, stage]);
 };
 
 exports.getProductOnChain = async (productId) => {
-  return await contract.getProduct(productId);
+  return await readContract.getProduct(productId);
 };
 
 // Function to search for products by certification hash on blockchain
@@ -87,5 +82,4 @@ exports.searchByCertificationHash = async (certificationHash) => {
 };
 
 console.log('Blockchain RPC configured:', !!rpcUrl);
-console.log('Blockchain private key configured:', !!privateKey);
-console.log('Contract Address configured:', !!process.env.CONTRACT_ADDRESS);
+console.log('Blockchain contract configured:', !!contractAddress);

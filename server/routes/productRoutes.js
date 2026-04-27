@@ -64,6 +64,13 @@ router.post('/update-product/:id',
   requireSecondaryAuth,
   productController.updateProduct
 );
+router.post('/product/:id/blockchain-receipt',
+  auth,
+  requireRole(['producer', 'admin']),
+  requirePermission('update_product_status'),
+  requireSecondaryAuth,
+  productController.attachBlockchainReceipt
+);
 router.get('/product/:id', productController.getProduct);
 router.get('/products', productController.getAllProducts);
 router.get('/my-products', auth, requireRole(['producer', 'admin']), productController.getMyProducts);

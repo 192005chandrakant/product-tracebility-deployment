@@ -80,19 +80,19 @@ function normalizeVerificationEvents(verification, product) {
 }
 
 function iconForType(type) {
-  if (type === 'success') return <FaCheckCircle className="text-green-600" />;
+  if (type === 'success') return <FaCheckCircle className="text-teal-300" />;
   if (type === 'danger') return <FaExclamationTriangle className="text-red-600" />;
   if (type === 'warning') return <FaExclamationTriangle className="text-amber-600" />;
-  if (type === 'ai') return <FaShieldAlt className="text-blue-600" />;
-  return <FaClock className="text-slate-500" />;
+  if (type === 'ai') return <FaShieldAlt className="text-purple-300" />;
+  return <FaClock className="text-slate-400" />;
 }
 
 function styleForType(type) {
-  if (type === 'success') return 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20';
+  if (type === 'success') return 'border-teal-300/30 bg-teal-400/10';
   if (type === 'danger') return 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20';
   if (type === 'warning') return 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20';
-  if (type === 'ai') return 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20';
-  return 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50';
+  if (type === 'ai') return 'border-purple-300/30 bg-purple-500/10';
+  return 'border-white/10 bg-white/5';
 }
 
 function VerificationTimeline({ verification, product, title = 'Verification Timeline' }) {
@@ -103,17 +103,17 @@ function VerificationTimeline({ verification, product, title = 'Verification Tim
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">{title}</h3>
+    <section className="rounded-xl cyber-glass p-4">
+      <h3 className="text-lg font-semibold text-white mb-3">{title}</h3>
       <div className="space-y-3">
         {events.map((event) => (
           <article key={event.key} className={`rounded-lg border p-3 ${styleForType(event.type)}`}>
             <div className="flex items-start gap-3">
-              <div className="mt-1">{iconForType(event.type)}</div>
+              <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center bg-[#1C1926] border border-purple-300/30 shadow-[0_0_16px_rgba(168,85,247,0.22)]" style={{ clipPath: 'polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%)' }}>{iconForType(event.type)}</div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{event.label}</h4>
-                <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 whitespace-pre-wrap">{event.description}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">{toDisplayDate(event.date)}</p>
+                <h4 className="text-sm font-semibold text-white">{event.label}</h4>
+                <p className="text-sm text-slate-300 mt-1 whitespace-pre-wrap">{event.description}</p>
+                <p className="text-xs text-slate-500 mt-2">{toDisplayDate(event.date)}</p>
               </div>
             </div>
           </article>

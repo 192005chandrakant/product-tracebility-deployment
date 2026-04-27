@@ -17,7 +17,7 @@ function Layout({ children }) {
     if (storedTheme === 'light') {
       return false;
     }
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return true;
   });
   const [user, setUser] = useState(null);
 
@@ -105,7 +105,7 @@ function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-cyan-900/20 transition-colors duration-500">
+    <div className="min-h-screen cyber-page transition-colors duration-500">
       {!isLandingRoute && <Navbar user={user} onLogout={handleLogout} />}
       
       {/* Theme Toggle */}
@@ -114,7 +114,7 @@ function Layout({ children }) {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className="h-11 w-11 rounded-full backdrop-blur-md bg-white/80 dark:bg-slate-900/75 border border-slate-200/70 dark:border-slate-700 shadow-lg text-slate-700 dark:text-slate-200"
+            className="h-11 w-11 rounded-full backdrop-blur-xl bg-white/5 border border-white/10 shadow-[0_0_24px_rgba(168,85,247,0.18)] text-purple-100 hover:text-teal-200"
             onClick={handleThemeToggle}
             aria-label="Toggle theme"
             title={dark ? 'Switch to light mode' : 'Switch to dark mode'}

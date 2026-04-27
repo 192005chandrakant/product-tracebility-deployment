@@ -153,6 +153,7 @@ const ProductSchema = new mongoose.Schema({
   stages: [String],
   blockchainRefHash: String,
   blockchainTx: String,
+  blockchainRequest: mongoose.Schema.Types.Mixed,
   blockchainStatus: {
     type: String,
     enum: ['confirmed', 'failed', 'pending'],

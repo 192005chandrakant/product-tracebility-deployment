@@ -638,10 +638,10 @@ function QRScan() {
   const activeStatus = statusMeta[scannerState] || statusMeta.idle;
 
   return (
-    <div className="min-h-screen relative overflow-hidden font-['Sora','Segoe_UI',sans-serif]">
+    <div className="min-h-screen relative overflow-hidden cyber-page font-['Sora','Segoe_UI',sans-serif]">
       {/* 3D Background - wrapped in ErrorBoundary */}
       <div className="absolute inset-0 z-0">
-        <ErrorBoundary fallback={<div className="w-full h-full bg-gradient-to-br from-cyan-900 via-slate-900 to-blue-900"></div>}>
+        <ErrorBoundary fallback={<div className="w-full h-full bg-gradient-to-br from-purple-950 via-[#13111C] to-teal-950"></div>}>
           <Suspense fallback={<div>Loading 3D scene...</div>}>
             <Scene3D suppressErrors={true} />
           </Suspense>
@@ -672,17 +672,17 @@ function QRScan() {
           </div>
         }>
         <AnimatedCard className="w-full max-w-5xl mx-auto">
-          <div className="rounded-[2rem] border border-white/35 dark:border-slate-700/70 bg-white/75 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_70px_-20px_rgba(8,47,73,0.75)] p-4 sm:p-6 lg:p-8">
+          <div className="rounded-[2rem] cyber-glass p-4 sm:p-6 lg:p-8">
             <div className="flex items-center justify-between gap-3 mb-5">
               <button
                 onClick={() => navigate('/')}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-sm font-semibold hover:scale-[1.02] transition"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 text-white border border-white/10 text-sm font-semibold hover:scale-[1.02] transition"
               >
                 <FaArrowLeft />
                 Back
               </button>
 
-              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/5 border border-white/10 text-xs sm:text-sm font-semibold text-slate-200">
                 <FaSun className="text-amber-500 dark:hidden" />
                 <FaMoon className="text-cyan-300 hidden dark:block" />
                 Adaptive Light and Dark
@@ -690,7 +690,7 @@ function QRScan() {
             </div>
 
             <div className="text-center mb-6 lg:mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white mb-3 shadow-xl">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#A855F7] to-[#2DD4BF] text-white mb-3 shadow-[0_0_28px_rgba(168,85,247,0.3)]">
                 <FaQrcode className="text-3xl" />
               </div>
               <div className="relative inline-block ml-2 align-top">
@@ -700,10 +700,10 @@ function QRScan() {
                   </Suspense>
                 </ErrorBoundary>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
                 Scan Product QR Code
               </h1>
-              <p className="mt-2 text-sm sm:text-base text-slate-700 dark:text-slate-300 font-medium">
+              <p className="mt-2 text-sm sm:text-base text-slate-300 font-medium">
                 Verify authenticity using AI + Blockchain
               </p>
 
@@ -718,7 +718,7 @@ function QRScan() {
                 </span>
               </div>
 
-              <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+              <p className="mt-3 text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
                 Safe scanning: this scanner only reads QR payloads needed for product verification and redirects you to the trusted product profile.
               </p>
             </div>
@@ -862,12 +862,12 @@ function QRScan() {
                   </div>
                 ) : null}
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-2.5 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.8)]">
+                <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-2.5 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.8)]">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <button
                       onClick={handleScanButtonClick}
                       disabled={permissionState === 'unavailable'}
-                      className="inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs sm:text-sm font-semibold shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105 active:scale-[0.99] transition"
+                      className="inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] text-white text-xs sm:text-sm font-semibold shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105 active:scale-[0.99] transition"
                     >
                       <FaCamera />
                       {isScanning ? 'Stop' : 'Start'}
@@ -879,7 +879,7 @@ function QRScan() {
                       className={`inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition active:scale-[0.99] ${
                         flashEnabled
                           ? 'bg-amber-400/90 text-slate-900 border-amber-300'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                          : 'bg-white/5 text-slate-200 border-white/10'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       <FaBolt />
@@ -888,7 +888,7 @@ function QRScan() {
 
                     <button
                       onClick={() => fileInputRef.current.click()}
-                      className="inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-[0.99] transition"
+                      className="inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl bg-white/5 text-slate-200 text-xs sm:text-sm font-semibold border border-white/10 hover:bg-white/10 active:scale-[0.99] transition"
                     >
                       <FaUpload />
                       Upload
@@ -896,7 +896,7 @@ function QRScan() {
 
                     <button
                       onClick={() => setShowHelp((prev) => !prev)}
-                      className="inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-[0.99] transition"
+                      className="inline-flex items-center justify-center gap-2 px-3 py-3 rounded-2xl bg-white/5 text-slate-200 text-xs sm:text-sm font-semibold border border-white/10 hover:bg-white/10 active:scale-[0.99] transition"
                     >
                       <FaQuestionCircle />
                       Help
@@ -927,7 +927,7 @@ function QRScan() {
                   </motion.div>
                 ) : null}
 
-                <div className="text-xs text-slate-600 dark:text-slate-400 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 p-3">
+                <div className="text-xs text-slate-400 rounded-xl border border-white/10 bg-white/5 p-3">
                   Safe scanning note: QR content is used only to identify the product record and run authenticity verification.
                 </div>
               </div>

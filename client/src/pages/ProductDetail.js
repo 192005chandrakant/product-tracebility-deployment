@@ -346,13 +346,11 @@ function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen transition-all duration-300
-        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
-        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+      <div className="min-h-screen transition-all duration-300 cyber-page">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">Loading product details...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
+            <p className="text-slate-300">Loading product details...</p>
           </div>
         </div>
       </div>
@@ -361,9 +359,7 @@ function ProductDetail() {
   
   if (!product) {
     return (
-      <div className="min-h-screen transition-all duration-300
-        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
-        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+      <div className="min-h-screen transition-all duration-300 cyber-page">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <p className="text-red-500 dark:text-red-400 text-xl mb-4">Product not found.</p>
@@ -386,23 +382,20 @@ function ProductDetail() {
                           product && product.createdByWallet === user.email;
 
   return (
-    <div className="min-h-screen transition-all duration-300
-      bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
-      dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 
+    <div className="min-h-screen transition-all duration-300 cyber-page
       flex flex-col justify-center items-center py-8 px-4">
       <ToastContainer position="top-center" />
       <motion.div
         className="card w-full max-w-3xl p-0 sm:p-0 rounded-2xl 
-          bg-white dark:bg-gray-800 
-          text-gray-900 dark:text-gray-100 
-          shadow-xl border border-gray-200 dark:border-gray-700 
+          cyber-glass
+          text-gray-100
           overflow-hidden mx-auto"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         {/* Product Image */}
-        <div className="w-full h-48 sm:h-64 bg-gradient-to-br from-blue-200 to-cyan-200 dark:from-blue-900 dark:to-cyan-900 flex items-center justify-center overflow-hidden">
+        <div className="w-full h-48 sm:h-64 bg-gradient-to-br from-[#252131] via-purple-950/40 to-teal-950/30 flex items-center justify-center overflow-hidden">
           {getImageUrl(product.imageFile) ? (
             <img
               src={getImageUrl(product.imageFile)}
@@ -428,7 +421,13 @@ function ProductDetail() {
             Back
           </motion.button>
 
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-center break-words">{product.name}</h2>
+          <div className="mb-4 flex justify-center">
+            <span className="verified-badge px-3 py-1 text-xs font-semibold">
+              <FaShieldAlt />
+              Blockchain Verified
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-center break-words text-white">{product.name}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4">
             <div className="text-gray-700 dark:text-gray-300 text-sm sm:text-base"><strong>Product ID:</strong> {product.productId}</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm sm:text-base"><strong>Origin:</strong> {product.origin}</div>
@@ -460,12 +459,12 @@ function ProductDetail() {
               </div>
             )}
             {txHash && (
-              <div className="col-span-1 sm:col-span-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base overflow-x-auto bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-200 dark:border-blue-800 mt-2">
+              <div className="col-span-1 sm:col-span-2 text-slate-200 text-sm sm:text-base overflow-x-auto hash-block p-3 mt-2">
                 <strong>Last Transaction Hash:</strong> 
                 <div className="flex items-center gap-2 mt-1">
                   <span className="break-all font-mono text-xs">{txHash}</span>
                   <button 
-                    className="text-blue-500 hover:text-blue-700"
+                    className="text-purple-300 hover:text-teal-200"
                     onClick={() => {
                       navigator.clipboard.writeText(txHash);
                       toast.info('Transaction hash copied!', { autoClose: 1500 });
@@ -494,7 +493,7 @@ function ProductDetail() {
             <CertificateViewer product={product} getDownloadUrl={getDownloadUrl} />
             
             {/* QR Code Display */}
-            <div className="col-span-1 sm:col-span-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base flex flex-col items-center gap-2 mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div className="col-span-1 sm:col-span-2 text-slate-200 text-sm sm:text-base flex flex-col items-center gap-2 mt-4 p-4 border border-white/10 bg-white/5 rounded-lg">
               <strong>Product QR Code:</strong>
               
               {loadingQR ? (
@@ -510,7 +509,7 @@ function ProductDetail() {
                   />
                   <button
                     onClick={handleQrDownload}
-                    className="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center gap-2 transition-colors"
+                    className="mt-2 px-4 py-2 bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] text-white rounded-lg flex items-center gap-2 transition-colors"
                   >
                     <FaQrcode className="w-4 h-4" />
                     Download QR Code
@@ -519,7 +518,7 @@ function ProductDetail() {
               ) : (
                 <button
                   onClick={fetchQrCode}
-                  className="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center gap-2 transition-colors"
+                  className="mt-2 px-4 py-2 bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] text-white rounded-lg flex items-center gap-2 transition-colors"
                 >
                   <FaQrcode className="w-4 h-4" />
                   Generate QR Code
@@ -532,7 +531,7 @@ function ProductDetail() {
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2">
             <span className="font-semibold text-gray-900 dark:text-gray-100">Status:</span>
             {status ? (
-              <span className="inline-block px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 text-xs font-semibold">{status}</span>
+              <span className="inline-block px-3 py-1 rounded-full bg-teal-400/10 border border-teal-300/30 text-teal-200 text-xs font-semibold animate-pulse-teal">{status}</span>
             ) : (
               <span className="inline-block px-3 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs font-semibold">No Status</span>
             )}
@@ -576,13 +575,13 @@ function ProductDetail() {
           </div>
 
           <h3 className="text-xl sm:text-2xl font-bold mb-4 text-center">Product Lifecycle</h3>
-          <VerticalTimeline layout="1-column" lineColor="#3b82f6">
+          <VerticalTimeline layout="1-column" lineColor="#A855F7">
             {(product.stages || []).map((stage, i) => (
               <VerticalTimelineElement
                 key={i}
-                contentStyle={{ background: 'rgba(59, 130, 246, 0.1)', color: '#1e293b', boxShadow: 'none', borderRadius: '0.75rem' }}
-                contentArrowStyle={{ borderRight: '7px solid #3b82f6' }}
-                iconStyle={{ background: '#3b82f6', color: '#fff', boxShadow: '0 0 0 4px #3b82f6, inset 0 2px 0 rgba(0,0,0,.08), 0 3px 0 rgba(0,0,0,.05)' }}
+                contentStyle={{ background: 'rgba(28, 25, 38, 0.86)', color: '#f8fafc', boxShadow: '0 0 22px rgba(168,85,247,0.15)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '0.75rem' }}
+                contentArrowStyle={{ borderRight: '7px solid #A855F7' }}
+                iconStyle={{ background: '#1C1926', color: '#fff', clipPath: 'polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%)', boxShadow: '0 0 0 4px rgba(168,85,247,0.5), 0 0 24px rgba(168,85,247,0.35)' }}
                 icon={<span>{i + 1}</span>}
                 date={null}
               >
@@ -599,8 +598,8 @@ function ProductDetail() {
           <BlockchainTransparencySection product={product} user={user} />
 
           {product.blockchainTx && (
-            <div className="mt-6 p-4 bg-gray-100 dark:bg-slate-700 rounded-lg text-xs sm:text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-600 overflow-x-auto">
-              <strong>Blockchain Transaction:</strong> <a href={`https://sepolia.etherscan.io/tx/${product.blockchainTx}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">{product.blockchainTx}</a>
+            <div className="mt-6 p-4 hash-block text-xs sm:text-sm overflow-x-auto">
+              <strong>Blockchain Transaction:</strong> <a href={`https://sepolia.etherscan.io/tx/${product.blockchainTx}`} target="_blank" rel="noopener noreferrer" className="text-teal-200 hover:underline break-all">{product.blockchainTx}</a>
             </div>
           )}
           {product.onChain && (

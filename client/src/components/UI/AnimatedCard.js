@@ -17,9 +17,8 @@ const AnimatedCard = ({
   };
 
   const hoverEffects = hover ? {
-    scale: 1.02,
-    rotateY: 2,
-    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.3)"
+    y: -5,
+    boxShadow: "0px 0px 20px rgba(168, 85, 247, 0.3)"
   } : {};
 
   return (
@@ -39,7 +38,7 @@ const AnimatedCard = ({
         ease: "easeOut"
       }}
       whileHover={hoverEffects}
-      className={`rounded-xl backdrop-blur-lg ${className}`}
+      className={`rounded-xl backdrop-blur-xl ${className}`}
       {...props}
     >
       {children}

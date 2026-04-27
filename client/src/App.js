@@ -4,6 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import PerformanceMonitor from './components/PerformanceMonitor';
+import { WalletProvider } from './context/WalletContext';
 import { 
   LazyHome, 
   LazyAuthLogin, 
@@ -131,30 +132,32 @@ function App() {
   useComponentPreloader();
   
   return (
-    <ErrorBoundary>
-      <Layout>
-        <Suspense fallback={<OptimizedLoadingFallback />}>
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<LazyLanding />} />
-              <Route path="/home" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer']}><LazyHome /></PrivateRoute>} />
-              <Route path="/scan" element={<LazyQRScan />} />
-              <Route path="/product/:id" element={<LazyProductDetail />} />
-              <Route path="/profile" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer', 'customer', 'user']}><UserProfile /></PrivateRoute>} />
-              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="/admin/dashboard" element={<PrivateRoute allowedRoles={['admin','producer']}><LazyAdminDashboard /></PrivateRoute>} />
-              <Route path="/admin/add" element={<PrivateRoute allowedRoles={['producer']}><LazyAddProduct /></PrivateRoute>} />
-              <Route path="/admin/update" element={<PrivateRoute allowedRoles={['producer', 'admin']}><LazyUpdateProduct /></PrivateRoute>} />
-              <Route path="/admin/update/:id" element={<PrivateRoute allowedRoles={['producer', 'admin']}><LazyUpdateProduct /></PrivateRoute>} />
-              <Route path="/ai" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer', 'customer', 'user']}><LazyAIConsole /></PrivateRoute>} />
-              <Route path="/auth/login" element={<LazyAuthLogin />} />
-              <Route path="/auth/register" element={<LazyAuthRegister />} />
-            </Routes>
-          </ErrorBoundary>
-        </Suspense>
-        <PerformanceMonitor />
-      </Layout>
-    </ErrorBoundary>
+    <WalletProvider>
+      <ErrorBoundary>
+        <Layout>
+          <Suspense fallback={<OptimizedLoadingFallback />}>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<LazyLanding />} />
+                <Route path="/home" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer']}><LazyHome /></PrivateRoute>} />
+                <Route path="/scan" element={<LazyQRScan />} />
+                <Route path="/product/:id" element={<LazyProductDetail />} />
+                <Route path="/profile" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer', 'customer', 'user']}><UserProfile /></PrivateRoute>} />
+                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="/admin/dashboard" element={<PrivateRoute allowedRoles={['admin','producer']}><LazyAdminDashboard /></PrivateRoute>} />
+                <Route path="/admin/add" element={<PrivateRoute allowedRoles={['producer']}><LazyAddProduct /></PrivateRoute>} />
+                <Route path="/admin/update" element={<PrivateRoute allowedRoles={['producer', 'admin']}><LazyUpdateProduct /></PrivateRoute>} />
+                <Route path="/admin/update/:id" element={<PrivateRoute allowedRoles={['producer', 'admin']}><LazyUpdateProduct /></PrivateRoute>} />
+                <Route path="/ai" element={<PrivateRoute allowedRoles={['admin', 'producer', 'consumer', 'customer', 'user']}><LazyAIConsole /></PrivateRoute>} />
+                <Route path="/auth/login" element={<LazyAuthLogin />} />
+                <Route path="/auth/register" element={<LazyAuthRegister />} />
+              </Routes>
+            </ErrorBoundary>
+          </Suspense>
+          <PerformanceMonitor />
+        </Layout>
+      </ErrorBoundary>
+    </WalletProvider>
   );
 }
 

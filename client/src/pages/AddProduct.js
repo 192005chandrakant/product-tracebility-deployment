@@ -29,6 +29,7 @@ import { isAIEnabled } from '../utils/aiApi';
 import StageDocumentationForm from '../components/StageDocumentationForm';
 import AIStructuredResponse from '../components/AIStructuredResponse';
 import VerificationResultPanel from '../components/VerificationResultPanel';
+import { stripTransientDocumentFields, usePersistentForm } from '../hooks/usePersistentForm';
 
 const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
   'application/pdf',
@@ -37,6 +38,22 @@ const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
   'image/jpg'
 ]);
 const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
+
+const ADD_PRODUCT_INITIAL_FORM = {
+  productId: '',
+  name: '',
+  origin: '',
+  manufacturer: '',
+  certificationType: '',
+  description: '',
+  blockchainRefHash: '',
+  password: '',
+};
+
+function sanitizeAddProductDraft(value) {
+  const { password, ...safeValue } = value || {};
+  return safeValue;
+}
 
 function hasDocumentMetadata(doc = {}) {
   return [
@@ -142,36 +159,29 @@ const AddProductDecorativeBackground = memo(function AddProductDecorativeBackgro
       </div>
 
       {/* Light Mode: Emerald gradient overlay */}
-      <div className="absolute inset-0 z-10 opacity-100 dark:opacity-0 transition-opacity duration-1000 pointer-events-none bg-gradient-to-br from-emerald-100/30 via-teal-100/20 to-cyan-100/30" aria-hidden="true"></div>
+      <div className="absolute inset-0 z-10 transition-opacity duration-1000 pointer-events-none bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.20),transparent_34rem)]" aria-hidden="true"></div>
 
       {/* Dark Mode: Tech grid pattern */}
       <div
-        className="absolute inset-0 z-10 opacity-0 dark:opacity-30 transition-opacity duration-1000 pointer-events-none"
+        className="absolute inset-0 z-10 opacity-30 transition-opacity duration-1000 pointer-events-none"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px)
+            linear-gradient(rgba(168, 85, 247, 0.12) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(45, 212, 191, 0.08) 1px, transparent 1px)
           `,
           backgroundSize: '40px 40px'
         }}
         aria-hidden="true"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 via-teal-900/20 to-cyan-900/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-teal-900/10"></div>
       </div>
     </>
   );
 });
 
 function AddProduct() {
-  const [form, setForm] = useState({
-    productId: '',
-    name: '',
-    origin: '',
-    manufacturer: '',
-    certificationType: '',
-    description: '',
-    blockchainRefHash: '',
-    password: '', // Add password field for secondary authentication
+  const [form, setForm, clearFormDraft] = usePersistentForm('add-product-form', ADD_PRODUCT_INITIAL_FORM, {
+    sanitize: sanitizeAddProductDraft
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -181,7 +191,9 @@ function AddProduct() {
   const [qrCode, setQrCode] = useState(null);
   const [qrCodeDownloadUrl, setQrCodeDownloadUrl] = useState(null); // Add QR download URL state
   const [registeredProduct, setRegisteredProduct] = useState(null);
-  const [stageDocuments, setStageDocuments] = useState([]);
+  const [stageDocuments, setStageDocuments, clearStageDocumentsDraft] = usePersistentForm('add-product-stage-documents', [], {
+    sanitize: stripTransientDocumentFields
+  });
   const [documentValidationErrors, setDocumentValidationErrors] = useState([]);
   const navigate = useNavigate();
   const enableAI = isAIEnabled();
@@ -410,6 +422,8 @@ function AddProduct() {
       
       setRegisteredProduct(responseData.product);
       setVerificationFeedback(responseData.verification || null);
+      clearFormDraft();
+      clearStageDocumentsDraft();
       toast.success('Product added successfully!');
       // Optionally, do not redirect immediately
       // setTimeout(() => navigate('/admin/dashboard'), 1200);
@@ -460,18 +474,13 @@ function AddProduct() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden transition-all duration-1000
-      bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 
-      dark:bg-gradient-to-br dark:from-slate-900 dark:via-emerald-950 dark:to-teal-950">
+    <div className="min-h-screen relative overflow-hidden transition-all duration-1000 cyber-page">
       <AddProductDecorativeBackground />
       
       <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
         <ToastContainer position="top-center" theme="auto" />
         
-        <AnimatedCard className="w-full max-w-2xl backdrop-blur-xl border shadow-2xl transition-all duration-500
-          bg-white/95 border-emerald-200/60 shadow-emerald-300/20
-          dark:bg-slate-800/95 dark:border-emerald-400/30 dark:shadow-emerald-500/20
-          hover:shadow-3xl hover:border-emerald-300/70 dark:hover:border-emerald-300/50">
+        <AnimatedCard className="w-full max-w-2xl cyber-glass shadow-2xl transition-all duration-500 hover:border-purple-300/50">
           <div className="p-8">{qrCode ? (
               // Success State - QR Code Display
               <motion.div
@@ -481,12 +490,12 @@ function AddProduct() {
                 transition={{ duration: 0.6 }}
               >
                 <div className="flex justify-center mb-6">
-                  <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-[#2DD4BF] to-[#A855F7] rounded-full flex items-center justify-center shadow-[0_0_28px_rgba(45,212,191,0.35)]">
                     <FaCheck className="text-white text-3xl" />
                   </div>
                 </div>
                 
-                <h3 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-4">
+                <h3 className="text-3xl font-bold bg-gradient-to-r from-[#2DD4BF] to-[#A855F7] bg-clip-text text-transparent mb-4">
                   Product Registered Successfully!
                 </h3>
 
@@ -500,7 +509,7 @@ function AddProduct() {
                   Your product has been added to the blockchain. Scan or download the QR code below:
                 </p>
                 
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl mb-6">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl mb-6">
                   <img 
                     src={qrCode} 
                     alt="Product QR Code" 
@@ -537,7 +546,7 @@ function AddProduct() {
                 </div>
                 
                 {registeredProduct && (
-                  <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-4 text-left mb-6">
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-left mb-6">
                     <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Product Details:</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-300">
                       <div><strong>ID:</strong> {registeredProduct.productId}</div>

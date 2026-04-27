@@ -9,9 +9,22 @@ import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import { buildAPIURL } from '../utils/apiConfig';
+import { usePersistentForm } from '../hooks/usePersistentForm';
+
+const REGISTER_INITIAL_FORM = { email: '', password: '', role: 'producer' };
+
+function sanitizeRegisterDraft(value) {
+  return {
+    email: value?.email || '',
+    role: value?.role || 'producer',
+    password: ''
+  };
+}
 
 function AuthRegister() {
-  const [form, setForm] = useState({ email: '', password: '', role: 'producer' });
+  const [form, setForm, clearRegisterDraft] = usePersistentForm('register-form', REGISTER_INITIAL_FORM, {
+    sanitize: sanitizeRegisterDraft
+  });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -31,6 +44,7 @@ function AuthRegister() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
+      clearRegisterDraft();
       toast.success('Registration successful!');
       setTimeout(() => navigate('/auth/login'), 1200);
     } catch (err) {
@@ -40,7 +54,7 @@ function AuthRegister() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden cyber-page">
       {/* 3D Background */}
       <div className="absolute inset-0 z-0">
         <Scene3D />
@@ -50,12 +64,12 @@ function AuthRegister() {
       <ParticleBackground />
       
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 via-blue-900/20 to-purple-900/20 z-10"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.20),transparent_34rem)] z-10"></div>
       
       <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
         <ToastContainer position="top-center" />
         
-        <AnimatedCard className="w-full max-w-md">
+        <AnimatedCard className="w-full max-w-md cyber-glass">
           <div className="p-8">
             {/* Header */}
             <motion.div
@@ -65,14 +79,14 @@ function AuthRegister() {
               transition={{ duration: 0.6 }}
             >
               <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#A855F7] to-[#2DD4BF] rounded-full flex items-center justify-center shadow-[0_0_28px_rgba(168,85,247,0.35)]">
                   <FaUserPlus className="text-white text-2xl" />
                 </div>
               </div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] bg-clip-text text-transparent">
                 Join Us Today
               </h2>
-              <p className="text-gray-600 dark:text-gray-300 mt-2">
+              <p className="text-slate-300 mt-2">
                 Create your account to get started
               </p>
             </motion.div>
@@ -87,7 +101,7 @@ function AuthRegister() {
             >
               {/* Email Input */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
@@ -99,14 +113,14 @@ function AuthRegister() {
                     value={form.email}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/80 dark:bg-slate-700/80 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 backdrop-blur-sm"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 text-slate-100 border border-white/10 focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200 backdrop-blur-sm"
                   />
                 </div>
               </div>
 
               {/* Password Input */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -118,7 +132,7 @@ function AuthRegister() {
                     value={form.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/80 dark:bg-slate-700/80 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 backdrop-blur-sm"
+                    className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 text-slate-100 border border-white/10 focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200 backdrop-blur-sm"
                   />
                   <button
                     type="button"
@@ -132,7 +146,7 @@ function AuthRegister() {
 
               {/* Role Selection */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Role
                 </label>
                 <div className="relative">
@@ -141,7 +155,7 @@ function AuthRegister() {
                     name="role"
                     value={form.role}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/80 dark:bg-slate-700/80 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 backdrop-blur-sm"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 text-slate-100 border border-white/10 focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200 backdrop-blur-sm"
                   >
                     <option value="producer">Producer</option>
                     <option value="consumer">Consumer</option>
@@ -173,10 +187,10 @@ function AuthRegister() {
             {/* Divider */}
             <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                <div className="w-full border-t border-white/10"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-slate-800 text-gray-500">
+                <span className="px-2 bg-[#1C1926] text-slate-400">
                   Already have an account?
                 </span>
               </div>

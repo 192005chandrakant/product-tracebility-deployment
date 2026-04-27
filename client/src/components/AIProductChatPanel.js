@@ -62,20 +62,20 @@ function AIProductChatPanel({ productId }) {
   };
 
   return (
-    <section className="p-4 border rounded-lg bg-white dark:bg-gray-900">
-      <h3 className="text-lg font-semibold mb-3">Ask AI About This Product</h3>
+    <section className="p-4 border rounded-lg cyber-glass">
+      <h3 className="text-lg font-semibold mb-3 text-white">Ask AI About This Product</h3>
       <form onSubmit={handleAsk} className="space-y-3">
         <textarea
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
           placeholder="Ask about certifications, origin, or lifecycle stages"
-          className="w-full p-3 border rounded-md bg-gray-50 dark:bg-gray-800"
+          className="w-full p-3 border border-white/10 rounded-md bg-white/5 text-slate-100 placeholder-slate-400"
           rows={4}
           maxLength={800}
         />
         <button
           type="submit"
-          className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-60"
+          className="px-4 py-2 rounded-md bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] text-white disabled:opacity-60"
           disabled={loading}
         >
           {loading ? 'Asking...' : 'Ask AI'}
@@ -83,7 +83,7 @@ function AIProductChatPanel({ productId }) {
       </form>
 
       {chatHistory.length > 0 ? (
-        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-2 text-xs text-slate-400">
           Context memory active for this product chat ({Math.ceil(chatHistory.length / 2)} turn(s)).
         </p>
       ) : null}
@@ -91,12 +91,12 @@ function AIProductChatPanel({ productId }) {
       {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
 
       {reply ? (
-        <div className="mt-4 p-3 rounded-md bg-blue-50 dark:bg-blue-950">
+        <div className="mt-4 p-3 rounded-md bg-white/5 border border-white/10">
           <AIStructuredResponse
             content={reply}
             fallbackTitle="AI Guidance"
-            titleClassName="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300"
-            bodyClassName="text-sm leading-6 text-blue-900 dark:text-blue-100"
+            titleClassName="text-xs font-semibold uppercase tracking-wide text-purple-200"
+            bodyClassName="text-sm leading-6 text-slate-200"
           />
         </div>
       ) : null}

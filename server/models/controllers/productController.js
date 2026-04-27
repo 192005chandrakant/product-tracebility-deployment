@@ -490,7 +490,46 @@ function extractBlockchainHash(blockchainResult) {
     return blockchainResult;
   }
 
-  return blockchainResult.hash || blockchainResult.txHash || null;
+  return blockchainResult.hash || blockchainResult.txHash || blockchainResult.transactionHash || null;
+}
+
+function parseBlockchainReceipt(receiptValue) {
+  if (!receiptValue) {
+    return null;
+  }
+
+  if (typeof receiptValue === 'string') {
+    try {
+      const parsed = JSON.parse(receiptValue);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  if (typeof receiptValue === 'object') {
+    return receiptValue;
+  }
+
+  return null;
+}
+
+function resolveBlockchainReceipt(body = {}) {
+  const parsedReceipt = parseBlockchainReceipt(body.blockchainReceipt || body.transactionReceipt || body.receipt);
+  if (parsedReceipt) {
+    return parsedReceipt;
+  }
+
+  const txHash = body.blockchainTxHash || body.transactionHash || body.txHash || body.blockchainTx || null;
+  if (!txHash) {
+    return null;
+  }
+
+  return {
+    hash: txHash,
+    txHash,
+    transactionHash: txHash
+  };
 }
 
 async function buildAndUploadQrCode(req, product) {
@@ -698,59 +737,36 @@ exports.addProduct = async (req, res) => {
       });
     }
 
-    let blockchainResult = null;
-    let blockchainEvent = null;
-    try {
-      blockchainResult = await blockchain.addProductOnChain({
-        productId: req.body.productId,
-        name: req.body.name,
-        origin: req.body.origin,
-        manufacturer: req.body.manufacturer,
-        certificationHash: blockchainRefHash
-      });
-    } catch (blockchainError) {
-      console.error('Blockchain error:', blockchainError);
-      if (blockchainError.reason === 'Product already exists') {
-        return res.status(400).json({
-          error: 'Product already exists on blockchain',
-          message: `Product with ID ${req.body.productId} is already registered on the blockchain. Please use a different product ID.`,
-          details: 'This product ID has been used before and cannot be reused.'
+    const blockchainPayload = {
+      name: req.body.name,
+      origin: req.body.origin,
+      manufacturer: req.body.manufacturer,
+      certificationHash: blockchainRefHash
+    };
+
+    const blockchainReceipt = resolveBlockchainReceipt(req.body);
+    const blockchainRequest = blockchainReceipt
+      ? null
+      : await blockchain.addProductOnChain({
+          productId: req.body.productId,
+          ...blockchainPayload
         });
+
+    const txHash = extractBlockchainHash(blockchainReceipt || blockchainRequest);
+    const blockchainEvent = buildBlockchainEventRecord({
+      action: 'register_product',
+      stage: REGISTRATION_STAGE,
+      productId: req.body.productId,
+      actorEmail: req.user.email,
+      actorRole: req.user.role,
+      txResult: blockchainReceipt || null,
+      status: blockchainReceipt ? 'confirmed' : 'pending',
+      payload: {
+        ...blockchainPayload,
+        transactionRequest: blockchainRequest,
+        transactionReceipt: blockchainReceipt
       }
-
-      blockchainEvent = buildBlockchainEventRecord({
-        action: 'register_product',
-        stage: REGISTRATION_STAGE,
-        productId: req.body.productId,
-        actorEmail: req.user.email,
-        actorRole: req.user.role,
-        payload: {
-          name: req.body.name,
-          origin: req.body.origin,
-          manufacturer: req.body.manufacturer,
-          certificationHash: blockchainRefHash
-        },
-        error: blockchainError
-      });
-    }
-
-    const txHash = extractBlockchainHash(blockchainResult);
-    if (!blockchainEvent) {
-      blockchainEvent = buildBlockchainEventRecord({
-        action: 'register_product',
-        stage: REGISTRATION_STAGE,
-        productId: req.body.productId,
-        actorEmail: req.user.email,
-        actorRole: req.user.role,
-        txResult: blockchainResult,
-        payload: {
-          name: req.body.name,
-          origin: req.body.origin,
-          manufacturer: req.body.manufacturer,
-          certificationHash: blockchainRefHash
-        }
-      });
-    }
+    });
 
     const stageVerificationSummary = summarizeStageVerification(docsProcessing.verificationResults);
     const lifecycleStatus = getLifecycleStatusFromVerification(stageVerificationSummary);
@@ -768,6 +784,7 @@ exports.addProduct = async (req, res) => {
       blockchainTx: txHash,
       blockchainStatus: blockchainEvent.status,
       blockchainUpdatedAt: blockchainEvent.recordedAt,
+      blockchainRequest: blockchainRequest,
       blockchainEvents: [blockchainEvent],
       certificationHash: blockchainRefHash,
       createdByWallet: req.user.email,
@@ -817,6 +834,7 @@ exports.addProduct = async (req, res) => {
       qrCode: qrCodeData,
       blockchainTx: txHash,
       blockchainEvent,
+      transactionRequest: blockchainRequest,
       verification: {
         status: stageVerificationSummary.status,
         reviewState: stageVerificationSummary.reviewState,
@@ -933,43 +951,32 @@ exports.updateProduct = async (req, res) => {
       });
     }
 
-    let blockchainResult = null;
-    let blockchainEvent = null;
-    try {
-      blockchainResult = await blockchain.updateStageOnChain(id, stage);
-    } catch (blockchainError) {
-      console.error('Blockchain error:', blockchainError);
-      blockchainEvent = buildBlockchainEventRecord({
-        action: 'update_stage',
+      const blockchainPayload = {
         stage,
-        productId: id,
-        actorEmail: req.user.email,
-        actorRole: req.user.role,
-        payload: {
-          stage,
-          stageNotes: req.body.stageNotes || '',
-          stageLocation: req.body.stageLocation || ''
-        },
-        error: blockchainError
-      });
-    }
+        stageNotes: req.body.stageNotes || '',
+        stageLocation: req.body.stageLocation || ''
+      };
 
-    const txHash = extractBlockchainHash(blockchainResult);
-    if (!blockchainEvent) {
-      blockchainEvent = buildBlockchainEventRecord({
+      const blockchainReceipt = resolveBlockchainReceipt(req.body);
+      const blockchainRequest = blockchainReceipt
+        ? null
+        : await blockchain.updateStageOnChain(id, stage);
+
+      const txHash = extractBlockchainHash(blockchainReceipt || blockchainRequest);
+      const blockchainEvent = buildBlockchainEventRecord({
         action: 'update_stage',
         stage,
         productId: id,
         actorEmail: req.user.email,
         actorRole: req.user.role,
-        txResult: blockchainResult,
+        txResult: blockchainReceipt || null,
+        status: blockchainReceipt ? 'confirmed' : 'pending',
         payload: {
-          stage,
-          stageNotes: req.body.stageNotes || '',
-          stageLocation: req.body.stageLocation || ''
+          ...blockchainPayload,
+          transactionRequest: blockchainRequest,
+          transactionReceipt: blockchainReceipt
         }
       });
-    }
 
     const verificationSummary = summarizeStageVerification(docsProcessing.verificationResults);
     const hasVerificationInputs = docsProcessing.verificationResults.length > 0;
@@ -1009,6 +1016,7 @@ exports.updateProduct = async (req, res) => {
           blockchainTx: txHash,
           blockchainStatus: blockchainEvent.status,
           blockchainUpdatedAt: blockchainEvent.recordedAt,
+          blockchainRequest: blockchainRequest,
           ...(verificationUpdate ? { verification: verificationUpdate } : {}),
           ...(compatibilityUpdate || {})
         },
@@ -1052,6 +1060,7 @@ exports.updateProduct = async (req, res) => {
           details: docsProcessing.verificationResults
         }
       },
+          transactionRequest: blockchainRequest,
       stageEvent: updatedProduct.stageEvents[updatedProduct.stageEvents.length - 1]
     });
   } catch (err) {
@@ -1100,6 +1109,76 @@ exports.getProduct = async (req, res) => {
     return res.json({ ...productObject, onChain, transparency });
   } catch (err) {
     console.error('Error in getProduct:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+exports.attachBlockchainReceipt = async (req, res) => {
+  try {
+    if (!req.user || !req.user.email) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { id } = req.params;
+    const product = await Product.findOne({ productId: id });
+
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    if (req.user.role !== 'admin' && product.createdByWallet !== req.user.email) {
+      return res.status(403).json({ error: 'Access denied. You can only update your own products.' });
+    }
+
+    const blockchainReceipt = resolveBlockchainReceipt(req.body);
+    const txHash = extractBlockchainHash(blockchainReceipt);
+
+    if (!txHash) {
+      return res.status(400).json({
+        success: false,
+        error: 'A blockchain receipt or transaction hash is required.'
+      });
+    }
+
+    const blockchainEvent = buildBlockchainEventRecord({
+      action: req.body.action || 'confirm_blockchain_submission',
+      stage: sanitizeText(req.body.stage, 80) || null,
+      productId: id,
+      actorEmail: req.user.email,
+      actorRole: req.user.role,
+      txResult: blockchainReceipt,
+      status: 'confirmed',
+      payload: {
+        transactionReceipt: blockchainReceipt,
+        receiptSource: 'client_wallet'
+      }
+    });
+
+    const updatedProduct = await Product.findOneAndUpdate(
+      { productId: id },
+      {
+        $set: {
+          blockchainTx: txHash,
+          blockchainStatus: 'confirmed',
+          blockchainUpdatedAt: blockchainEvent.recordedAt,
+          blockchainRequest: null
+        },
+        $push: {
+          blockchainEvents: blockchainEvent
+        }
+      },
+      { new: true }
+    );
+
+    return res.json({
+      success: true,
+      message: 'Blockchain receipt attached successfully',
+      blockchainTx: txHash,
+      blockchainEvent,
+      product: updatedProduct.toObject()
+    });
+  } catch (err) {
+    console.error('Error in attachBlockchainReceipt:', err);
     return res.status(500).json({ error: err.message });
   }
 };

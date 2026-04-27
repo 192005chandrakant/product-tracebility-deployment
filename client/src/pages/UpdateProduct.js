@@ -35,6 +35,7 @@ import { SETTINGS_CHANGED_EVENT } from '../utils/appSettings';
 import StageDocumentationForm from '../components/StageDocumentationForm';
 import AIStructuredResponse from '../components/AIStructuredResponse';
 import VerificationResultPanel from '../components/VerificationResultPanel';
+import { stripTransientDocumentFields, usePersistentForm } from '../hooks/usePersistentForm';
 
 const STAGE_OPTIONS = [
   { value: 'Harvested', label: 'Harvested', color: 'from-green-500 to-green-600', icon: FaBox },
@@ -156,7 +157,7 @@ const UpdateProductDecorativeBackground = memo(function UpdateProductDecorativeB
       </div>
 
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20 z-10 pointer-events-none" aria-hidden="true"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.20),transparent_34rem)] z-10 pointer-events-none" aria-hidden="true"></div>
     </>
   );
 });
@@ -166,8 +167,8 @@ function UpdateProduct() {
   const { statistics, loading: statsLoading, error: statsError, refreshStats } = useRealTimeStats(5000); // Refresh every 5 seconds
   
   // Main state
-  const [productId, setProductId] = useState('');
-  const [stage, setStage] = useState('');
+  const [productId, setProductId, clearProductIdDraft] = usePersistentForm('update-product-id', '');
+  const [stage, setStage, clearStageDraft] = usePersistentForm('update-product-stage', '');
   const [password, setPassword] = useState(''); // Add password for secondary authentication
   const [message, setMessage] = useState('');
   const [verificationFeedback, setVerificationFeedback] = useState(null);
@@ -175,7 +176,7 @@ function UpdateProduct() {
   const [isSuccess, setIsSuccess] = useState(false);
   
   // Product search and details
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery, clearSearchDraft] = usePersistentForm('update-product-search', '');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -183,11 +184,13 @@ function UpdateProduct() {
   // File uploads
   // Stage history
   const [stageHistory, setStageHistory] = useState([]);
-  const [stageDocuments, setStageDocuments] = useState([]);
+  const [stageDocuments, setStageDocuments, clearStageDocumentsDraft] = usePersistentForm('update-product-stage-documents', [], {
+    sanitize: stripTransientDocumentFields
+  });
   const [documentValidationErrors, setDocumentValidationErrors] = useState([]);
 
   // AI update assistant
-  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiQuestion, setAiQuestion, clearAiQuestionDraft] = usePersistentForm('update-product-ai-question', '');
   const [aiReply, setAiReply] = useState('');
   const [aiError, setAiError] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -376,6 +379,11 @@ function UpdateProduct() {
       }
 
       setStageDocuments([]);
+      clearProductIdDraft();
+      clearStageDraft();
+      clearSearchDraft();
+      clearAiQuestionDraft();
+      clearStageDocumentsDraft();
 
       // Navigate to product detail page after delay
       setTimeout(() => {
@@ -439,7 +447,7 @@ function UpdateProduct() {
   }, []);
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden cyber-page">
       <UpdateProductDecorativeBackground />
       
       <div className="relative z-20 min-h-screen p-4 flex flex-col items-center">
@@ -449,22 +457,22 @@ function UpdateProduct() {
           {/* Header */}
           <div className="text-center mb-8 pt-8">
             <div className="relative inline-block mb-6">
-              <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-2xl">
+              <div className="w-24 h-24 bg-gradient-to-br from-[#A855F7] to-[#2DD4BF] rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_32px_rgba(168,85,247,0.35)]">
                 <FaEdit className="text-white text-4xl" />
               </div>
               <div className="absolute -top-3 -right-3">
                 <FloatingCubeWrapper>
                   <mesh>
                     <boxGeometry args={[0.5, 0.5, 0.5]} />
-                    <meshStandardMaterial color="#ff6b35" />
+                    <meshStandardMaterial color="#A855F7" />
                   </mesh>
                 </FloatingCubeWrapper>
               </div>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] bg-clip-text text-transparent">
               Update Product
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 text-lg max-w-2xl mx-auto">
+            <p className="text-slate-300 text-lg max-w-2xl mx-auto">
               Search for products, update stages, upload files, and track your progress with real-time statistics
             </p>
           </div>
@@ -475,7 +483,7 @@ function UpdateProduct() {
               <AnimatedCard className="h-fit">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                    <h3 className="text-xl font-bold text-white">
                       Statistics
                     </h3>
                     <button
@@ -489,7 +497,7 @@ function UpdateProduct() {
                   </div>
                   
                   <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-lg text-white">
+                    <div className="bg-gradient-to-r from-[#A855F7] to-purple-600 p-4 rounded-lg text-white">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-blue-100 text-sm">Total Products</p>
@@ -499,7 +507,7 @@ function UpdateProduct() {
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-green-500 to-green-600 p-4 rounded-lg text-white">
+                    <div className="bg-gradient-to-r from-[#2DD4BF] to-teal-500 p-4 rounded-lg text-white">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-green-100 text-sm">Total Scans</p>
@@ -509,7 +517,7 @@ function UpdateProduct() {
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-4 rounded-lg text-white">
+                    <div className="bg-gradient-to-r from-purple-500 to-[#A855F7] p-4 rounded-lg text-white">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-purple-100 text-sm">Total Updates</p>

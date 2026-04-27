@@ -22,6 +22,7 @@ import {
   FaTimes,
   FaUsers,
 } from 'react-icons/fa';
+import BrandLogo from '../components/BrandLogo';
 import '../styles/landing.css';
 
 const LazyScene3D = lazy(() => import('../components/3D/Scene3D'));
@@ -66,6 +67,29 @@ const featureGrid = [
   { title: 'Realtime Dashboards', desc: 'Visual KPI boards for supply and compliance teams.', icon: FaChartLine },
   { title: 'AI Explanations', desc: 'Understand anomalies with natural-language summaries.', icon: FaRobot },
   { title: 'Open APIs', desc: 'Integrate with ERP, WMS, and quality systems.', icon: FaCloud },
+];
+
+const platformModules = [
+  {
+    title: 'Producer Operations',
+    desc: 'Register product identity, upload proof documents, generate printable QR codes, and update lifecycle stages without leaving the command center.',
+    icon: FaDatabase,
+  },
+  {
+    title: 'AI Evidence Review',
+    desc: 'Gemini-assisted verification checks certificate fields, document consistency, stage evidence, and risk signals before records are trusted.',
+    icon: FaBrain,
+  },
+  {
+    title: 'Public Verification',
+    desc: 'Consumers scan a QR code and see product origin, certification status, lifecycle events, transaction hashes, and trust indicators in one readable profile.',
+    icon: FaQrcode,
+  },
+  {
+    title: 'Admin Moderation',
+    desc: 'Admins review flagged products, inspect risk scores, approve or reject records, and export transparent audit activity.',
+    icon: FaShieldAlt,
+  },
 ];
 
 const integrations = ['SAP', 'Oracle', 'Salesforce', 'Shopify', 'Snowflake', 'MongoDB', 'Slack', 'Power BI'];
@@ -144,6 +168,7 @@ function Landing() {
   const navItems = useMemo(
     () => [
       { label: 'Features', href: '#features' },
+      { label: 'Platform', href: '#platform' },
       { label: 'How It Works', href: '#how-it-works' },
       { label: 'Security', href: '#security' },
       { label: 'Pricing', href: '#pricing' },
@@ -180,8 +205,7 @@ function Landing() {
       <header className="sticky top-0 z-50 border-b border-slate-200/50 dark:border-slate-700/50 bg-white/75 dark:bg-slate-950/65 backdrop-blur-xl">
         <div className="lp-container flex h-16 items-center justify-between gap-4">
           <button className="flex items-center gap-2" onClick={() => navigate('/')}>
-            <div className="h-9 w-9 rounded-xl lp-gradient-btn flex items-center justify-center font-bold">T</div>
-            <span className="text-lg sm:text-xl font-semibold tracking-tight">TraceChain</span>
+            <BrandLogo size="sm" animated />
           </button>
 
           <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-300">
@@ -242,15 +266,15 @@ function Landing() {
         <section className="lp-section lp-hero-section pt-12 sm:pt-16 lg:pt-24">
           <div className="lp-container grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-16 items-start lg:items-center">
             <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }}>
-              <p className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-wide uppercase text-indigo-600 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-500/20 rounded-full px-3 py-1.5 mb-6">
-                <FaStar className="text-amber-400" /> Trusted Traceability Platform
+              <p className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-wide uppercase text-purple-700 dark:text-purple-200 bg-purple-500/15 border border-purple-300/20 rounded-full px-3 py-1.5 mb-6">
+                <FaStar className="text-teal-300" /> Blockchain + AI Traceability Platform
               </p>
               <h1 className="lp-display text-[clamp(2rem,9vw,4rem)] lg:text-[clamp(3.75rem,5vw,4.75rem)] font-semibold leading-[1.05] tracking-tight">
                 Turn every product into a
                 <span className="lp-gradient-text"> transparent growth engine.</span>
               </h1>
               <p className="lp-lead mt-6 text-base sm:text-lg leading-relaxed text-slate-600 dark:text-slate-300 max-w-xl">
-                Unified blockchain verification, AI insights, and live operational dashboards for producers and enterprise supply teams.
+                Register products, validate certification evidence with Gemini, anchor lifecycle events to blockchain, and let consumers verify authenticity instantly from a QR scan.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
                 <motion.button
@@ -271,7 +295,7 @@ function Landing() {
                 </motion.button>
               </div>
               <div className="mt-7 flex flex-wrap gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                {['No-code onboarding', 'Enterprise security', 'Sub-second QR verification'].map((item) => (
+                {['On-chain proof trails', 'Gemini evidence review', 'QR consumer verification', 'Producer command center'].map((item) => (
                   <span key={item} className="lp-chip px-3 py-1.5 rounded-full border border-slate-300/80 dark:border-slate-600/90">
                     {item}
                   </span>
@@ -427,6 +451,42 @@ function Landing() {
                 </div>
               </div>
             </SectionReveal>
+          </div>
+        </section>
+
+        <section className="lp-section pt-0 scroll-mt-24" id="platform">
+          <div className="lp-container">
+            <SectionReveal>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="lp-kicker">Platform Depth</p>
+                  <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">Built around the real traceability workflow</h2>
+                </div>
+                <p className="max-w-xl text-sm sm:text-base text-slate-600 dark:text-slate-300">
+                  TraceChain connects product onboarding, proof validation, blockchain transparency, and consumer trust into one operating layer.
+                </p>
+              </div>
+            </SectionReveal>
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {platformModules.map((module, index) => (
+                <SectionReveal key={module.title} delay={index * 0.05}>
+                  <motion.article
+                    whileHover={{ y: -5, boxShadow: '0 18px 48px rgba(168,85,247,0.18)' }}
+                    className="lp-card rounded-2xl p-5 h-full"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="h-11 w-11 rounded-xl lp-gradient-btn flex items-center justify-center flex-shrink-0">
+                        <module.icon />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">{module.title}</h3>
+                        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{module.desc}</p>
+                      </div>
+                    </div>
+                  </motion.article>
+                </SectionReveal>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -683,7 +743,7 @@ function Landing() {
       <footer className="border-t border-slate-200/60 dark:border-slate-700/60 py-10">
         <div className="lp-container grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
           <div>
-            <div className="text-lg font-semibold">TraceChain</div>
+            <BrandLogo size="sm" />
             <p className="mt-3 text-slate-600 dark:text-slate-300">Enterprise-grade product traceability for modern supply ecosystems.</p>
           </div>
           <div>

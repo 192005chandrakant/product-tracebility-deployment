@@ -86,12 +86,28 @@ describe('productController.addProduct verification flow', () => {
     jest.clearAllMocks();
 
     Product.findOne.mockResolvedValue(null);
-    blockchain.addProductOnChain.mockResolvedValue({ hash: '0xabc123' });
-    blockchain.updateStageOnChain.mockResolvedValue(null);
+    blockchain.addProductOnChain.mockResolvedValue({
+      contractAddress: '0xcontract',
+      chainId: 11155111,
+      to: '0xcontract',
+      data: '0xabcdef',
+      value: '0',
+      methodName: 'addProduct',
+      args: []
+    });
+    blockchain.updateStageOnChain.mockResolvedValue({
+      contractAddress: '0xcontract',
+      chainId: 11155111,
+      to: '0xcontract',
+      data: '0x123456',
+      value: '0',
+      methodName: 'updateStage',
+      args: []
+    });
     buildBlockchainEventRecord.mockImplementation((payload) => ({
-      status: 'confirmed',
+      status: payload?.status || (payload?.txResult?.hash ? 'confirmed' : 'pending'),
       recordedAt: new Date('2026-04-17T00:00:00.000Z'),
-      txHash: payload?.txResult?.hash || '0xabc123',
+      txHash: payload?.txResult?.hash || payload?.txResult?.txHash || payload?.txResult?.transactionHash || null,
       ...payload
     }));
 
@@ -293,6 +309,11 @@ describe('productController.addProduct verification flow', () => {
       originalFileName: 'certificate.pdf',
       fileId: 'certificate-file-1'
     }));
+    expect(savedProduct.blockchainStatus).toBe('pending');
+    expect(savedProduct.blockchainRequest).toEqual(expect.objectContaining({
+      methodName: 'addProduct',
+      contractAddress: '0xcontract'
+    }));
     expect(savedProduct.verification).toEqual(expect.objectContaining({
       status: 'allowed',
       reviewState: 'verified',
@@ -306,6 +327,13 @@ describe('productController.addProduct verification flow', () => {
     expect(blockchain.addProductOnChain).toHaveBeenCalledWith(expect.objectContaining({
       productId: 'P-101',
       certificationHash: expect.any(String)
+    }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      blockchainTx: null,
+      transactionRequest: expect.objectContaining({
+        methodName: 'addProduct',
+        contractAddress: '0xcontract'
+      })
     }));
   });
 });
