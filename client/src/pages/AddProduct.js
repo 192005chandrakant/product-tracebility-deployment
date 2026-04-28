@@ -34,6 +34,7 @@ import { useBlockchainProductTransaction, BlockchainTransactionProgress } from '
 import { WalletConnectButton } from '../components/WalletConnectButton';
 import VerificationResultPanel from '../components/VerificationResultPanel';
 import { stripTransientDocumentFields, usePersistentForm } from '../hooks/usePersistentForm';
+import BrandLogo from '../components/BrandLogo';
 
 const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
   'application/pdf',
@@ -656,6 +657,11 @@ function AddProduct() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6 }}
                 >
+                  <div className="mb-5 flex justify-center">
+                    <div className="rounded-[24px] border border-white/10 bg-white/60 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-white/5">
+                      <BrandLogo size="sm" animated />
+                    </div>
+                  </div>
                   <div className="flex justify-center mb-6">
                     <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-500
                       bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500

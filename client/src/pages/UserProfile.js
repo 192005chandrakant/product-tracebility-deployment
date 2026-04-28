@@ -36,6 +36,7 @@ import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
+import BrandLogo from '../components/BrandLogo';
 import { buildAPIURL } from '../utils/apiConfig';
 
 function isDatabaseProduct(product) {
@@ -264,6 +265,11 @@ function UserProfile() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
+            <div className="mb-5 flex justify-center">
+              <div className="rounded-[24px] border border-white/10 bg-white/60 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-white/5">
+                <BrandLogo size="sm" animated />
+              </div>
+            </div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <GlowingButton

@@ -20,6 +20,7 @@ import ParticleBackground from '../components/UI/ParticleBackground';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
+import BrandLogo from '../components/BrandLogo';
 
 // Simple error boundary to prevent crashes from 3D components
 class ErrorBoundary extends Component {
@@ -661,11 +662,11 @@ function QRScan() {
       <div className="relative z-20 min-h-screen p-4 sm:p-6 lg:p-8">
         <ErrorBoundary fallback={
           <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl max-w-md w-full">
-            <h2 className="text-2xl text-white font-bold mb-4">QR Code Scanner</h2>
-            <p className="text-white/80 mb-6">Something went wrong with the scanner. Please try again.</p>
+            <h2 className="text-2xl text-slate-900 dark:text-white font-bold mb-4">QR Code Scanner</h2>
+            <p className="text-slate-600 dark:text-white/80 mb-6">Something went wrong with the scanner. Please try again.</p>
             <button 
               onClick={() => window.location.reload()}
-              className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+              className="w-full py-3 bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] text-white rounded-lg"
             >
               Reload Scanner
             </button>
@@ -700,10 +701,15 @@ function QRScan() {
                   </Suspense>
                 </ErrorBoundary>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
+              <div className="mb-4 flex justify-center lg:justify-start">
+                <div className="rounded-[24px] border border-white/10 bg-white/60 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-white/5">
+                  <BrandLogo size="sm" animated />
+                </div>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
                 Scan Product QR Code
               </h1>
-              <p className="mt-2 text-sm sm:text-base text-slate-300 font-medium">
+              <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-300 font-medium">
                 Verify authenticity using AI + Blockchain
               </p>
 

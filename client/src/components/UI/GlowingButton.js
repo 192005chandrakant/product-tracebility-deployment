@@ -41,7 +41,7 @@ const GlowingButton = ({
     
     ghost: `relative overflow-hidden group
       bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/60
-      text-slate-200 hover:text-white
+      text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white
       font-semibold shadow-lg hover:shadow-xl backdrop-blur-sm
       shadow-purple-950/20 hover:shadow-purple-400/20
       focus:ring-4 focus:ring-purple-300/30
@@ -49,7 +49,7 @@ const GlowingButton = ({
       
     outline: `relative overflow-hidden group
       bg-transparent border border-purple-400/70 hover:border-teal-300
-      text-purple-200 hover:text-white
+      text-purple-700 dark:text-purple-200 hover:text-slate-900 dark:hover:text-white
       font-semibold shadow-lg hover:shadow-xl
       shadow-purple-400/20 hover:shadow-purple-300/40
       focus:ring-4 focus:ring-purple-300/30
@@ -57,10 +57,10 @@ const GlowingButton = ({
   };
 
   const sizes = {
-    sm: "px-4 py-2.5 text-sm",
-    md: "px-6 py-3.5 text-base",
-    lg: "px-8 py-4 text-lg",
-    xl: "px-10 py-5 text-xl"
+    sm: "px-4 py-2.5 text-sm min-h-[2.5rem]",
+    md: "px-6 py-3.5 text-base min-h-[3rem]",
+    lg: "px-8 py-4 text-lg min-h-[3.5rem]",
+    xl: "px-10 py-5 text-xl min-h-[4rem]"
   };
 
   return (
@@ -85,7 +85,7 @@ const GlowingButton = ({
         ${variants[variant]} 
         ${sizes[size]} 
         ${className}
-        rounded-xl transition-all duration-300 ripple-effect
+        rounded-xl transition-all duration-300 ripple-effect whitespace-nowrap
         transform active:scale-95
         disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
         relative z-10
@@ -98,7 +98,7 @@ const GlowingButton = ({
         return acc;
       }, {})}
     >
-      <span className="relative z-10 flex items-center justify-center">
+      <span className="relative z-10 flex items-center justify-center gap-2">
         {children}
       </span>
       

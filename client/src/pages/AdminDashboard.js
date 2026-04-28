@@ -37,6 +37,7 @@ import { buildAPIURL } from '../utils/apiConfig';
 import AIInsightsPanel from '../components/AIInsightsPanel';
 import VerificationTimeline from '../components/VerificationTimeline';
 import VerificationResultPanel from '../components/VerificationResultPanel';
+import BrandLogo from '../components/BrandLogo';
 import { getAdminDashboard, getAdminOverview, getFlaggedProducts, getAdminActionLogs, getAdminProduct, takeAdminAction } from '../utils/adminApi';
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/400x200?text=No+Image';
@@ -407,7 +408,7 @@ function AdminDashboard() {
     const stageColors = {
       'Harvested': 'from-green-500 to-green-600',
       'Processed': 'from-yellow-500 to-yellow-600',
-      'Packaged': 'from-blue-500 to-blue-600',
+      'Packaged': 'from-[#A855F7] to-[#2DD4BF]',
       'Shipped': 'from-purple-500 to-purple-600',
       'Delivered': 'from-cyan-500 to-cyan-600',
       'Sold': 'from-red-500 to-red-600',
@@ -519,25 +520,25 @@ function AdminDashboard() {
       label: 'Total Products',
       value: adminOverview?.totalProducts ?? allProducts.length,
       icon: FaBoxOpen,
-      color: 'from-blue-50 to-blue-100'
+      color: 'from-purple-50 to-fuchsia-50 dark:from-[#1C1926] dark:to-[#221b34]'
     },
     {
       label: 'Flagged Products',
       value: adminOverview?.flaggedProducts ?? flaggedProducts.length,
       icon: FaExclamationTriangle,
-      color: 'from-yellow-50 to-yellow-100'
+      color: 'from-amber-50 to-orange-50 dark:from-[#2a2114] dark:to-[#261812]'
     },
     {
       label: 'Verified Products',
       value: adminOverview?.verifiedProducts ?? allProducts.filter((product) => product.verification?.status === 'allowed').length,
       icon: FaCheckCircle,
-      color: 'from-green-50 to-green-100'
+      color: 'from-teal-50 to-cyan-50 dark:from-[#132724] dark:to-[#12212a]'
     },
     {
       label: 'Blocked Products',
       value: adminOverview?.failedProducts ?? adminOverview?.blockedProducts ?? allProducts.filter((product) => product.verification?.status === 'blocked').length,
       icon: FaTimesCircle,
-      color: 'from-red-50 to-red-100'
+      color: 'from-rose-50 to-orange-50 dark:from-[#2b171d] dark:to-[#271713]'
     }
   ];
 
@@ -558,26 +559,31 @@ function AdminDashboard() {
                   onClick={() => navigate('/')}
                   variant="secondary"
                   className="p-3 mt-1 sm:mt-0"
-                  glowColor="blue"
+                  glowColor="purple"
                 >
                   <FaArrowLeft className="w-4 h-4" />
                 </GlowingButton>
                 <div>
-                  <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                  <div className="mb-4">
+                    <div className="inline-flex rounded-[24px] border border-white/10 bg-white/60 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-white/5">
+                      <BrandLogo size="sm" animated />
+                    </div>
+                  </div>
+                  <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#A855F7] via-purple-400 to-[#2DD4BF] bg-clip-text text-transparent">
                     Admin Dashboard
                   </h1>
-                  <p className="text-slate-300 text-sm sm:text-base">
+                  <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base">
                     Real-time moderation, lifecycle visibility, and product governance in one place.
                   </p>
                   {isAdmin ? (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-700 border border-purple-300/30 dark:text-purple-200 text-xs font-semibold">
                         <FaUserShield /> {adminIdentity.email || 'admin'}
                       </span>
                       <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-semibold uppercase">
                         Role: {adminIdentity.role || 'admin'}
                       </span>
-                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-300/30 dark:text-emerald-200 text-xs font-semibold">
                         Live sync: {lastModerationSync ? new Date(lastModerationSync).toLocaleTimeString() : 'Not synced yet'}
                       </span>
                     </div>
@@ -589,7 +595,7 @@ function AdminDashboard() {
                   <button
                     type="button"
                     onClick={handleAdminLogout}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-semibold text-slate-200 hover:bg-white/10"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-slate-200 hover:bg-white/10"
                   >
                     <FaSignOutAlt /> Logout
                   </button>
@@ -605,15 +611,15 @@ function AdminDashboard() {
               <AnimatedCard className="p-6 cyber-glass">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">My Products</p>
-                    <p className="text-3xl font-bold text-blue-800 dark:text-blue-200">
+                    <p className="text-sm text-purple-600 dark:text-purple-300 font-medium">My Products</p>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-purple-100">
                       {myProducts.length}
                     </p>
-                    <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
+                    <p className="text-xs text-purple-500 dark:text-purple-300 mt-1">
                       Products I registered
                     </p>
                   </div>
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#A855F7] to-[#2DD4BF] rounded-xl flex items-center justify-center shadow-lg">
                     <FaBoxOpen className="text-white text-xl" />
                   </div>
                 </div>
@@ -622,15 +628,15 @@ function AdminDashboard() {
               <AnimatedCard className="p-6 cyber-glass">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">Total Scans</p>
-                    <p className="text-3xl font-bold text-green-800 dark:text-green-200">
+                    <p className="text-sm text-teal-600 dark:text-teal-300 font-medium">Total Scans</p>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-teal-100">
                       {statistics.totalScans}
                     </p>
-                    <p className="text-xs text-green-500 dark:text-green-400 mt-1">
+                    <p className="text-xs text-teal-500 dark:text-teal-300 mt-1">
                       QR code scans
                     </p>
                   </div>
-                  <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#2DD4BF] to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
                     <FaEye className="text-white text-xl" />
                   </div>
                 </div>
@@ -639,15 +645,15 @@ function AdminDashboard() {
               <AnimatedCard className="p-6 cyber-glass">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Total Updates</p>
-                    <p className="text-3xl font-bold text-purple-800 dark:text-purple-200">
+                    <p className="text-sm text-fuchsia-600 dark:text-fuchsia-300 font-medium">Total Updates</p>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-fuchsia-100">
                       {statistics.totalUpdates}
                     </p>
-                    <p className="text-xs text-purple-500 dark:text-purple-400 mt-1">
+                    <p className="text-xs text-fuchsia-500 dark:text-fuchsia-300 mt-1">
                       Stage updates
                     </p>
                   </div>
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-14 h-14 bg-gradient-to-br from-fuchsia-500 to-[#A855F7] rounded-xl flex items-center justify-center shadow-lg">
                     <FaEdit className="text-white text-xl" />
                   </div>
                 </div>
@@ -729,16 +735,16 @@ function AdminDashboard() {
                   </div>
                   <div className="flex flex-col gap-3 xl:items-end">
                     <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
-                      <div className="min-w-[140px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-4 py-3">
+                      <div className="min-w-[140px] rounded-2xl border border-white/10 bg-white/55 dark:bg-white/5 px-4 py-3">
                         <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Queue size</p>
                         <p className="text-2xl font-bold text-slate-900 dark:text-white">{moderationStats.flagged}</p>
                       </div>
-                      <div className="min-w-[140px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-4 py-3">
+                      <div className="min-w-[140px] rounded-2xl border border-white/10 bg-white/55 dark:bg-white/5 px-4 py-3">
                         <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Avg risk</p>
                         <p className="text-2xl font-bold text-slate-900 dark:text-white">{moderationStats.averageRisk}</p>
                       </div>
                     </div>
-                    <GlowingButton onClick={loadAdminData} variant="secondary" glowColor="blue" className="px-5 py-2">
+                    <GlowingButton onClick={loadAdminData} variant="secondary" glowColor="purple" className="px-5 py-2">
                       <FaSync className={moderationLoading ? 'animate-spin' : ''} /> Refresh Moderation Data
                     </GlowingButton>
                   </div>
@@ -763,13 +769,13 @@ function AdminDashboard() {
                   {adminCards.map((card) => {
                     const Icon = card.icon;
                     return (
-                      <div key={card.label} className={`rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-gradient-to-br ${card.color} dark:from-slate-800 dark:to-slate-900 shadow-sm`}>
+                      <div key={card.label} className={`rounded-2xl border border-white/10 p-4 bg-gradient-to-br ${card.color} shadow-sm`}>
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">{card.label}</p>
                             <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">{card.value}</p>
                           </div>
-                          <div className="w-12 h-12 rounded-xl bg-white/80 dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700">
+                          <div className="w-12 h-12 rounded-xl bg-white/80 dark:bg-white/5 flex items-center justify-center shadow-sm border border-white/10">
                             <Icon className="text-slate-700 dark:text-slate-200" />
                           </div>
                         </div>
@@ -785,29 +791,29 @@ function AdminDashboard() {
                 ) : null}
 
                 <div id="moderation-queue" className="grid grid-cols-1 2xl:grid-cols-[220px_1.05fr_0.95fr] gap-6">
-                  <aside className="hidden 2xl:block rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/70 p-4 h-fit sticky top-24">
+                  <aside className="hidden 2xl:block rounded-2xl border border-white/10 bg-white/65 dark:bg-white/5 p-4 h-fit sticky top-24 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
                     <h3 className="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-3">Control Center</h3>
                     <div className="space-y-2 text-sm">
-                      <a href="#admin-overview" className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                      <a href="#admin-overview" className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white/80 dark:hover:bg-white/10 border border-transparent hover:border-purple-300/30">
                         <FaClipboardList /> Dashboard
                       </a>
-                      <a href="#moderation-queue" className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                      <a href="#moderation-queue" className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white/80 dark:hover:bg-white/10 border border-transparent hover:border-purple-300/30">
                         <FaFlag /> Flagged Items
                       </a>
-                      <a href="#admin-action-logs" className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                      <a href="#admin-action-logs" className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white/80 dark:hover:bg-white/10 border border-transparent hover:border-purple-300/30">
                         <FaHistory /> Reports
                       </a>
                     </div>
                   </aside>
 
-                  <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col min-h-[32rem]">
-                    <div className="flex flex-col gap-4 px-4 sm:px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80">
+                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/80 dark:bg-white/5 flex flex-col min-h-[32rem] shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+                    <div className="flex flex-col gap-4 px-4 sm:px-5 py-4 border-b border-white/10 bg-white/70 dark:bg-white/5">
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <h3 className="text-lg font-bold text-slate-900 dark:text-white">Moderation Queue</h3>
                           <p className="text-sm text-slate-600 dark:text-slate-300">Pick a product to inspect it in the detail pane.</p>
                         </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/80 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-white/10">
                           {filteredModerationQueue.length} items
                         </span>
                       </div>
@@ -832,10 +838,10 @@ function AdminDashboard() {
                               key={filter.key}
                               type="button"
                               onClick={() => setModerationFilter(filter.key)}
-                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] text-white border-transparent shadow-[0_0_18px_rgba(168,85,247,0.18)]' : 'bg-white/80 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-white/10 hover:bg-white dark:hover:bg-white/10'}`}
                             >
                               {filter.label}
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] ${active ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] ${active ? 'bg-white/20 text-white' : 'bg-white/70 dark:bg-white/10'}`}>
                                 {count}
                               </span>
                             </button>
@@ -850,7 +856,7 @@ function AdminDashboard() {
                           value={moderationSearch}
                           onChange={(event) => setModerationSearch(event.target.value)}
                           placeholder="Search moderation queue by product or ID"
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-9 pr-3 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full rounded-xl border border-white/10 bg-white/85 dark:bg-white/5 py-2.5 pl-9 pr-3 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                       </div>
                     </div>
@@ -863,7 +869,7 @@ function AdminDashboard() {
 
                     <div className="hidden md:block flex-1 min-h-0 overflow-auto">
                       <table className="min-w-full">
-                        <thead className="bg-slate-50 dark:bg-slate-800 sticky top-0 z-10">
+                        <thead className="bg-white/85 dark:bg-white/5 sticky top-0 z-10">
                           <tr>
                             <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">Product</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">Manufacturer</th>
@@ -880,7 +886,7 @@ function AdminDashboard() {
                               <tr
                                 key={product.productId}
                                 onClick={() => handleSelectReviewProduct(product)}
-                                className={`cursor-pointer transition-colors ${isSelected ? 'bg-slate-100 dark:bg-slate-800/80' : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'}`}
+                                className={`cursor-pointer transition-colors ${isSelected ? 'bg-purple-500/10 dark:bg-purple-500/10' : 'hover:bg-white/80 dark:hover:bg-white/5'}`}
                               >
                                 <td className="px-4 py-4">
                                   <div className="flex items-start gap-3">
@@ -969,7 +975,7 @@ function AdminDashboard() {
                             key={product.productId}
                             type="button"
                             onClick={() => handleSelectReviewProduct(product)}
-                            className={`w-full text-left p-4 transition-colors ${isSelected ? 'bg-slate-100 dark:bg-slate-800/80' : 'bg-white dark:bg-slate-900'}`}
+                            className={`w-full text-left p-4 transition-colors ${isSelected ? 'bg-purple-500/10 dark:bg-purple-500/10' : 'bg-white/80 dark:bg-white/5'}`}
                           >
                             <div className="flex items-start gap-3">
                               <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-700">
@@ -1015,34 +1021,34 @@ function AdminDashboard() {
 
                   <div id="product-review" className="space-y-4">
                     {selectedReviewProduct ? (
-                      <AnimatedCard className="p-5 sm:p-6 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg sticky top-24">
+                      <AnimatedCard className="p-5 sm:p-6 border border-white/10 bg-white/80 dark:bg-white/5 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sticky top-24">
                         <div className="flex items-center justify-between gap-3 mb-4">
                           <div>
                             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Selected product</p>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedReviewProduct.name}</h3>
                           </div>
-                          <button onClick={() => setSelectedReviewProduct(null)} className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm">
+                          <button onClick={() => setSelectedReviewProduct(null)} className="px-3 py-2 rounded-xl bg-white/80 dark:bg-white/10 text-slate-700 hover:bg-white text-sm border border-white/10">
                             Close
                           </button>
                         </div>
 
                         <div className="space-y-3 text-sm">
                           {selectedReviewLoading ? (
-                            <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3 text-blue-700 dark:text-blue-200 text-sm font-semibold">
+                            <div className="rounded-xl border border-cyan-300/20 bg-cyan-500/8 p-3 text-cyan-700 dark:text-cyan-200 text-sm font-semibold">
                               Loading latest product verification details...
                             </div>
                           ) : null}
 
-                          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-3">
+                          <div className="rounded-xl border border-white/10 bg-white/55 dark:bg-white/5 p-3">
                             <p className="text-slate-500 text-xs uppercase tracking-wide">Product ID</p>
                             <p className="font-medium text-slate-900 dark:text-white break-all">{selectedReviewProduct.productId}</p>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-3">
+                            <div className="rounded-xl border border-white/10 bg-white/55 dark:bg-white/5 p-3">
                               <p className="text-slate-500 text-xs uppercase tracking-wide">Manufacturer</p>
                               <p className="font-medium text-slate-900 dark:text-white">{selectedReviewProduct.manufacturer || 'Not provided'}</p>
                             </div>
-                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-3">
+                            <div className="rounded-xl border border-white/10 bg-white/55 dark:bg-white/5 p-3">
                               <p className="text-slate-500 text-xs uppercase tracking-wide">Origin</p>
                               <p className="font-medium text-slate-900 dark:text-white">{selectedReviewProduct.origin || 'Not provided'}</p>
                             </div>
@@ -1053,7 +1059,7 @@ function AdminDashboard() {
                             title="Moderation Verification Summary"
                           />
 
-                          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-3">
+                          <div className="rounded-xl border border-white/10 bg-white/55 dark:bg-white/5 p-3">
                             <h4 className="font-semibold mb-2 text-slate-900 dark:text-white">Verification Timeline</h4>
                             <VerificationTimeline
                               product={selectedReviewProduct}
@@ -1063,20 +1069,20 @@ function AdminDashboard() {
                           </div>
 
                           <div className="flex flex-wrap gap-2">
-                            <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'approve')} className="px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold disabled:opacity-60 hover:bg-emerald-700">
+                            <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'approve')} className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold disabled:opacity-60 hover:bg-emerald-700 shadow-sm">
                               <FaClipboardCheck className="inline mr-2" />Approve
                             </button>
-                            <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'reject')} className="px-4 py-2 rounded-lg bg-amber-500 text-white font-semibold disabled:opacity-60 hover:bg-amber-600">
+                            <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'reject')} className="px-4 py-2 rounded-xl bg-amber-500 text-white font-semibold disabled:opacity-60 hover:bg-amber-600 shadow-sm">
                               <FaBell className="inline mr-2" />Reject
                             </button>
-                            <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'remove')} className="px-4 py-2 rounded-lg bg-rose-600 text-white font-semibold disabled:opacity-60 hover:bg-rose-700">
+                            <button disabled={reviewBusy} onClick={() => handleAdminAction(selectedReviewProduct.productId, 'remove')} className="px-4 py-2 rounded-xl bg-rose-600 text-white font-semibold disabled:opacity-60 hover:bg-rose-700 shadow-sm">
                               <FaTrash className="inline mr-2" />Remove
                             </button>
                           </div>
                         </div>
                       </AnimatedCard>
                     ) : (
-                      <AnimatedCard className="p-5 sm:p-6 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg min-h-[18rem] flex items-center justify-center text-center">
+                      <AnimatedCard className="p-5 sm:p-6 border border-white/10 bg-white/80 dark:bg-white/5 shadow-[0_18px_45px_rgba(15,23,42,0.08)] min-h-[18rem] flex items-center justify-center text-center">
                         <div>
                           <FaSearchPlus className="mx-auto text-3xl text-slate-400 mb-3" />
                           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Inspect a product</h3>
@@ -1089,7 +1095,7 @@ function AdminDashboard() {
                   </div>
                 </div>
 
-                <div id="admin-action-logs" className="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 p-4">
+                <div id="admin-action-logs" className="mt-6 rounded-2xl border border-white/10 bg-white/70 dark:bg-white/5 p-4 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                       <FaHistory /> Recent Admin Actions
@@ -1111,11 +1117,11 @@ function AdminDashboard() {
                         </thead>
                         <tbody>
                           {adminActionLogs.map((log) => (
-                            <tr key={log._id} className="border-t border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                            <tr key={log._id} className="border-t border-white/10 text-slate-700 dark:text-slate-200">
                               <td className="py-2 pr-4 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
                               <td className="py-2 pr-4 whitespace-nowrap">{log.adminEmail}</td>
                               <td className="py-2 pr-4">
-                                <span className="px-2 py-1 rounded-full text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                                <span className="px-2 py-1 rounded-full text-xs font-semibold bg-white/80 dark:bg-white/10 border border-white/10">
                                   {log.action}
                                 </span>
                               </td>
@@ -1249,12 +1255,12 @@ function AdminDashboard() {
               // Skeleton loader for products
               <SkeletonLoader type="grid" count={6} />
             ) : filteredProducts.length === 0 ? (
-              <AnimatedCard className="p-8 sm:p-12 text-center">
-                <FaBoxOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              <AnimatedCard className="p-8 sm:p-12 text-center border border-white/10 bg-white/75 dark:bg-white/5 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+                <FaBoxOpen className="w-12 h-12 sm:w-16 sm:h-16 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-gray-100 mb-2">
                   No products found
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                <p className="text-slate-600 dark:text-gray-400 mb-6">
                   {searchQuery || selectedStage ? 'Try adjusting your search or filters' : 
                    activeTab === 'my-products' ? 
                    `You have ${myProducts.length} products but they don't match the current filters` : 
@@ -1263,7 +1269,7 @@ function AdminDashboard() {
                 <GlowingButton
                   onClick={() => navigate('/admin/add')}
                   className="w-full sm:w-auto px-6 py-3 font-semibold text-base sm:text-lg"
-                  glowColor="blue"
+                  glowColor="purple"
                 >
                   <FaPlusCircle className="mr-2" />
                   Add Product
@@ -1295,7 +1301,7 @@ function AdminDashboard() {
                               }}
                             />
                           ) : (
-                            <div className="flex flex-col items-center justify-center text-gray-400">
+                            <div className="flex flex-col items-center justify-center text-slate-400">
                               <FaBoxOpen className="text-4xl mb-2" />
                               <span className="text-sm">No Image</span>
                             </div>
@@ -1309,7 +1315,7 @@ function AdminDashboard() {
                               {product.stages[product.stages.length - 1]}
                             </span>
                           ) : (
-                            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold text-gray-500 bg-gray-200 dark:bg-gray-700">
+                            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold text-slate-500 bg-white/80 dark:bg-white/10">
                               No Status
                             </span>
                           )}
@@ -1341,7 +1347,7 @@ function AdminDashboard() {
                               href={getFullUrl(getLatestDocumentFile(product))}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
+                              className="inline-flex items-center text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 text-sm"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <FaFileAlt className="w-4 h-4 mr-1" />
@@ -1355,7 +1361,7 @@ function AdminDashboard() {
                           <GlowingButton
                             onClick={() => navigate(`/product/${product.productId}`)}
                             className="w-full py-3 font-semibold text-base sm:text-lg"
-                            glowColor="blue"
+                            glowColor="purple"
                           >
                             <FaEye className="mr-2" />
                             View Details

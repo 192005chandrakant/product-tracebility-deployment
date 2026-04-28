@@ -29,11 +29,11 @@ function StageDocumentationForm({
       />
 
       {Array.isArray(validationErrors) && validationErrors.length > 0 ? (
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4">
-          <p className="text-xs uppercase tracking-wide text-rose-700 dark:text-rose-300 font-semibold mb-2">Document Validation</p>
+        <div className="rounded-2xl border border-rose-300/30 bg-rose-500/10 p-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">Document Validation</p>
           <ul className="space-y-1 text-sm text-rose-900 dark:text-rose-100">
             {validationErrors.map((error, index) => (
-              <li key={`${index}-${error}`}>• {error}</li>
+              <li key={`${index}-${error}`}>- {error}</li>
             ))}
           </ul>
         </div>

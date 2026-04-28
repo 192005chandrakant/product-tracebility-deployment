@@ -10,21 +10,21 @@ function formatDate(value) {
 function statusTone(status) {
   if (status === 'confirmed' || status === 'success') {
     return {
-      cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-      icon: <FaCheckCircle className="text-green-600" />
+      cls: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+      icon: <FaCheckCircle className="text-emerald-500" />
     };
   }
 
   if (status === 'failed' || status === 'rejected') {
     return {
-      cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-      icon: <FaExclamationTriangle className="text-red-600" />
+      cls: 'bg-rose-500/10 text-rose-700 dark:text-rose-300',
+      icon: <FaExclamationTriangle className="text-rose-500" />
     };
   }
 
   return {
-    cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-    icon: <FaCube className="text-amber-600" />
+    cls: 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
+    icon: <FaCube className="text-purple-500" />
   };
 }
 
@@ -101,6 +101,20 @@ function getTotalPages(length, pageSize) {
   return Math.max(Math.ceil(length / pageSize), 1);
 }
 
+function Pager({ page, totalPages, onPrev, onNext }) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="mt-3 flex items-center justify-between gap-2">
+      <p className="text-xs text-slate-500 dark:text-slate-400">Page {page} of {totalPages}</p>
+      <div className="flex items-center gap-2">
+        <button type="button" className="rounded-xl border border-white/10 bg-white/60 px-2 py-1 text-xs disabled:opacity-50 dark:bg-white/5" disabled={page <= 1} onClick={onPrev}>Previous</button>
+        <button type="button" className="rounded-xl border border-white/10 bg-white/60 px-2 py-1 text-xs disabled:opacity-50 dark:bg-white/5" disabled={page >= totalPages} onClick={onNext}>Next</button>
+      </div>
+    </div>
+  );
+}
+
 function BlockchainTransparencySection({ product, user }) {
   const sourceProduct = product || {};
 
@@ -153,54 +167,54 @@ function BlockchainTransparencySection({ product, user }) {
   }
 
   return (
-    <section className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-        <FaLink className="text-cyan-500" />
+    <section className="mt-6 rounded-[28px] border border-white/10 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:bg-white/5">
+      <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+        <FaLink className="text-purple-500" />
         Blockchain Transparency
       </h3>
 
       {txHash ? (
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-800/70 mb-3">
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Latest Transaction Hash</p>
-          <p className="font-mono text-xs break-all text-slate-800 dark:text-slate-200">{txHash}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Recorded: {formatDate(latestRecordedAt)}</p>
+        <div className="mb-3 rounded-2xl border border-white/10 bg-white/55 p-3 dark:bg-white/5">
+          <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Latest Transaction Hash</p>
+          <p className="break-all font-mono text-xs text-slate-800 dark:text-slate-200">{txHash}</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Recorded: {formatDate(latestRecordedAt)}</p>
         </div>
       ) : null}
 
-      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-3 ${tone.cls}`}>
+      <div className={`mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${tone.cls}`}>
         {tone.icon}
         <span>Status: {status}</span>
       </div>
 
       {verificationBadge ? (
-        <div className="mb-4 rounded-lg border border-sky-200 dark:border-sky-800 p-3 bg-sky-50 dark:bg-sky-900/20">
-          <div className="flex items-center gap-2 mb-2">
-            <FaShieldAlt className="text-sky-600" />
+        <div className="mb-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/8 p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <FaShieldAlt className="text-cyan-500" />
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Signed Verification Badge</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-200">
+          <div className="grid grid-cols-1 gap-2 text-xs text-slate-700 dark:text-slate-200 md:grid-cols-2">
             <div className="min-w-0">
               <span className="font-semibold">Contract:</span>
-              <p className="mt-1 font-mono break-all">{verificationBadge.contractAddress || 'N/A'}</p>
+              <p className="mt-1 break-all font-mono">{verificationBadge.contractAddress || 'N/A'}</p>
             </div>
             <div className="min-w-0">
               <span className="font-semibold">Latest TX:</span>
-              <p className="mt-1 font-mono break-all">{verificationBadge.latestTxHash || txHash || 'N/A'}</p>
+              <p className="mt-1 break-all font-mono">{verificationBadge.latestTxHash || txHash || 'N/A'}</p>
             </div>
             <div className="min-w-0">
               <span className="font-semibold">Proof Hash:</span>
-              <p className="mt-1 font-mono break-all">{verificationBadge.proofHash || 'N/A'}</p>
+              <p className="mt-1 break-all font-mono">{verificationBadge.proofHash || 'N/A'}</p>
             </div>
             <div className="min-w-0">
               <span className="font-semibold">Signature:</span>
               <p className="mt-1 break-all">{verificationBadge.signature || 'Not signed (set TRANSPARENCY_AUDIT_SIGNING_KEY)'}</p>
             </div>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Generated: {formatDate(verificationBadge.generatedAt)} | Algorithm: {verificationBadge.algorithm || 'SHA256'}
           </p>
           {verificationBadge.explorerUrl ? (
-            <a href={verificationBadge.explorerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            <a href={verificationBadge.explorerUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-purple-600 hover:underline dark:text-purple-300">
               <FaExternalLinkAlt />
               Verify latest transaction on explorer
             </a>
@@ -209,9 +223,9 @@ function BlockchainTransparencySection({ product, user }) {
       ) : null}
 
       {onChainProof ? (
-        <div className="mb-4 rounded-lg border border-slate-200 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-800/70">
-          <div className="flex items-center gap-2 mb-2">
-            <FaShieldAlt className="text-cyan-600" />
+        <div className="mb-4 rounded-2xl border border-white/10 bg-white/55 p-3 dark:bg-white/5">
+          <div className="mb-2 flex items-center gap-2">
+            <FaShieldAlt className="text-cyan-500" />
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">On-chain Consistency Check</p>
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -224,46 +238,39 @@ function BlockchainTransparencySection({ product, user }) {
 
       {stageProofs.length > 0 ? (
         <div className="mb-4">
-          <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">Stage-to-Transaction Proofs</h4>
+          <h4 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Stage-to-Transaction Proofs</h4>
           <div className="space-y-2">
             {visibleStageProofs.map((proof, index) => {
               const absoluteIndex = (stageProofPage - 1) * pageSize + index;
               const proofTone = statusTone(proof.status || 'pending');
               return (
-                <article key={`${proof.txHash || proof.stage || 'stage-proof'}-${absoluteIndex}`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-800/60">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                <article key={`${proof.txHash || proof.stage || 'stage-proof'}-${absoluteIndex}`} className="rounded-2xl border border-white/10 bg-white/55 p-3 dark:bg-white/5">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-purple-500/10 px-2 py-1 text-xs font-semibold text-purple-700 dark:text-purple-300">
                       {proof.stage || 'Unknown Stage'}
                     </span>
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${proofTone.cls}`}>{proof.status || 'pending'}</span>
+                    <span className={`rounded-full px-2 py-1 text-xs font-semibold ${proofTone.cls}`}>{proof.status || 'pending'}</span>
                   </div>
-                  {proof.txHash ? <p className="font-mono text-xs break-all text-slate-800 dark:text-slate-200">{proof.txHash}</p> : null}
+                  {proof.txHash ? <p className="break-all font-mono text-xs text-slate-800 dark:text-slate-200">{proof.txHash}</p> : null}
                   {proof.explorerUrl ? (
-                    <a href={proof.explorerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                    <a href={proof.explorerUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-purple-600 hover:underline dark:text-purple-300">
                       <FaExternalLinkAlt />
                       Open in explorer
                     </a>
                   ) : null}
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatDate(proof.recordedAt)}</p>
-                  {proof.verificationStatus ? (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">Verification: {proof.verificationStatus}</p>
-                  ) : null}
-                  {proof.verificationReason ? (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-wrap">{proof.verificationReason}</p>
-                  ) : null}
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{formatDate(proof.recordedAt)}</p>
+                  {proof.verificationStatus ? <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Verification: {proof.verificationStatus}</p> : null}
+                  {proof.verificationReason ? <p className="mt-1 whitespace-pre-wrap text-xs text-slate-600 dark:text-slate-300">{proof.verificationReason}</p> : null}
                 </article>
               );
             })}
           </div>
-          {stageProofTotalPages > 1 ? (
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <p className="text-xs text-slate-500 dark:text-slate-400">Page {stageProofPage} of {stageProofTotalPages}</p>
-              <div className="flex items-center gap-2">
-                <button type="button" className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 disabled:opacity-50" disabled={stageProofPage <= 1} onClick={() => setStageProofPage((page) => Math.max(page - 1, 1))}>Previous</button>
-                <button type="button" className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 disabled:opacity-50" disabled={stageProofPage >= stageProofTotalPages} onClick={() => setStageProofPage((page) => Math.min(page + 1, stageProofTotalPages))}>Next</button>
-              </div>
-            </div>
-          ) : null}
+          <Pager
+            page={stageProofPage}
+            totalPages={stageProofTotalPages}
+            onPrev={() => setStageProofPage((page) => Math.max(page - 1, 1))}
+            onNext={() => setStageProofPage((page) => Math.min(page + 1, stageProofTotalPages))}
+          />
         </div>
       ) : null}
 
@@ -274,51 +281,42 @@ function BlockchainTransparencySection({ product, user }) {
             const absoluteIndex = (ledgerPage - 1) * pageSize + index;
             const eventTone = statusTone(event.status || status);
             return (
-              <article key={`${event.txHash || 'event'}-${absoluteIndex}`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-800/60">
-                <div className="flex items-center gap-2 mb-2">
+              <article key={`${event.txHash || 'event'}-${absoluteIndex}`} className="rounded-2xl border border-white/10 bg-white/55 p-3 dark:bg-white/5">
+                <div className="mb-2 flex items-center gap-2">
                   {eventTone.icon}
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${eventTone.cls}`}>{event.status || 'pending'}</span>
+                  <span className={`rounded-full px-2 py-1 text-xs font-semibold ${eventTone.cls}`}>{event.status || 'pending'}</span>
                   {event.action ? (
-                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                    <span className="rounded-full bg-white/70 px-2 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
                       {event.action}
                     </span>
                   ) : null}
                 </div>
-                {event.txHash ? <p className="font-mono text-xs break-all text-slate-800 dark:text-slate-200">{event.txHash}</p> : null}
+                {event.txHash ? <p className="break-all font-mono text-xs text-slate-800 dark:text-slate-200">{event.txHash}</p> : null}
                 {event.explorerUrl ? (
-                  <a href={event.explorerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                  <a href={event.explorerUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-purple-600 hover:underline dark:text-purple-300">
                     <FaExternalLinkAlt />
                     Explorer transaction
                   </a>
                 ) : null}
-                {event.stage ? (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">Stage: {event.stage}</p>
-                ) : null}
+                {event.stage ? <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Stage: {event.stage}</p> : null}
                 {event.initiatedBy ? (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 flex items-start gap-1 min-w-0">
-                    <FaUserShield className="text-slate-500 mt-0.5 shrink-0" />
+                  <p className="mt-1 flex min-w-0 items-start gap-1 text-xs text-slate-600 dark:text-slate-300">
+                    <FaUserShield className="mt-0.5 shrink-0 text-slate-500" />
                     <span className="min-w-0 break-all">Initiated by: {canViewOperatorDetails ? event.initiatedBy : maskValue(event.initiatedBy)}</span>
                   </p>
                 ) : null}
-                {canViewOperatorDetails && event.initiatedByRole ? (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">Role: {event.initiatedByRole}</p>
-                ) : null}
-                {event.errorMessage ? (
-                  <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 whitespace-pre-wrap">{event.errorMessage}</p>
-                ) : null}
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatDate(event.recordedAt || event.timestamp)}</p>
+                {canViewOperatorDetails && event.initiatedByRole ? <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Role: {event.initiatedByRole}</p> : null}
+                {event.errorMessage ? <p className="mt-1 whitespace-pre-wrap text-xs text-rose-700 dark:text-rose-300">{event.errorMessage}</p> : null}
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{formatDate(event.recordedAt || event.timestamp)}</p>
               </article>
             );
           })}
-          {ledgerTotalPages > 1 ? (
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <p className="text-xs text-slate-500 dark:text-slate-400">Page {ledgerPage} of {ledgerTotalPages}</p>
-              <div className="flex items-center gap-2">
-                <button type="button" className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 disabled:opacity-50" disabled={ledgerPage <= 1} onClick={() => setLedgerPage((page) => Math.max(page - 1, 1))}>Previous</button>
-                <button type="button" className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 disabled:opacity-50" disabled={ledgerPage >= ledgerTotalPages} onClick={() => setLedgerPage((page) => Math.min(page + 1, ledgerTotalPages))}>Next</button>
-              </div>
-            </div>
-          ) : null}
+          <Pager
+            page={ledgerPage}
+            totalPages={ledgerTotalPages}
+            onPrev={() => setLedgerPage((page) => Math.max(page - 1, 1))}
+            onNext={() => setLedgerPage((page) => Math.min(page + 1, ledgerTotalPages))}
+          />
         </div>
       ) : null}
     </section>

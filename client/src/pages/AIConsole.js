@@ -4,6 +4,7 @@ import { FaRobot, FaMagic, FaShieldAlt } from 'react-icons/fa';
 import { useSearchParams } from 'react-router-dom';
 import AIProductChatPanel from '../components/AIProductChatPanel';
 import AIDescriptionGeneratorPanel from '../components/AIDescriptionGeneratorPanel';
+import BrandLogo from '../components/BrandLogo';
 import { isAIEnabled } from '../utils/aiApi';
 import { SETTINGS_CHANGED_EVENT } from '../utils/appSettings';
 
@@ -34,9 +35,12 @@ function AIConsole() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4 cyber-page">
         <div className="max-w-xl w-full text-center p-8 rounded-3xl cyber-glass shadow-xl">
+          <div className="mb-4 flex justify-center">
+            <BrandLogo size="sm" animated />
+          </div>
           <FaShieldAlt className="mx-auto text-5xl text-purple-300 mb-4" />
-          <h1 className="text-3xl font-bold mb-3 text-white">AI tools are disabled</h1>
-          <p className="text-slate-300">
+          <h1 className="text-3xl font-bold mb-3 text-slate-900 dark:text-white">AI tools are disabled</h1>
+          <p className="text-slate-600 dark:text-slate-300">
             Enable <span className="font-mono">REACT_APP_ENABLE_AI_FEATURES=true</span> to use the AI Console.
           </p>
         </div>
@@ -51,14 +55,15 @@ function AIConsole() {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-6xl mx-auto px-4 space-y-8"
       >
-        <section className="rounded-3xl p-8 cyber-glass text-white shadow-2xl">
+        <section className="rounded-3xl p-8 cyber-glass text-slate-900 dark:text-white shadow-2xl">
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
               <FaRobot className="text-2xl text-purple-300" />
             </div>
             <div>
+              <BrandLogo size="sm" compact className="mb-3" />
               <h1 className="text-3xl md:text-4xl font-bold">AI Console</h1>
-              <p className="mt-3 text-white/75 max-w-3xl">
+              <p className="mt-3 text-slate-600 dark:text-white/75 max-w-3xl">
                 Ask questions about a product, or generate a production-ready description from keywords.
                 AI responses stay isolated from the core traceability workflow.
               </p>

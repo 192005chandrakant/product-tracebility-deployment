@@ -23,6 +23,7 @@ import AIStructuredResponse from '../components/AIStructuredResponse';
 import VerificationResultPanel from '../components/VerificationResultPanel';
 import { useBlockchainProductTransaction, BlockchainTransactionProgress } from '../hooks/useBlockchainProductTransaction';
 import { WalletConnectButton } from '../components/WalletConnectButton';
+import BrandLogo from '../components/BrandLogo';
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/600x300?text=No+Image';
 const STATUS_OPTIONS = [
@@ -434,7 +435,7 @@ function ProductDetail() {
           <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Wallet</p>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 {isConnected && account
                   ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}`
                   : 'Connect your wallet before updating product status'}
@@ -457,13 +458,18 @@ function ProductDetail() {
             Back
           </motion.button>
 
+          <div className="mb-5 flex justify-center">
+            <div className="rounded-[24px] border border-white/10 bg-white/60 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-white/5">
+              <BrandLogo size="sm" animated />
+            </div>
+          </div>
           <div className="mb-4 flex justify-center">
             <span className="verified-badge px-3 py-1 text-xs font-semibold">
               <FaShieldAlt />
               Blockchain Verified
             </span>
           </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-center break-words text-white">{product.name}</h2>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-center break-words text-slate-900 dark:text-white">{product.name}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4">
             <div className="text-gray-700 dark:text-gray-300 text-sm sm:text-base"><strong>Product ID:</strong> {product.productId}</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm sm:text-base"><strong>Origin:</strong> {product.origin}</div>

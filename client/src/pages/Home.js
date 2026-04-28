@@ -11,6 +11,7 @@ import ParticleBackground from '../components/UI/ParticleBackground';
 import StatisticsPanel from '../components/UI/StatisticsPanel';
 import ProductSearch from '../components/ProductSearch';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
+import BrandLogo from '../components/BrandLogo';
 
 function isDatabaseProduct(product) {
   return Boolean(product && typeof product === 'object' && product._id);
@@ -162,8 +163,13 @@ function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
+            <div className="mb-5 flex justify-center">
+              <div className="rounded-[24px] border border-white/10 bg-white/60 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-white/5">
+                <BrandLogo size="sm" animated />
+              </div>
+            </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 leading-tight
-              text-white">
+              text-slate-900 dark:text-white">
               Welcome back, 
               <span className="bg-gradient-to-r from-[#A855F7] to-[#2DD4BF]
                 bg-clip-text text-transparent block mt-2">
@@ -195,8 +201,7 @@ function Home() {
                   group-hover:scale-105 transition-transform duration-300">
                   <FaQrcode className="text-white text-xl" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2
-                  text-white">Scan QR Code</h3>
+                <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-white">Scan QR Code</h3>
                 <p className="text-slate-300">Quickly verify product authenticity</p>
               </div>
             </AnimatedCard>
@@ -215,8 +220,7 @@ function Home() {
                     group-hover:scale-105 transition-transform duration-300">
                     <FaPlus className="text-white text-xl" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2
-                    text-white">Add Product</h3>
+                  <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-white">Add Product</h3>
                   <p className="text-slate-300">Register new products on blockchain</p>
                 </div>
               </AnimatedCard>
@@ -235,8 +239,7 @@ function Home() {
                   group-hover:scale-105 transition-transform duration-300">
                   <FaChartLine className="text-white text-xl" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2
-                  text-white">Dashboard</h3>
+                <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-white">Dashboard</h3>
                 <p className="text-slate-300">View analytics and insights</p>
               </div>
             </AnimatedCard>
@@ -258,7 +261,7 @@ function Home() {
               cyber-glass">
               
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                   Recent Products
                 </h2>
                 <button 

@@ -39,6 +39,7 @@ import VerificationResultPanel from '../components/VerificationResultPanel';
 import { stripTransientDocumentFields, usePersistentForm } from '../hooks/usePersistentForm';
 import { useBlockchainProductTransaction, BlockchainTransactionProgress } from '../hooks/useBlockchainProductTransaction';
 import { WalletConnectButton } from '../components/WalletConnectButton';
+import BrandLogo from '../components/BrandLogo';
 
 const STAGE_OPTIONS = [
   { value: 'Harvested', label: 'Harvested', color: 'from-green-500 to-green-600', icon: FaBox },
@@ -490,10 +491,15 @@ function UpdateProduct() {
                 </FloatingCubeWrapper>
               </div>
             </div>
+            <div className="mb-5 flex justify-center">
+              <div className="rounded-[24px] border border-white/10 bg-white/60 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-white/5">
+                <BrandLogo size="sm" animated />
+              </div>
+            </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] bg-clip-text text-transparent">
               Update Product
             </h1>
-            <p className="text-slate-300 text-lg max-w-2xl mx-auto">
+            <p className="text-slate-600 dark:text-slate-300 text-lg max-w-2xl mx-auto">
               Search for products, update stages, upload files, and track your progress with real-time statistics
             </p>
           </div>
@@ -501,7 +507,7 @@ function UpdateProduct() {
           <div className="max-w-6xl mx-auto mb-6 flex items-center justify-between gap-4 flex-wrap">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Wallet</p>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 {isConnected && account
                   ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}`
                   : 'Connect your wallet before submitting an update'}
@@ -520,7 +526,7 @@ function UpdateProduct() {
               <AnimatedCard className="h-fit">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-white">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                       Statistics
                     </h3>
                     <button

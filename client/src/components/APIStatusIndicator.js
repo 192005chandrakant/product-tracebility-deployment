@@ -88,12 +88,12 @@ const APIStatusIndicator = ({ showDetails = false }) => {
     switch (status.state) {
       case 'connected':
         return status.authentication ? 
-          <FaCheckCircle className="text-green-500" /> : 
-          <FaExclamationTriangle className="text-yellow-500" />;
+          <FaCheckCircle className="text-emerald-500" /> : 
+          <FaExclamationTriangle className="text-amber-500" />;
       case 'disconnected':
-        return <FaExclamationTriangle className="text-red-500" />;
+        return <FaExclamationTriangle className="text-rose-500" />;
       default:
-        return <FaSpinner className="text-blue-500 animate-spin" />;
+        return <FaSpinner className="text-purple-500 animate-spin" />;
     }
   };
 
@@ -101,12 +101,12 @@ const APIStatusIndicator = ({ showDetails = false }) => {
     switch (status.state) {
       case 'connected':
         return status.authentication ? 
-          'bg-green-50 border-green-200 text-green-800' : 
-          'bg-yellow-50 border-yellow-200 text-yellow-800';
+          'bg-emerald-500/10 border-emerald-300/30 text-emerald-800 dark:text-emerald-200' : 
+          'bg-amber-500/10 border-amber-300/30 text-amber-800 dark:text-amber-200';
       case 'disconnected':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-rose-500/10 border-rose-300/30 text-rose-800 dark:text-rose-200';
       default:
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-purple-500/10 border-purple-300/30 text-purple-800 dark:text-purple-200';
     }
   };
 
@@ -124,11 +124,11 @@ const APIStatusIndicator = ({ showDetails = false }) => {
   const getStatusTextColor = () => {
     switch (status.state) {
       case 'connected':
-        return status.authentication ? 'text-green-600' : 'text-yellow-600';
+        return status.authentication ? 'text-emerald-600 dark:text-emerald-300' : 'text-amber-600 dark:text-amber-300';
       case 'disconnected':
-        return 'text-red-600';
+        return 'text-rose-600 dark:text-rose-300';
       default:
-        return 'text-blue-600';
+        return 'text-purple-600 dark:text-purple-300';
     }
   };
 
@@ -146,7 +146,7 @@ const APIStatusIndicator = ({ showDetails = false }) => {
 
   // Detailed view (showDetails = true)
   return (
-    <div className={`p-3 rounded-lg border text-sm flex items-center gap-2 ${getStatusColor()}`}>
+    <div className={`cyber-glass p-3 rounded-2xl border text-sm flex items-center gap-2 ${getStatusColor()}`}>
       {getStatusIcon()}
       <div className="flex-1">
         <div className="font-medium">{getStatusText()}</div>
@@ -165,7 +165,7 @@ const APIStatusIndicator = ({ showDetails = false }) => {
       <button
         onClick={checkAPIStatus}
         disabled={status.loading}
-        className="p-1 hover:bg-black hover:bg-opacity-10 rounded"
+        className="p-1 hover:bg-black/10 rounded-lg"
         title="Refresh status"
       >
         <FaCog className={status.loading ? 'animate-spin' : ''} />

@@ -125,6 +125,59 @@ const trustPillars = [
   },
 ];
 
+const traceabilityDrivers = [
+  {
+    title: 'Recall Precision',
+    desc: 'Standards-based traceability helps teams isolate affected lots faster, reduce blanket recalls, and respond with clearer evidence.',
+    icon: FaShieldAlt,
+  },
+  {
+    title: 'Consumer Transparency',
+    desc: 'Supply-chain transparency lets customers, partners, and regulators understand where goods came from and how they moved.',
+    icon: FaUsers,
+  },
+  {
+    title: 'Counterfeit Defense',
+    desc: 'Verifiable product identity, event history, and proof documents make it harder for counterfeit or manipulated records to pass downstream.',
+    icon: FaLink,
+  },
+  {
+    title: 'Operational Visibility',
+    desc: 'Shared event data turns isolated handoffs into a readable operating picture for logistics, quality, and compliance teams.',
+    icon: FaChartLine,
+  },
+];
+
+const standardsNarrative = [
+  {
+    title: 'Capture Critical Events',
+    body: 'Model the chain around receiving, packing, shipping, inspection, and transfer events so every milestone has an accountable record.',
+  },
+  {
+    title: 'Preserve Key Data Elements',
+    body: 'Keep batch references, document metadata, location context, and timestamps attached to each event so downstream decisions stay explainable.',
+  },
+  {
+    title: 'Publish Trust Outward',
+    body: 'Move from internal visibility alone to consumer-safe verification pages, partner-ready exports, and audit trails that can be shared with confidence.',
+  },
+];
+
+const executiveFaqs = [
+  {
+    q: 'Why combine blockchain and AI for traceability?',
+    a: 'Blockchain creates a tamper-evident event history. AI speeds up document review, anomaly detection, and evidence explanation so teams can act faster without losing accountability.',
+  },
+  {
+    q: 'How does this help during recalls or investigations?',
+    a: 'Structured event history, batch references, and document trails make it easier to locate affected products, explain chain-of-custody decisions, and reduce manual audit time.',
+  },
+  {
+    q: 'What makes the experience credible for consumers?',
+    a: 'The verification page exposes the product story in plain language: origin, lifecycle stages, certification evidence, and the underlying transaction history behind the QR scan.',
+  },
+];
+
 const pricingPlans = [
   {
     name: 'Starter',
@@ -427,6 +480,35 @@ function Landing() {
           </div>
         </section>
 
+        <section className="lp-section pt-0 scroll-mt-24" id="value">
+          <div className="lp-container">
+            <SectionReveal>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="lp-kicker">Why It Matters</p>
+                  <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">Traceability that supports trust, compliance, and faster response</h2>
+                </div>
+                <p className="max-w-2xl text-sm sm:text-base text-slate-600 dark:text-slate-300">
+                  Modern supply networks need more than internal status updates. They need interoperable event history, consumer-safe transparency, and evidence that stands up during recalls, disputes, and partner reviews.
+                </p>
+              </div>
+            </SectionReveal>
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {traceabilityDrivers.map((item, index) => (
+                <SectionReveal key={item.title} delay={index * 0.05}>
+                  <motion.article whileHover={{ y: -5 }} className="lp-card rounded-2xl p-5 h-full">
+                    <div className="h-11 w-11 rounded-xl lp-gradient-btn flex items-center justify-center mb-4">
+                      <item.icon />
+                    </div>
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{item.desc}</p>
+                  </motion.article>
+                </SectionReveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="lp-section pt-0 scroll-mt-24" id="analytics">
           <div className="lp-container">
             <SectionReveal>
@@ -487,6 +569,42 @@ function Landing() {
                 </SectionReveal>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="lp-section pt-0 scroll-mt-24" id="standards">
+          <div className="lp-container">
+            <SectionReveal>
+              <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-6 items-start">
+                <div className="lp-card rounded-3xl p-6 sm:p-8">
+                  <p className="lp-kicker">Standards-Ready</p>
+                  <h2 className="mt-2 text-3xl md:text-4xl font-semibold tracking-tight">Built around the way traceability systems actually work</h2>
+                  <p className="mt-4 text-slate-600 dark:text-slate-300 max-w-2xl">
+                    TraceChain is designed for event-driven traceability: capture meaningful handoffs, preserve the data around them, and make the resulting proof useful across internal operations and external verification.
+                  </p>
+                  <div className="mt-6 space-y-4">
+                    {standardsNarrative.map((item) => (
+                      <div key={item.title} className="lp-glass rounded-2xl p-4">
+                        <h3 className="text-base font-semibold">{item.title}</h3>
+                        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{item.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="lp-card rounded-3xl p-6 sm:p-8">
+                  <p className="lp-kicker">Executive FAQ</p>
+                  <div className="mt-4 space-y-4">
+                    {executiveFaqs.map((item) => (
+                      <div key={item.q} className="rounded-2xl border border-slate-200/60 dark:border-slate-700/60 bg-white/55 dark:bg-white/5 p-4">
+                        <h3 className="text-base font-semibold">{item.q}</h3>
+                        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{item.a}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </SectionReveal>
           </div>
         </section>
 

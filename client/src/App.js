@@ -4,6 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import PerformanceMonitor from './components/PerformanceMonitor';
+import BrandLogo from './components/BrandLogo';
 import { WalletProvider } from './context/WalletContext';
 import { 
   LazyHome, 
@@ -25,13 +26,12 @@ import './styles/animations.css';
 
 // Optimized loading screen with consistent styling
 const OptimizedLoadingFallback = React.memo(() => (
-  <div className="min-h-screen transition-all duration-300
-    bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
-    dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+  <div className="min-h-screen transition-all duration-300 cyber-page">
     <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+      <div className="text-center cyber-glass rounded-[28px] border border-white/10 px-8 py-7 shadow-[0_20px_60px_rgba(15,23,42,0.18)]">
+        <BrandLogo size="sm" compact className="justify-center mb-4" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#A855F7] dark:border-[#2DD4BF] mx-auto mb-4"></div>
+        <p className="text-slate-700 dark:text-slate-300">Loading...</p>
       </div>
     </div>
   </div>

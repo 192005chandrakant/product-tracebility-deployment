@@ -8,6 +8,7 @@ import ParticleBackground from '../components/UI/ParticleBackground';
 import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
+import BrandLogo from '../components/BrandLogo';
 import { buildAPIURL } from '../utils/apiConfig';
 import { usePersistentForm } from '../hooks/usePersistentForm';
 
@@ -78,6 +79,11 @@ function AuthRegister() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
+              <div className="mb-5 flex justify-center">
+                <div className="rounded-[24px] border border-white/10 bg-white/60 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-white/5">
+                  <BrandLogo size="sm" animated />
+                </div>
+              </div>
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 bg-gradient-to-br from-[#A855F7] to-[#2DD4BF] rounded-full flex items-center justify-center shadow-[0_0_28px_rgba(168,85,247,0.35)]">
                   <FaUserPlus className="text-white text-2xl" />
@@ -86,7 +92,7 @@ function AuthRegister() {
               <h2 className="text-3xl font-bold bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] bg-clip-text text-transparent">
                 Join Us Today
               </h2>
-              <p className="text-slate-300 mt-2">
+              <p className="text-slate-600 dark:text-slate-300 mt-2">
                 Create your account to get started
               </p>
             </motion.div>

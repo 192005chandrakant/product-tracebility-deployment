@@ -38,17 +38,16 @@ const GoogleLoginButton = ({
   `;
 
   const darkStyles = `
-    bg-gradient-to-r from-gray-800 to-gray-700 text-white
-    border-2 border-gray-600 hover:border-gray-500
-    dark:from-slate-700 dark:to-slate-600 dark:border-slate-500
-    dark:hover:border-slate-400 dark:hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]
-    focus:ring-blue-400 dark:focus:ring-offset-slate-900
+    bg-[linear-gradient(135deg,rgba(28,25,38,0.96),rgba(19,17,28,0.96))] text-white
+    border border-white/10 hover:border-purple-300/40
+    dark:hover:shadow-[0_0_20px_rgba(168,85,247,0.3)]
+    focus:ring-purple-400 dark:focus:ring-offset-slate-900
   `;
 
   const lightStyles = `
-    bg-white text-gray-700 border-2 border-gray-300
-    hover:border-gray-400 hover:bg-gray-50
-    focus:ring-blue-400 focus:ring-offset-white
+    bg-white/90 text-slate-700 border border-slate-200
+    hover:border-purple-300/40 hover:bg-white
+    focus:ring-purple-400 focus:ring-offset-white
   `;
 
   return (
