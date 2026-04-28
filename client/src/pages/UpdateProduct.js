@@ -29,6 +29,7 @@ import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import FloatingCubeWrapper from '../components/3D/FloatingCubeWrapper';
+import { buildAPIURL } from '../utils/apiConfig';
 import useRealTimeStats from '../hooks/useRealTimeStats';
 import { aiChat, isAIEnabled } from '../utils/aiApi';
 import { SETTINGS_CHANGED_EVENT } from '../utils/appSettings';
@@ -36,6 +37,8 @@ import StageDocumentationForm from '../components/StageDocumentationForm';
 import AIStructuredResponse from '../components/AIStructuredResponse';
 import VerificationResultPanel from '../components/VerificationResultPanel';
 import { stripTransientDocumentFields, usePersistentForm } from '../hooks/usePersistentForm';
+import { useBlockchainProductTransaction, BlockchainTransactionProgress } from '../hooks/useBlockchainProductTransaction';
+import { WalletConnectButton } from '../components/WalletConnectButton';
 
 const STAGE_OPTIONS = [
   { value: 'Harvested', label: 'Harvested', color: 'from-green-500 to-green-600', icon: FaBox },
@@ -195,6 +198,12 @@ function UpdateProduct() {
   const [aiError, setAiError] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [enableAI, setEnableAI] = useState(isAIEnabled());
+  const {
+    processProductTransaction,
+    blockchainState,
+    isConnected,
+    account
+  } = useBlockchainProductTransaction();
   
   const navigate = useNavigate();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -344,31 +353,43 @@ function UpdateProduct() {
         formData.append('stageDocumentFiles', doc.file);
       });
 
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      let responseData = null;
+      const result = await processProductTransaction(
+        async () => {
+          const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`
+            },
+            body: formData,
+          });
+
+          responseData = await res.json();
+          if (!res.ok) {
+            setVerificationFeedback(responseData.verification || null);
+            throw new Error(responseData.message || responseData.error || 'Failed to update product');
+          }
+
+          return { data: responseData };
         },
-        body: formData,
-      });
+        {
+          productId,
+          stage,
+          receiptEndpoint: buildAPIURL(`/api/product/${productId}/blockchain-receipt`)
+        }
+      );
 
-      const data = await res.json();
-      if (!res.ok) {
-        setVerificationFeedback(data.verification || null);
-        throw new Error(data.message || data.error || 'Failed to update product');
-      }
-
-      setVerificationFeedback(data.verification || null);
+      setVerificationFeedback(responseData.verification || null);
 
       // Show success message with transaction hash if available
-      if (data.txHash) {
-        setMessage(`Product stage updated successfully! Transaction hash: ${data.txHash}`);
+      if (result?.txHash) {
+        setMessage(`Product stage updated successfully! Transaction hash: ${result.txHash}`);
         setIsSuccess(true);
         toast.success('Stage updated successfully!', {
           autoClose: 5000,
           onClick: () => {
             // Copy transaction hash to clipboard when toast is clicked
-            navigator.clipboard.writeText(data.txHash);
+            navigator.clipboard.writeText(result.txHash);
             toast.info('Transaction hash copied to clipboard!', { autoClose: 2000 });
           }
         });
@@ -387,7 +408,7 @@ function UpdateProduct() {
 
       // Navigate to product detail page after delay
       setTimeout(() => {
-        navigate(`/product/${productId}`, { state: { txHash: data.txHash } });
+        navigate(`/product/${productId}`, { state: { txHash: result?.txHash || responseData?.txHash } });
       }, 1500);
       
     } catch (err) {
@@ -475,6 +496,22 @@ function UpdateProduct() {
             <p className="text-slate-300 text-lg max-w-2xl mx-auto">
               Search for products, update stages, upload files, and track your progress with real-time statistics
             </p>
+          </div>
+
+          <div className="max-w-6xl mx-auto mb-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Wallet</p>
+              <p className="text-sm text-slate-300">
+                {isConnected && account
+                  ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}`
+                  : 'Connect your wallet before submitting an update'}
+              </p>
+            </div>
+            <WalletConnectButton />
+          </div>
+
+          <div className="max-w-6xl mx-auto mb-6">
+            <BlockchainTransactionProgress state={blockchainState} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto w-full">

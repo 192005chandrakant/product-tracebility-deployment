@@ -15,6 +15,7 @@ const statisticsRoutes = require('./routes/statisticsRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const { bootstrapAdminAccount } = require('./utils/adminBootstrap');
+const BlockchainEventListener = require('./services/blockchainEventListener');
 
 const app = express();
 
@@ -446,7 +447,7 @@ const startServer = async () => {
   try {
     const availablePort = await findAvailablePort(PORT);
     
-    const server = app.listen(availablePort, () => {
+    const server = app.listen(availablePort, async () => {
       console.log(`🚀 Server running on port ${availablePort}`);
       console.log(`📡 API available at http://localhost:${availablePort}`);
       console.log(`🧪 Health endpoint: http://localhost:${availablePort}/api/health`);
@@ -469,6 +470,22 @@ const startServer = async () => {
       // If port changed, log it
       if (availablePort !== PORT) {
         console.log(`⚠️ Port ${PORT} was in use, using port ${availablePort} instead`);
+      }
+
+      // Initialize blockchain event listener if MongoDB and blockchain env vars are configured
+      if (global.mongoConnected && process.env.SEPOLIA_RPC_URL && process.env.CONTRACT_ADDRESS) {
+        try {
+          const blockchainEventListener = new BlockchainEventListener();
+          await blockchainEventListener.initialize();
+          app.locals.blockchainEventListener = blockchainEventListener;
+          blockchainEventListener.start();
+          console.log('✅ Blockchain event listener initialized and started');
+        } catch (error) {
+          console.warn('⚠️ Blockchain event listener initialization failed:', error.message);
+          console.log('   Continuing without event listener - products will remain pending until manually synced');
+        }
+      } else {
+        console.log('⏭️ Skipping blockchain event listener - missing env vars or MongoDB not connected');
       }
     }).on('error', (err) => {
       if (err.code === 'EADDRINUSE') {

@@ -8,9 +8,11 @@ import ParticleBackground from '../components/UI/ParticleBackground';
 import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 import { optimizedAnimations } from '../utils/performanceOptimizations';
 import { buildAPIURL, apiRequest } from '../utils/apiConfig';
 import { usePersistentForm } from '../hooks/usePersistentForm';
+import { useGoogleLogin } from '../hooks/useGoogleLogin';
 
 const LOGIN_INITIAL_FORM = { email: '', password: '' };
 
@@ -25,6 +27,9 @@ function AuthLogin() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  
+  // Google login hook
+  const { googleLogin, loading: googleLoading, error: googleError, clearError } = useGoogleLogin();
 
   // Memoized handlers for better performance
   const handleChange = useCallback((e) => {
@@ -34,6 +39,19 @@ function AuthLogin() {
   const togglePasswordVisibility = useCallback(() => {
     setShowPassword(prev => !prev);
   }, []);
+  
+  // Handle Google login
+  const handleGoogleLogin = useCallback(async () => {
+    const result = await googleLogin();
+    
+    if (result.success) {
+      toast.success('Google login successful! Redirecting...');
+      window.dispatchEvent(new Event('userLogin'));
+      setTimeout(() => navigate('/home', { replace: true }), 1000);
+    } else {
+      toast.error(result.error || 'Google login failed');
+    }
+  }, [googleLogin, navigate]);
 
   // Optimized animation variants
   const animationVariants = useMemo(() => ({
@@ -128,10 +146,10 @@ function AuthLogin() {
               {...animationVariants.headerAnimation}
             >
               <div className="flex justify-center mb-6">
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-500
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-500
                   bg-gradient-to-br from-[#A855F7] via-purple-500 to-[#2DD4BF]
-                  shadow-[0_0_30px_rgba(168,85,247,0.35)]
-                  hover:scale-110 hover:rotate-6 hover:shadow-2xl">
+                  ring-1 ring-white/10 ring-offset-2 ring-offset-slate-950
+                  hover:scale-110 hover:rotate-6 hover:ring-2 hover:ring-cyan-300/40">
                   <FaSignInAlt className="text-white text-3xl drop-shadow-lg" />
                 </div>
               </div>
@@ -141,8 +159,7 @@ function AuthLogin() {
                 dark:drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">
                 Welcome Back
               </h2>
-              <p className="text-lg transition-all duration-500
-                text-slate-300">
+              <p className="text-lg text-slate-600 dark:text-slate-300 transition-all duration-500">
                 Sign in to your account
               </p>
             </motion.div>
@@ -155,14 +172,11 @@ function AuthLogin() {
             >
               {/* Email Input */}
               <div className="relative group">
-                <label className="block text-sm font-semibold mb-3 transition-all duration-300
-                  text-gray-700 group-focus-within:text-indigo-600 
-                  dark:text-slate-300 dark:group-focus-within:text-cyan-400">
+                <label className="block text-sm font-semibold mb-3 text-slate-700 transition-all duration-300 group-focus-within:text-purple-600 dark:text-slate-300 dark:group-focus-within:text-cyan-400">
                   Email Address
                 </label>
                 <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-300
-                    text-gray-400 group-focus-within:text-indigo-500 dark:group-focus-within:text-cyan-400">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 transition-all duration-300 group-focus-within:text-purple-500 dark:group-focus-within:text-cyan-400">
                     <FaEnvelope className="text-lg" />
                   </div>
                   <input
@@ -172,29 +186,18 @@ function AuthLogin() {
                     value={form.email}
                     onChange={handleChange}
                     required
-                    className="w-full pl-12 pr-4 py-4 rounded-xl transition-all duration-300 font-medium input-enhanced
-                      bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500
-                      focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200/50
-                      hover:border-gray-300 hover:bg-gray-50/80
-                      dark:bg-slate-700/50 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400
-                      dark:focus:bg-slate-700/80 dark:focus:border-cyan-400 dark:focus:ring-cyan-400/30
-                      dark:hover:border-slate-500 dark:hover:bg-slate-700/70
-                      shadow-sm hover:shadow-md focus:shadow-lg hover-lift
-                      dark:shadow-slate-800/50 dark:focus:shadow-cyan-500/20"
+                    className="form-control input-enhanced w-full rounded-xl py-4 pl-12 pr-4 font-medium shadow-sm hover-lift"
                   />
                 </div>
               </div>
 
               {/* Password Input */}
               <div className="relative group">
-                <label className="block text-sm font-semibold mb-3 transition-all duration-300
-                  text-gray-700 group-focus-within:text-indigo-600 
-                  dark:text-slate-300 dark:group-focus-within:text-cyan-400">
+                <label className="block text-sm font-semibold mb-3 text-slate-700 transition-all duration-300 group-focus-within:text-purple-600 dark:text-slate-300 dark:group-focus-within:text-cyan-400">
                   Password
                 </label>
                 <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-300
-                    text-gray-400 group-focus-within:text-indigo-500 dark:group-focus-within:text-cyan-400">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 transition-all duration-300 group-focus-within:text-purple-500 dark:group-focus-within:text-cyan-400">
                     <FaLock className="text-lg" />
                   </div>
                   <input
@@ -204,24 +207,12 @@ function AuthLogin() {
                     value={form.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-12 pr-14 py-4 rounded-xl transition-all duration-300 font-medium input-enhanced
-                      bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500
-                      focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200/50
-                      hover:border-gray-300 hover:bg-gray-50/80
-                      dark:bg-slate-700/50 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400
-                      dark:focus:bg-slate-700/80 dark:focus:border-cyan-400 dark:focus:ring-cyan-400/30
-                      dark:hover:border-slate-500 dark:hover:bg-slate-700/70
-                      shadow-sm hover:shadow-md focus:shadow-lg hover-lift
-                      dark:shadow-slate-800/50 dark:focus:shadow-cyan-500/20"
+                    className="form-control input-enhanced w-full rounded-xl py-4 pl-12 pr-14 font-medium shadow-sm hover-lift"
                   />
                   <button
                     type="button"
                     onClick={togglePasswordVisibility}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-all duration-300
-                      text-gray-400 hover:text-indigo-600 focus:text-indigo-600
-                      dark:text-slate-400 dark:hover:text-cyan-400 dark:focus:text-cyan-400
-                      p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600/50
-                      focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-cyan-400/30"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 rounded-lg p-1 text-slate-400 transition-all duration-300 hover:bg-white/60 hover:text-purple-600 focus:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-200/50 dark:hover:bg-slate-600/50 dark:hover:text-cyan-400 dark:focus:ring-cyan-400/30 dark:focus:text-cyan-400"
                   >
                     {showPassword ? <FaEyeSlash className="text-lg" /> : <FaEye className="text-lg" />}
                   </button>
@@ -255,13 +246,48 @@ function AuthLogin() {
             {/* Divider */}
             <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t-2 transition-all duration-300
-                  border-gray-200 dark:border-slate-600"></div>
+                <div className="w-full border-t-2 border-slate-200/80 transition-all duration-300 dark:border-slate-600"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 py-1 rounded-full font-medium transition-all duration-300
-                  bg-white text-gray-500 border border-gray-200
-                  dark:bg-slate-800 dark:text-slate-400 dark:border-slate-600">
+                <span className="rounded-full border border-white/10 bg-white/75 px-4 py-1 font-medium text-slate-500 transition-all duration-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-600">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            {/* Google Login Button */}
+            <motion.div
+              className="pt-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <GoogleLoginButton
+                onClick={handleGoogleLogin}
+                loading={googleLoading}
+                variant="dark"
+              />
+              {googleError && (
+                <div className="mt-3 rounded-2xl border border-rose-300/30 bg-rose-500/10 p-3 dark:bg-rose-900/20">
+                  <p className="text-sm text-red-600 dark:text-red-400">{googleError}</p>
+                  <button
+                    type="button"
+                    onClick={clearError}
+                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 mt-1 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Divider */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t-2 border-slate-200/80 transition-all duration-300 dark:border-slate-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="rounded-full border border-white/10 bg-white/75 px-4 py-1 font-medium text-slate-500 transition-all duration-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-600">
                   Don't have an account?
                 </span>
               </div>

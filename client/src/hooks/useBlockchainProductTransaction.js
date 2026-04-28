@@ -107,7 +107,7 @@ export function useBlockchainProductTransaction() {
         console.log('📤 Submitting transaction receipt to API...');
 
         const receiptResponse = await fetch(
-          `${options.receiptEndpoint || '/api/products/product/' + options.productId + '/blockchain-receipt'}`,
+          `${options.receiptEndpoint || '/api/product/' + options.productId + '/blockchain-receipt'}`,
           {
             method: 'POST',
             headers: {

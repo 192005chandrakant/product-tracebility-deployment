@@ -2,30 +2,46 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+    <!-- App favicons / logo -->
+    <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/tracechain-mark.svg" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/tracechain-mark.svg" />
+    <!-- Social preview image -->
+    <meta property="og:image" content="%PUBLIC_URL%/tracechain-mark.svg" />
+    <meta name="twitter:image" content="%PUBLIC_URL%/tracechain-mark.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#13111C" />
     <meta
       name="description"
-      content="Blockchain-based Product Traceability Web App"
+      content="TraceChain is a modern blockchain and AI product traceability platform for trusted verification, compliance evidence, and public authenticity checks."
     />
+    <meta property="og:title" content="TraceChain | Product Traceability Platform" />
+    <meta property="og:description" content="Enterprise-grade blockchain traceability with AI insights, audit trails, QR verification, and modern producer workflows." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TraceChain | Product Traceability Platform" />
+    <meta name="twitter:description" content="Trusted product verification and supply-chain transparency powered by blockchain and AI." />
     <!-- Removed problematic base href for correct asset loading -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <title>Product Traceability</title>
+    <title>TraceChain | Product Traceability Platform</title>
     
     <!-- Prevent white flash on initial load -->
     <style>
       html, body {
         margin: 0;
         padding: 0;
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+        background:
+          radial-gradient(circle at top right, rgba(168, 85, 247, 0.18), transparent 32%),
+          linear-gradient(160deg, #f5f3ff 0%, #eef2ff 48%, #ecfeff 100%);
         transition: background 0.3s ease;
+        color: #201a31;
       }
       
       /* Dark mode background */
       @media (prefers-color-scheme: dark) {
         html, body {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+          background:
+            radial-gradient(circle at top right, rgba(168, 85, 247, 0.18), transparent 28rem),
+            linear-gradient(160deg, #13111C 0%, #171321 46%, #0f1624 100%);
+          color: #f8f7ff;
         }
       }
       
@@ -42,7 +58,8 @@
         width: 48px;
         height: 48px;
         border: 2px solid transparent;
-        border-top: 2px solid #3b82f6;
+        border-top: 2px solid #A855F7;
+        box-shadow: 0 0 24px rgba(168, 85, 247, 0.25);
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }

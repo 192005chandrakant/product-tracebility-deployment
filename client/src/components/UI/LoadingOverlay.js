@@ -9,14 +9,15 @@ const LoadingOverlay = ({
 }) => {
   if (isLoading) {
     return (
-      <div className={`${minHeight} transition-all duration-300 
-        bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 
-        dark:bg-gradient-to-br dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 
-        ${className}`}>
+      <div className={`${minHeight} transition-all duration-300 cyber-page ${className}`}>
         <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">{message}</p>
+          <div className="text-center cyber-glass rounded-3xl border border-white/10 px-8 py-7 shadow-[0_20px_60px_rgba(17,24,39,0.18)]">
+            <div className="relative mx-auto mb-4 h-14 w-14">
+              <div className="absolute inset-0 rounded-full border border-purple-300/30 bg-purple-500/10 animate-pulse" />
+              <div className="absolute inset-1 rounded-full border-2 border-transparent border-t-[#A855F7] border-r-[#2DD4BF] animate-spin" />
+            </div>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{message}</p>
+            <p className="mt-2 text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">TraceChain</p>
           </div>
         </div>
       </div>

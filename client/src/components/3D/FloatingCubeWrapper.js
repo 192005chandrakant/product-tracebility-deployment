@@ -62,7 +62,7 @@ const FloatingCubeWrapper = memo(({
 
   // Error boundary fallback
   const ErrorFallback = useCallback(() => (
-    <div className={`${className} bg-gray-200 dark:bg-gray-700 rounded animate-pulse`} />
+    <div className={`${className} rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.22),rgba(45,212,191,0.08),transparent)] shadow-[0_0_24px_rgba(168,85,247,0.16)] animate-pulse`} />
   ), [className]);
 
   return (

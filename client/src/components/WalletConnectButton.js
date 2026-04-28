@@ -10,7 +10,7 @@ export function WalletConnectButton({ className = '' }) {
       <button
         onClick={connectWallet}
         disabled={isConnecting}
-        className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors ${className}`}
+        className={`interactive-lift rounded-xl bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_22px_rgba(168,85,247,0.18)] transition-all hover:shadow-[0_0_28px_rgba(45,212,191,0.22)] disabled:opacity-50 ${className}`}
       >
         {isConnecting ? 'Connecting...' : 'Connect Wallet'}
       </button>
@@ -19,17 +19,17 @@ export function WalletConnectButton({ className = '' }) {
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <div className="px-4 py-2 bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700 rounded-lg">
-        <div className="text-sm font-semibold text-green-800 dark:text-green-100">
+      <div className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 px-4 py-2 shadow-sm">
+        <div className="text-sm font-semibold text-emerald-800 dark:text-emerald-100">
           {formatAddress(account)}
         </div>
-        <div className="text-xs text-green-700 dark:text-green-200">
+        <div className="text-xs text-emerald-700 dark:text-emerald-200">
           {chainId ? getNetworkName(chainId) : 'Unknown Network'}
         </div>
       </div>
       <button
         onClick={disconnectWallet}
-        className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+        className="interactive-lift rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-700 transition-all hover:bg-rose-500/15 dark:text-rose-200"
       >
         Disconnect
       </button>

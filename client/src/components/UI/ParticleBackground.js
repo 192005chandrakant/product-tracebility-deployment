@@ -21,7 +21,7 @@ const ParticleBackground = memo(function ParticleBackground({ count = 50 }) {
       {particles.map((particle) => (
         <motion.div
           key={particle.id}
-          className="absolute rounded-full bg-gradient-to-r from-blue-400 to-purple-400 opacity-30"
+          className="absolute rounded-full bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] opacity-25"
           style={{
             left: `${particle.x}%`,
             top: `${particle.y}%`,

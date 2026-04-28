@@ -21,6 +21,8 @@ import BlockchainTransparencySection from '../components/BlockchainTransparencyS
 import ProductVerificationStatusSection from '../components/ProductVerificationStatusSection';
 import AIStructuredResponse from '../components/AIStructuredResponse';
 import VerificationResultPanel from '../components/VerificationResultPanel';
+import { useBlockchainProductTransaction, BlockchainTransactionProgress } from '../hooks/useBlockchainProductTransaction';
+import { WalletConnectButton } from '../components/WalletConnectButton';
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/600x300?text=No+Image';
 const STATUS_OPTIONS = [
@@ -152,6 +154,12 @@ function ProductDetail() {
   const [loadingQR, setLoadingQR] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const enableAI = isAIEnabled();
+  const {
+    processProductTransaction,
+    blockchainState,
+    isConnected,
+    account
+  } = useBlockchainProductTransaction();
 
   // Function to fetch QR code
   const fetchQrCode = async () => {
@@ -297,33 +305,45 @@ function ProductDetail() {
       formData.append('stage', newStatus);
       formData.append('password', confirmPassword);
 
-      const res = await fetch(buildAPIURL(`/api/update-product/${product.productId}`), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+      const token = localStorage.getItem('token');
+      let responseData = null;
+      const result = await processProductTransaction(
+        async () => {
+          const res = await fetch(buildAPIURL(`/api/update-product/${product.productId}`), {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+          responseData = await res.json();
+          if (!res.ok) throw new Error(responseData.error || responseData.message || 'Failed to update status');
+          return { data: responseData };
         },
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update status');
+        {
+          productId: product.productId,
+          stage: newStatus,
+          receiptEndpoint: buildAPIURL(`/api/product/${product.productId}/blockchain-receipt`)
+        }
+      );
       
       // Save transaction hash if available
-      if (data.txHash) {
-        setTxHash(data.txHash);
+      if (result?.txHash) {
+        setTxHash(result.txHash);
       }
       
       // Update the product state with the returned data
       setProduct(prevProduct => ({ 
         ...prevProduct, 
         stages: [...(prevProduct.stages || []), newStatus],
-        stageEvents: data.stageEvent
-          ? [...(prevProduct.stageEvents || []), data.stageEvent]
+        stageEvents: responseData.stageEvent
+          ? [...(prevProduct.stageEvents || []), responseData.stageEvent]
           : (prevProduct.stageEvents || []),
-        blockchainTx: data.blockchainTx,
-        blockchainStatus: data.blockchainEvent?.status || prevProduct.blockchainStatus,
-        blockchainUpdatedAt: data.blockchainEvent?.recordedAt || prevProduct.blockchainUpdatedAt,
-        blockchainEvents: data.blockchainEvent
-          ? [...(prevProduct.blockchainEvents || []), data.blockchainEvent]
+        blockchainTx: responseData.blockchainTx || result?.txHash,
+        blockchainStatus: responseData.blockchainEvent?.status || prevProduct.blockchainStatus,
+        blockchainUpdatedAt: responseData.blockchainEvent?.recordedAt || prevProduct.blockchainUpdatedAt,
+        blockchainEvents: responseData.blockchainEvent
+          ? [...(prevProduct.blockchainEvents || []), responseData.blockchainEvent]
           : (prevProduct.blockchainEvents || [])
       }));
       
@@ -411,6 +431,22 @@ function ProductDetail() {
           )}
         </div>
         <div className="p-4 sm:p-8">
+          <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Wallet</p>
+              <p className="text-sm text-slate-300">
+                {isConnected && account
+                  ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}`
+                  : 'Connect your wallet before updating product status'}
+              </p>
+            </div>
+            <WalletConnectButton />
+          </div>
+
+          <div className="mb-6">
+            <BlockchainTransactionProgress state={blockchainState} />
+          </div>
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}

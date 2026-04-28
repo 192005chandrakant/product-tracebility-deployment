@@ -17,7 +17,9 @@ import {
   FaDownload,
   FaArrowLeft,
   FaCheck,
-  FaLock
+  FaLock,
+  FaWallet,
+  FaSpinner
 } from 'react-icons/fa';
 import ParticleBackground from '../components/UI/ParticleBackground';
 import GlowingButton from '../components/UI/GlowingButton';
@@ -28,6 +30,8 @@ import AIDescriptionGeneratorPanel from '../components/AIDescriptionGeneratorPan
 import { isAIEnabled } from '../utils/aiApi';
 import StageDocumentationForm from '../components/StageDocumentationForm';
 import AIStructuredResponse from '../components/AIStructuredResponse';
+import { useBlockchainProductTransaction, BlockchainTransactionProgress } from '../hooks/useBlockchainProductTransaction';
+import { WalletConnectButton } from '../components/WalletConnectButton';
 import VerificationResultPanel from '../components/VerificationResultPanel';
 import { stripTransientDocumentFields, usePersistentForm } from '../hooks/usePersistentForm';
 
@@ -197,6 +201,12 @@ function AddProduct() {
   const [documentValidationErrors, setDocumentValidationErrors] = useState([]);
   const navigate = useNavigate();
   const enableAI = isAIEnabled();
+  const {
+    processProductTransaction,
+    blockchainState,
+    isConnected,
+    account
+  } = useBlockchainProductTransaction();
 
   // Test server connectivity on mount
   useEffect(() => {
@@ -344,45 +354,56 @@ function AddProduct() {
       
       const token = localStorage.getItem('token');
       console.log('Token:', token ? 'exists' : 'not found');
-      
-      console.log('Making request to:', buildAPIURL('/api/add-product'));
-      const res = await fetch(buildAPIURL('/api/add-product'), {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`
+
+      let responseData = null;
+      const result = await processProductTransaction(
+        async () => {
+          console.log('Making request to:', buildAPIURL('/api/add-product'));
+          const res = await fetch(buildAPIURL('/api/add-product'), {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`
+            },
+            body: data,
+          });
+
+          console.log('Response status:', res.status);
+
+          const contentType = res.headers.get('content-type');
+          console.log('Content-Type:', contentType);
+
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await res.text();
+            console.error('Non-JSON response:', text);
+            throw new Error('Server returned non-JSON response');
+          }
+
+          const text = await res.text();
+          if (!text || text.trim().length === 0) {
+            throw new Error(`Server returned empty response with status ${res.status}`);
+          }
+
+          try {
+            responseData = JSON.parse(text);
+          } catch (parseErr) {
+            console.error('Failed to parse JSON response:', text);
+            throw new Error(`Server returned invalid JSON (status ${res.status})`);
+          }
+
+          console.log('Response data:', responseData);
+
+          if (!res.ok) {
+            setVerificationFeedback(responseData.verification || null);
+            throw new Error(responseData.message || responseData.error || 'Failed to add product');
+          }
+
+          return { data: responseData };
         },
-        body: data,
-      });
-      
-      console.log('Response status:', res.status);
-      
-      // Check if response is JSON
-      const contentType = res.headers.get('content-type');
-      console.log('Content-Type:', contentType);
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await res.text();
-        console.error('Non-JSON response:', text);
-        throw new Error('Server returned non-JSON response');
-      }
-      
-      const text = await res.text();
-      if (!text || text.trim().length === 0) {
-        throw new Error(`Server returned empty response with status ${res.status}`);
-      }
-      let responseData;
-      try {
-        responseData = JSON.parse(text);
-      } catch (parseErr) {
-        console.error('Failed to parse JSON response:', text);
-        throw new Error(`Server returned invalid JSON (status ${res.status})`);
-      }
-      console.log('Response data:', responseData);
-      
-      if (!res.ok) {
-        setVerificationFeedback(responseData.verification || null);
-        throw new Error(responseData.message || responseData.error || 'Failed to add product');
-      }
+        {
+          productId: normalizedForm.productId,
+          receiptEndpoint: buildAPIURL(`/api/product/${normalizedForm.productId}/blockchain-receipt`)
+        }
+      );
       
       // Dispatch custom event to refresh statistics
       window.dispatchEvent(new Event('productAdded'));
@@ -424,7 +445,7 @@ function AddProduct() {
       setVerificationFeedback(responseData.verification || null);
       clearFormDraft();
       clearStageDocumentsDraft();
-      toast.success('Product added successfully!');
+      toast.success(result?.success ? 'Product added successfully!' : 'Product added successfully!');
       // Optionally, do not redirect immediately
       // setTimeout(() => navigate('/admin/dashboard'), 1200);
     } catch (err) {
@@ -481,7 +502,24 @@ function AddProduct() {
         <ToastContainer position="top-center" theme="auto" />
         
         <AnimatedCard className="w-full max-w-2xl cyber-glass shadow-2xl transition-all duration-500 hover:border-purple-300/50">
-          <div className="p-8">{qrCode ? (
+          <div className="p-8">
+            <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  Web3 submission
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {isConnected && account
+                    ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}`
+                    : 'Connect your wallet to sign blockchain transactions'}
+                </p>
+              </div>
+              <WalletConnectButton />
+            </div>
+
+            <BlockchainTransactionProgress state={blockchainState} />
+
+            {qrCode ? (
               // Success State - QR Code Display
               <motion.div
                 className="text-center"

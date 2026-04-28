@@ -313,10 +313,10 @@ function UserProfile() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-shrink-0 flex flex-col items-center space-y-1 py-3 px-4 min-w-[80px] rounded-lg font-medium text-xs transition-all ${
+                    className={`flex-shrink-0 flex flex-col items-center space-y-1 py-3 px-4 min-w-[88px] rounded-2xl font-medium text-xs transition-all ${
                       activeTab === tab.id
-                        ? 'bg-blue-500 text-white shadow-lg'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? 'bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] text-white shadow-[0_0_26px_rgba(168,85,247,0.22)]'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/5'
                     }`}
                   >
                     <tab.icon className="w-4 h-4" />
@@ -569,37 +569,37 @@ function UserProfile() {
                 <AnimatedCard className="p-6">
                   {activeTab === 'overview' && (
                     <div className="space-y-6">
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Overview</h2>
+                          <h2 className="text-2xl font-bold text-slate-900 dark:text-gray-100 mb-6">Overview</h2>
                       
                       {/* Stats Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-gradient-to-r from-[#A855F7] to-purple-600 rounded-xl p-6 text-white">
+                        <div className="interactive-lift bg-gradient-to-r from-[#A855F7] to-purple-600 rounded-[24px] p-6 text-white shadow-[0_18px_45px_rgba(15,23,42,0.24)]">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-blue-100 text-sm">Products Added</p>
+                              <p className="text-purple-100 text-sm">Products Added</p>
                               <p className="text-2xl font-bold">{user.productsAdded}</p>
                             </div>
-                            <FaBox className="w-8 h-8 text-blue-200" />
+                            <FaBox className="w-8 h-8 text-purple-100" />
                           </div>
                         </div>
                         
-                        <div className="bg-gradient-to-r from-[#2DD4BF] to-teal-500 rounded-xl p-6 text-white">
+                        <div className="interactive-lift bg-gradient-to-r from-[#2DD4BF] to-teal-500 rounded-[24px] p-6 text-white shadow-[0_18px_45px_rgba(15,23,42,0.24)]">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-green-100 text-sm">Scans Performed</p>
+                              <p className="text-teal-50 text-sm">Scans Performed</p>
                               <p className="text-2xl font-bold">{user.scansPerformed}</p>
                             </div>
-                            <FaQrcode className="w-8 h-8 text-green-200" />
+                            <FaQrcode className="w-8 h-8 text-teal-50" />
                           </div>
                         </div>
                         
-                        <div className="bg-gradient-to-r from-purple-500 to-[#A855F7] rounded-xl p-6 text-white">
+                        <div className="interactive-lift bg-gradient-to-r from-purple-500 to-[#A855F7] rounded-[24px] p-6 text-white shadow-[0_18px_45px_rgba(15,23,42,0.24)]">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-purple-100 text-sm">Total Products</p>
+                              <p className="text-fuchsia-100 text-sm">Total Products</p>
                               <p className="text-2xl font-bold">{user.totalProducts}</p>
                             </div>
-                            <FaChartLine className="w-8 h-8 text-purple-200" />
+                            <FaChartLine className="w-8 h-8 text-fuchsia-100" />
                           </div>
                         </div>
                       </div>
@@ -609,7 +609,7 @@ function UserProfile() {
                   {activeTab === 'activity' && (
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Recent Activity</h2>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-gray-100">Recent Activity</h2>
                         <GlowingButton
                           onClick={handleRefresh}
                           variant="secondary"
@@ -630,38 +630,38 @@ function UserProfile() {
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: index * 0.1 }}
-                              className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors cursor-pointer"
+                              className="interactive-lift flex items-center space-x-4 rounded-[22px] border border-white/10 bg-white/60 p-4 transition-colors cursor-pointer hover:bg-white/80 dark:bg-white/5 dark:hover:bg-white/10"
                               onClick={() => navigate(`/product/${product.productId}`)}
                             >
-                              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-500">
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-[#2DD4BF] to-cyan-500 shadow-[0_0_20px_rgba(45,212,191,0.22)]">
                                 <FaBox className="w-4 h-4 text-white" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                <p className="text-sm font-medium text-slate-900 dark:text-gray-100">
                                   Created product: {product.name}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                <p className="text-xs text-slate-500 dark:text-gray-400">
                                   Product ID: {product.productId}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                <p className="text-xs text-slate-500 dark:text-gray-400">
                                   {product.createdAt ? new Date(product.createdAt).toLocaleDateString() : 'Recently'}
                                 </p>
                               </div>
                               <div className="flex items-center space-x-2">
                                 {product.stages && product.stages.length > 0 && (
-                                  <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600">
+                                  <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#A855F7] to-[#2DD4BF]">
                                     {product.stages[product.stages.length - 1]}
                                   </span>
                                 )}
-                                <FaEye className="w-4 h-4 text-gray-400" />
+                                <FaEye className="w-4 h-4 text-slate-400" />
                               </div>
                             </motion.div>
                           ))
                         ) : (
                           <div className="text-center py-12">
-                            <FaHistory className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-500 dark:text-gray-400">No recent activity</p>
-                            <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">
+                            <FaHistory className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                            <p className="text-slate-500 dark:text-gray-400">No recent activity</p>
+                            <p className="text-sm text-slate-400 dark:text-gray-500 mb-6">
                               Add products to see your activity history
                             </p>
                             <GlowingButton
@@ -694,16 +694,16 @@ function UserProfile() {
                   {activeTab === 'products' && (
                     <div className="space-y-6">
                       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Products</h2>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-gray-100">My Products</h2>
                         <div className="flex gap-2">
                           <div className="relative">
-                            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                             <input
                               type="text"
                               placeholder="Search products..."
                               value={searchQuery}
                               onChange={(e) => setSearchQuery(e.target.value)}
-                              className="pl-10 pr-4 py-2 bg-white/50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent backdrop-blur-sm w-48"
+                              className="form-control pl-10 pr-4 py-2 w-48 rounded-xl"
                             />
                           </div>
                           <GlowingButton
@@ -722,13 +722,13 @@ function UserProfile() {
                           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
                             <FaBox className="text-white text-2xl" />
                           </div>
-                          <p className="text-gray-500 dark:text-gray-400">Loading products...</p>
+                          <p className="text-slate-500 dark:text-gray-400">Loading products...</p>
                         </div>
                       ) : products.length === 0 ? (
                         <div className="text-center py-12">
-                          <FaBox className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                          <p className="text-gray-500 dark:text-gray-400">No products found</p>
-                          <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">Start by adding your first product</p>
+                          <FaBox className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                          <p className="text-slate-500 dark:text-gray-400">No products found</p>
+                          <p className="text-sm text-slate-400 dark:text-gray-500 mb-6">Start by adding your first product</p>
                           <GlowingButton
                             onClick={() => navigate('/admin/add')}
                             className="px-6 py-3 font-semibold"
@@ -757,7 +757,7 @@ function UserProfile() {
                               <AnimatedCard className="overflow-hidden h-full">
                                 <div className="relative">
                                   {/* Product Image */}
-                                  <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
+                                  <div className="h-32 bg-[linear-gradient(145deg,rgba(245,243,255,0.9),rgba(224,242,254,0.8))] dark:bg-[linear-gradient(145deg,rgba(28,25,38,0.95),rgba(15,22,36,0.9))] flex items-center justify-center overflow-hidden">
                                     {getImageUrl(product.imageFile) ? (
                                       <img
                                         src={getImageUrl(product.imageFile)}
@@ -769,7 +769,7 @@ function UserProfile() {
                                         }}
                                       />
                                     ) : null}
-                                    <div className="flex flex-col items-center justify-center text-gray-400" style={{display: getImageUrl(product.imageFile) ? 'none' : 'flex'}}>
+                                    <div className="flex flex-col items-center justify-center text-slate-400" style={{display: getImageUrl(product.imageFile) ? 'none' : 'flex'}}>
                                       <FaBox className="text-2xl mb-1" />
                                       <span className="text-xs">No Image</span>
                                     </div>
@@ -778,11 +778,11 @@ function UserProfile() {
                                   {/* Stage Badge */}
                                   <div className="absolute top-2 right-2">
                                     {product.stages && product.stages.length > 0 ? (
-                                      <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-green-500 to-green-600">
+                                      <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#2DD4BF] to-cyan-500">
                                         {product.stages[product.stages.length - 1]}
                                       </span>
                                     ) : (
-                                      <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold text-gray-500 bg-gray-200 dark:bg-gray-700">
+                                      <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold text-slate-500 bg-white/80 dark:bg-white/10">
                                         New
                                       </span>
                                     )}
@@ -790,18 +790,18 @@ function UserProfile() {
                                 </div>
                                 
                                 <div className="p-4">
-                                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 truncate">
+                                  <h3 className="text-lg font-bold text-slate-900 dark:text-gray-100 mb-2 truncate">
                                     {product.name}
                                   </h3>
                                   
                                   <div className="space-y-1 mb-3">
-                                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center text-sm text-slate-600 dark:text-gray-400">
                                       <FaQrcode className="w-3 h-3 mr-2" />
                                       <span className="font-mono text-xs">{product.productId}</span>
                                     </div>
                                     
                                     {product.description && (
-                                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                                      <p className="text-sm text-slate-600 dark:text-gray-400 line-clamp-2">
                                         {product.description.substring(0, 80)}...
                                       </p>
                                     )}
@@ -840,29 +840,29 @@ function UserProfile() {
 
                   {activeTab === 'settings' && (
                     <div className="space-y-6">
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Settings</h2>
+                      <h2 className="text-2xl font-bold text-slate-900 dark:text-gray-100 mb-6">Settings</h2>
                       
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="flex items-center justify-between p-4 rounded-[22px] border border-white/10 bg-white/60 dark:bg-white/5">
                           <div className="flex items-center space-x-3">
-                            <FaBell className="w-5 h-5 text-gray-400" />
+                            <FaBell className="w-5 h-5 text-slate-400" />
                             <div>
-                              <p className="font-medium text-gray-900 dark:text-gray-100">Email Notifications</p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Receive updates about your products</p>
+                              <p className="font-medium text-slate-900 dark:text-gray-100">Email Notifications</p>
+                              <p className="text-sm text-slate-500 dark:text-gray-400">Receive updates about your products</p>
                             </div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" className="sr-only peer" defaultChecked />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300/40 dark:peer-focus:ring-purple-800/40 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-purple-600"></div>
                           </label>
                         </div>
                         
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="flex items-center justify-between p-4 rounded-[22px] border border-white/10 bg-white/60 dark:bg-white/5">
                           <div className="flex items-center space-x-3">
-                            <FaKey className="w-5 h-5 text-gray-400" />
+                            <FaKey className="w-5 h-5 text-slate-400" />
                             <div>
-                              <p className="font-medium text-gray-900 dark:text-gray-100">Two-Factor Authentication</p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Add an extra layer of security</p>
+                              <p className="font-medium text-slate-900 dark:text-gray-100">Two-Factor Authentication</p>
+                              <p className="text-sm text-slate-500 dark:text-gray-400">Add an extra layer of security</p>
                             </div>
                           </div>
                           <GlowingButton
