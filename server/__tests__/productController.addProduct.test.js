@@ -406,4 +406,92 @@ describe('productController.addProduct verification flow', () => {
     expect(savedProduct.riskScore).toBe(100);
     expect(blockchain.addProductOnChain).not.toHaveBeenCalled();
   });
+
+  test('queues newly added stage documents for admin moderation after successful verification', async () => {
+    const certificateFile = createCertificateFile();
+    const existingProduct = {
+      productId: 'P-103',
+      name: 'Organic Turmeric Powder',
+      manufacturer: 'Walmart Foods Pvt Ltd',
+      createdByWallet: 'producer@example.com',
+      stages: ['Registered'],
+      stageEvents: [],
+      verification: {
+        status: 'allowed',
+        reviewState: 'verified'
+      }
+    };
+
+    Product.findOne.mockResolvedValue(existingProduct);
+    Product.findOneAndUpdate.mockImplementation((query, update) => Promise.resolve({
+      ...existingProduct,
+      stages: ['Registered', 'Processed'],
+      stageEvents: [update.$push.stageEvents],
+      verification: update.$set.verification
+    }));
+
+    const req = {
+      user: { email: 'producer@example.com', role: 'producer' },
+      params: { id: 'P-103' },
+      body: {
+        stage: 'Processed',
+        stageNotes: 'Processed at unit 7',
+        stageLocation: 'Mumbai',
+        certificationType: 'ISO 22000'
+      },
+      files: {
+        stageDocumentFiles: [certificateFile]
+      }
+    };
+    req.body.stageDocumentsMeta = JSON.stringify([
+      {
+        stage: 'Processed',
+        documentType: 'certificate',
+        title: 'Processing Certificate',
+        documentReference: 'PROC-CERT-1',
+        issuingAuthority: 'Global Cert Board',
+        requiresVerification: true,
+        fileIndex: 0,
+        standardCode: 'ISO 22000'
+      }
+    ]);
+    const res = createRes();
+
+    await productController.updateProduct(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Product updated successfully',
+      verification: expect.objectContaining({
+        status: 'flagged',
+        reviewState: 'pending_review',
+        reason: 'New stage document requires admin moderation before approval.'
+      })
+    }));
+
+    const update = Product.findOneAndUpdate.mock.calls[0][1];
+    expect(update.$set.verification).toEqual(expect.objectContaining({
+      status: 'flagged',
+      reviewState: 'pending_review',
+      lifecycleStatus: 'flagged',
+      pipeline: expect.objectContaining({
+        source: 'stage_documents',
+        stage: 'Processed',
+        documentsProcessed: 1
+      })
+    }));
+    expect(update.$push.stageEvents.verificationSummary).toEqual(expect.objectContaining({
+      status: 'flagged',
+      reviewState: 'pending_review'
+    }));
+    expect(update.$push.stageEvents.documents[0].verification).toEqual(expect.objectContaining({
+      status: 'flagged',
+      reviewState: 'pending_review',
+      reason: 'New stage document requires admin moderation before approval.',
+      pipeline: expect.objectContaining({
+        moderationRequired: true,
+        stage: 'Processed'
+      })
+    }));
+    expect(blockchain.updateStageOnChain).toHaveBeenCalledWith('P-103', 'Processed');
+  });
 });

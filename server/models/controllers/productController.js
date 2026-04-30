@@ -481,6 +481,56 @@ function summarizeStageVerification(results = []) {
   };
 }
 
+function queueStageUpdateDocumentsForModeration(docsProcessing = {}, stage) {
+  const moderationReason = 'New stage document requires admin moderation before approval.';
+
+  const docs = Array.isArray(docsProcessing.docs) ? docsProcessing.docs : [];
+  const verificationResults = Array.isArray(docsProcessing.verificationResults)
+    ? docsProcessing.verificationResults
+    : [];
+
+  docs.forEach((document) => {
+    if (!document || !document.verification || document.verification.status === 'blocked') {
+      return;
+    }
+
+    document.verification = {
+      ...document.verification,
+      status: 'flagged',
+      reviewState: 'pending_review',
+      reason: moderationReason,
+      pipeline: {
+        ...(document.verification.pipeline || {}),
+        moderationRequired: true,
+        moderationReason,
+        stage
+      }
+    };
+  });
+
+  verificationResults.forEach((result) => {
+    if (!result || !result.decision || result.decision.status === 'blocked') {
+      return;
+    }
+
+    result.decision = {
+      ...result.decision,
+      status: 'flagged',
+      reviewState: 'pending_review',
+      reason: moderationReason
+    };
+    result.reason = moderationReason;
+    result.pipeline = {
+      ...(result.pipeline || {}),
+      moderationRequired: true,
+      moderationReason,
+      stage
+    };
+  });
+
+  return docsProcessing;
+}
+
 function extractBlockchainHash(blockchainResult) {
   if (!blockchainResult) {
     return null;
@@ -991,6 +1041,10 @@ exports.updateProduct = async (req, res) => {
       },
       uploader: req.user.email
     });
+
+    if (docsProcessing.verificationResults.length > 0) {
+      queueStageUpdateDocumentsForModeration(docsProcessing, stage);
+    }
 
     const blockedDoc = docsProcessing.verificationResults.find((result) => result.blocked);
     if (blockedDoc) {
