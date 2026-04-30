@@ -9,8 +9,10 @@ import GlowingButton from '../components/UI/GlowingButton';
 import AnimatedCard from '../components/UI/AnimatedCard';
 import Scene3D from '../components/3D/Scene3D';
 import BrandLogo from '../components/BrandLogo';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 import { buildAPIURL } from '../utils/apiConfig';
 import { usePersistentForm } from '../hooks/usePersistentForm';
+import { useGoogleLogin } from '../hooks/useGoogleLogin';
 
 const REGISTER_INITIAL_FORM = { email: '', password: '', role: 'producer' };
 
@@ -29,6 +31,7 @@ function AuthRegister() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { googleLogin, loading: googleLoading, error: googleError, clearError } = useGoogleLogin();
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -52,6 +55,19 @@ function AuthRegister() {
       toast.error(err.message);
     }
     setLoading(false);
+  };
+
+  const handleGoogleSignup = async () => {
+    const result = await googleLogin({ role: form.role });
+
+    if (result.success) {
+      clearRegisterDraft();
+      toast.success('Google sign-up successful! Redirecting...');
+      window.dispatchEvent(new Event('userLogin'));
+      setTimeout(() => navigate('/home', { replace: true }), 1000);
+    } else {
+      toast.error(result.error || 'Google sign-up failed');
+    }
   };
 
   return (
@@ -189,6 +205,34 @@ function AuthRegister() {
                 )}
               </GlowingButton>
             </motion.form>
+
+            {/* Google Signup */}
+            <motion.div
+              className="pt-6"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.35 }}
+            >
+              <GoogleLoginButton
+                onClick={handleGoogleSignup}
+                loading={googleLoading}
+                label="Sign up with Google"
+                loadingLabel="Creating account with Google..."
+                title="Create your account with Google"
+              />
+              {googleError && (
+                <div className="mt-3 rounded-2xl border border-rose-300/30 bg-rose-500/10 p-3 dark:bg-rose-900/20">
+                  <p className="text-sm text-red-600 dark:text-red-400">{googleError}</p>
+                  <button
+                    type="button"
+                    onClick={clearError}
+                    className="mt-1 text-xs text-red-500 underline hover:text-red-700 dark:hover:text-red-300"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+            </motion.div>
 
             {/* Divider */}
             <div className="relative my-8">

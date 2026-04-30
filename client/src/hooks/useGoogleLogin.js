@@ -17,7 +17,7 @@ export const useGoogleLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const googleLogin = useCallback(async () => {
+  const googleLogin = useCallback(async (options = {}) => {
     setLoading(true);
     setError(null);
     
@@ -59,6 +59,7 @@ export const useGoogleLogin = () => {
         body: JSON.stringify({
           firebaseToken,
           googleUser,
+          role: options.role,
         }),
       });
       

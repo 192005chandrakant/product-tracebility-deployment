@@ -1,12 +1,12 @@
-const AI_ENABLED_KEY = 'tracechain.ai.enabled';
-const API_BASE_URL_KEY = 'tracechain.api.baseUrl';
-const SETTINGS_CHANGED_EVENT = 'tracechainSettingsChanged';
+export const AI_ENABLED_KEY = 'tracechain.ai.enabled';
+export const API_BASE_URL_KEY = 'tracechain.api.baseUrl';
+export const SETTINGS_CHANGED_EVENT = 'tracechainSettingsChanged';
 
-function canUseStorage() {
+export function canUseStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 }
 
-function safeGetItem(key) {
+export function safeGetItem(key) {
   if (!canUseStorage()) return null;
   try {
     return window.localStorage.getItem(key);
@@ -16,7 +16,7 @@ function safeGetItem(key) {
   }
 }
 
-function safeSetItem(key, value) {
+export function safeSetItem(key, value) {
   if (!canUseStorage()) return;
   try {
     if (value === null || value === undefined || value === '') {
@@ -32,7 +32,7 @@ function safeSetItem(key, value) {
   }
 }
 
-function safeRemoveItem(key) {
+export function safeRemoveItem(key) {
   if (!canUseStorage()) return;
   try {
     window.localStorage.removeItem(key);
@@ -44,7 +44,7 @@ function safeRemoveItem(key) {
   }
 }
 
-function parseBoolean(value, fallback = false) {
+export function parseBoolean(value, fallback = false) {
   if (value === null || value === undefined || value === '') {
     return fallback;
   }
@@ -59,7 +59,7 @@ function parseBoolean(value, fallback = false) {
   return fallback;
 }
 
-function isValidHttpUrl(value) {
+export function isValidHttpUrl(value) {
   if (typeof value !== 'string') return false;
   const trimmed = value.trim();
   if (!trimmed) return false;
@@ -72,7 +72,7 @@ function isValidHttpUrl(value) {
   }
 }
 
-function getPersistedAIEnabled() {
+export function getPersistedAIEnabled() {
   const envEnabled = process.env.REACT_APP_ENABLE_AI_FEATURES === 'true';
   if (envEnabled) {
     return true;
@@ -85,11 +85,11 @@ function getPersistedAIEnabled() {
   return false;
 }
 
-function setPersistedAIEnabled(enabled) {
+export function setPersistedAIEnabled(enabled) {
   safeSetItem(AI_ENABLED_KEY, enabled ? 'true' : 'false');
 }
 
-function getPersistedAPIBaseURL() {
+export function getPersistedAPIBaseURL() {
   const stored = safeGetItem(API_BASE_URL_KEY);
   if (stored && isValidHttpUrl(stored)) {
     return stored.trim();
@@ -97,7 +97,7 @@ function getPersistedAPIBaseURL() {
   return '';
 }
 
-function setPersistedAPIBaseURL(baseUrl) {
+export function setPersistedAPIBaseURL(baseUrl) {
   const trimmed = typeof baseUrl === 'string' ? baseUrl.trim() : '';
   if (!trimmed) {
     safeRemoveItem(API_BASE_URL_KEY);
@@ -111,23 +111,8 @@ function setPersistedAPIBaseURL(baseUrl) {
   safeSetItem(API_BASE_URL_KEY, trimmed);
 }
 
-function clearPersistedAPIBaseURL() {
+export function clearPersistedAPIBaseURL() {
   safeRemoveItem(API_BASE_URL_KEY);
 }
 
-module.exports = {
-  AI_ENABLED_KEY,
-  API_BASE_URL_KEY,
-  SETTINGS_CHANGED_EVENT,
-  canUseStorage,
-  safeGetItem,
-  safeSetItem,
-  safeRemoveItem,
-  parseBoolean,
-  isValidHttpUrl,
-  getPersistedAIEnabled,
-  setPersistedAIEnabled,
-  getPersistedAPIBaseURL,
-  setPersistedAPIBaseURL,
-  clearPersistedAPIBaseURL,
-};
+

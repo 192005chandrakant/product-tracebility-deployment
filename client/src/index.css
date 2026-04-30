@@ -239,6 +239,11 @@ html:not(.dark) .form-panel {
   box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.18), 0 0 24px rgba(168, 85, 247, 0.12);
 }
 
+.form-control option {
+  color: #f8fafc;
+  background-color: #0f172a;
+}
+
 html:not(.dark) .form-control {
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(15, 23, 42, 0.14);
@@ -247,6 +252,11 @@ html:not(.dark) .form-control {
 
 html:not(.dark) .form-control::placeholder {
   color: #64748b;
+}
+
+html:not(.dark) .form-control option {
+  color: #111827;
+  background-color: #ffffff;
 }
 
 .panel-icon-shell {

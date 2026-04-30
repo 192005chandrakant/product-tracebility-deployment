@@ -108,13 +108,37 @@ const apiRequest = async (endpoint, options = {}, retryCount = 2) => {
         errorData = { message: `${response.status} ${response.statusText}` };
       }
       
+      // ========== ENHANCED ERROR LOGGING ==========
       if (isDebug) {
-        console.error(`❌ API request failed: ${response.status} ${response.statusText}`, errorData);
+        console.error(`❌ API request failed: ${response.status} ${response.statusText}`);
+        console.error('Error Response:', errorData);
       }
-      throw new Error(
+      
+      // Special handling for Google login 401 errors
+      if (endpoint.includes('/api/auth/google-login') && response.status === 401) {
+        console.warn('🔐 Google Login Firebase Verification Failed');
+        console.warn('Debug Information:', errorData.debug);
+        if (errorData.hint) {
+          console.warn('💡 Hint:', errorData.hint);
+        }
+        console.warn('Recovery Steps:');
+        console.warn('1. Check Firebase configuration: GET /api/auth/debug/firebase-status');
+        console.warn('2. Verify FIREBASE_SERVICE_ACCOUNT_JSON environment variable');
+        console.warn('3. See GOOGLE_LOGIN_DEBUG_GUIDE.md for detailed troubleshooting');
+      }
+      
+      // Create error with detailed information
+      const error = new Error(
         (errorData && (errorData.message || errorData.error)) ||
         `API Error: ${response.status} ${response.statusText}`
       );
+      error.response = errorData;
+      error.status = response.status;
+      error.code = errorData?.code;
+      error.debug = errorData?.debug;
+      error.hint = errorData?.hint;
+      
+      throw error;
     }
     
     // Handle empty responses

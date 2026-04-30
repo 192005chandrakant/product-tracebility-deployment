@@ -125,6 +125,21 @@ function getVerificationMeta(verification) {
   };
 }
 
+function getModerationBucket(verification = {}) {
+  const status = String(verification?.status || 'flagged').toLowerCase();
+  const reviewState = String(verification?.reviewState || '').toLowerCase();
+
+  if (status === 'blocked' || reviewState === 'rejected') {
+    return 'blocked';
+  }
+
+  if (status === 'allowed' && reviewState === 'verified') {
+    return 'verified';
+  }
+
+  return 'flagged';
+}
+
 function AdminDashboard() {
   // Real-time statistics
   const { statistics, loading: statsLoading, refreshStats } = useRealTimeStats(8000);
@@ -438,10 +453,10 @@ function AdminDashboard() {
   const moderationBreakdown = useMemo(() => {
     const queue = flaggedProducts || [];
     return queue.reduce((accumulator, product) => {
-      const status = product?.verification?.status || 'flagged';
-      if (status === 'allowed') {
+      const bucket = getModerationBucket(product?.verification);
+      if (bucket === 'verified') {
         accumulator.verified += 1;
-      } else if (status === 'blocked') {
+      } else if (bucket === 'blocked') {
         accumulator.blocked += 1;
       } else {
         accumulator.flagged += 1;
@@ -454,14 +469,14 @@ function AdminDashboard() {
     const queue = flaggedProducts || [];
 
     return queue.filter((product) => {
-      const status = product?.verification?.status || 'flagged';
+      const bucket = getModerationBucket(product?.verification);
       const matchesStatus = moderationFilter === 'all'
         ? true
         : moderationFilter === 'verified'
-          ? status === 'allowed'
+          ? bucket === 'verified'
           : moderationFilter === 'blocked'
-            ? status === 'blocked'
-            : status === 'flagged';
+            ? bucket === 'blocked'
+            : bucket === 'flagged';
 
       const query = moderationSearch.trim().toLowerCase();
       const matchesSearch = !query

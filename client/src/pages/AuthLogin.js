@@ -41,16 +41,70 @@ function AuthLogin() {
     setShowPassword(prev => !prev);
   }, []);
   
-  // Handle Google login
+  // Handle Google login with enhanced error handling and feedback
   const handleGoogleLogin = useCallback(async () => {
-    const result = await googleLogin();
-    
-    if (result.success) {
-      toast.success('Google login successful! Redirecting...');
-      window.dispatchEvent(new Event('userLogin'));
-      setTimeout(() => navigate('/home', { replace: true }), 1000);
-    } else {
-      toast.error(result.error || 'Google login failed');
+    try {
+      console.log('🔐 Google login initiated from AuthLogin page');
+      
+      const result = await googleLogin({
+        role: 'consumer' // Default role, can be customized from UI
+      });
+      
+      if (result.success) {
+        console.log('✅ Google login successful:', {
+          email: result.user?.email,
+          isNewUser: result.isNewUser,
+          role: result.user?.role
+        });
+        
+        // Show success message
+        const userGreeting = result.user?.firstName 
+          ? `Welcome back, ${result.user.firstName}!`
+          : 'Google login successful!';
+        
+        toast.success(userGreeting + ' Redirecting...', {
+          position: 'top-center',
+          autoClose: 1500
+        });
+        
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new Event('userLogin'));
+        
+        // Store additional user data if needed
+        if (result.user) {
+          sessionStorage.setItem('lastLoginMethod', 'google');
+          sessionStorage.setItem('lastLoginEmail', result.user.email);
+        }
+        
+        // Redirect to home dashboard
+        setTimeout(() => {
+          console.log('🔀 Redirecting to /home');
+          navigate('/home', { replace: true });
+        }, 1000);
+      } else {
+        console.error('❌ Google login failed:', {
+          error: result.error,
+          errorCode: result.errorCode
+        });
+        
+        // Show detailed error feedback
+        const errorMessage = result.error || 'Google login failed. Please try again.';
+        toast.error(errorMessage, {
+          position: 'top-center',
+          autoClose: 4000
+        });
+        
+        // Log error for debugging
+        if (result.details) {
+          console.error('📋 Error details:', result.details);
+        }
+      }
+    } catch (err) {
+      console.error('💥 Unexpected error in handleGoogleLogin:', err);
+      toast.error('An unexpected error occurred. Please try again.', {
+        position: 'top-center',
+        autoClose: 4000
+      });
     }
   }, [googleLogin, navigate]);
 
@@ -271,7 +325,7 @@ function AuthLogin() {
               <GoogleLoginButton
                 onClick={handleGoogleLogin}
                 loading={googleLoading}
-                variant="dark"
+
               />
               {googleError && (
                 <div className="mt-3 rounded-2xl border border-rose-300/30 bg-rose-500/10 p-3 dark:bg-rose-900/20">

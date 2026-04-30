@@ -602,7 +602,7 @@ async function buildAndUploadQrCode(req, product) {
 exports.addProduct = async (req, res) => {
   try {
     if (!req.user || !req.user.email) {
-      return res.status(401).json({ error: 'Secondary authentication required. Please log in again.' });
+      return res.status(401).json({ error: 'Authentication required. Please log in again.' });
     }
 
     const normalizedProductId = sanitizeText(req.body && req.body.productId, 120);
@@ -712,12 +712,82 @@ exports.addProduct = async (req, res) => {
     const blockedDoc = docsProcessing.verificationResults.find((result) => result.blocked);
     if (blockedDoc) {
       const blockedSummary = summarizeStageVerification(docsProcessing.verificationResults);
+      const blockedDecisionAt = new Date();
+      const blockedCriticalFailures = [...new Set(
+        docsProcessing.verificationResults.flatMap((result) => result.riskResult.criticalFailures || [])
+      )];
+      const blockedLifecycleStatus = getLifecycleStatusFromVerification(blockedSummary);
+
+      const blockedVerificationEvent = buildBlockchainEventRecord({
+        action: 'verification_blocked',
+        stage: REGISTRATION_STAGE,
+        productId: req.body.productId,
+        actorEmail: req.user.email,
+        actorRole: req.user.role,
+        txResult: null,
+        status: 'failed',
+        payload: {
+          reason: blockedSummary.reason,
+          stage: REGISTRATION_STAGE,
+          blockedBy: blockedDoc.documentType || 'registration_document'
+        }
+      });
+
+      const blockedProduct = new Product({
+        ...req.body,
+        imageFile: imageFileData,
+        certFile: primaryCertificateFile,
+        blockchainRefHash: blockchainRefHash || `blocked-hash-${Date.now()}`,
+        blockchainTx: null,
+        blockchainStatus: 'failed',
+        blockchainUpdatedAt: blockedDecisionAt,
+        blockchainRequest: null,
+        blockchainEvents: [blockedVerificationEvent],
+        certificationHash: blockchainRefHash,
+        createdByWallet: req.user.email,
+        stageEvents: [{
+          stage: REGISTRATION_STAGE,
+          stageNotes: sanitizeText(req.body.registrationStageNotes, 800),
+          updatedBy: req.user.email,
+          blockchainTxHash: null,
+          documents: docsProcessing.docs,
+          verificationSummary: blockedSummary,
+          recordedAt: blockedDecisionAt
+        }],
+        verification: {
+          status: blockedSummary.status,
+          reviewState: blockedSummary.reviewState,
+          riskScore: blockedSummary.riskScore,
+          issues: blockedSummary.issues,
+          criticalFailures: blockedCriticalFailures,
+          aiModel: null,
+          reason: blockedSummary.reason,
+          pipeline: {
+            source: 'stage_documents',
+            documentsProcessed: docsProcessing.verificationResults.length,
+            blocked: true
+          },
+          verifiedAt: blockedDecisionAt,
+          decisionAt: blockedDecisionAt,
+          lifecycleStatus: blockedLifecycleStatus
+        },
+        ...buildCompatibilityVerificationFields({
+          status: blockedSummary.status,
+          riskScore: blockedSummary.riskScore,
+          issues: blockedSummary.issues
+        })
+      });
+
+      await blockedProduct.save();
+
       return res.status(422).json({
         success: false,
         status: 'blocked',
         riskScore: blockedDoc.riskResult.riskScore,
         issues: blockedDoc.riskResult.issues,
-        message: 'One of the registration-stage documents failed verification.',
+        message: 'Verification failed. Product has been queued for admin review.',
+        queuedForAdminReview: true,
+        product: blockedProduct.toObject(),
         verification: {
           status: blockedDoc.decision.status,
           reviewState: blockedDoc.decision.reviewState,
@@ -862,7 +932,7 @@ exports.addProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     if (!req.user || !req.user.email) {
-      return res.status(401).json({ error: 'Secondary authentication required. Please log in again.' });
+      return res.status(401).json({ error: 'Authentication required. Please log in again.' });
     }
 
     const { id } = req.params;
@@ -925,12 +995,61 @@ exports.updateProduct = async (req, res) => {
     const blockedDoc = docsProcessing.verificationResults.find((result) => result.blocked);
     if (blockedDoc) {
       const blockedSummary = summarizeStageVerification(docsProcessing.verificationResults);
+      const blockedDecisionAt = new Date();
+
+      const blockedUpdate = {
+        status: blockedSummary.status,
+        reviewState: blockedSummary.reviewState,
+        riskScore: blockedSummary.riskScore,
+        issues: blockedSummary.issues,
+        reason: blockedSummary.reason,
+        verifiedAt: blockedDecisionAt,
+        decisionAt: blockedDecisionAt,
+        pipeline: {
+          source: 'stage_documents',
+          stage,
+          documentsProcessed: docsProcessing.verificationResults.length,
+          blocked: true
+        },
+        lifecycleStatus: getLifecycleStatusFromVerification(blockedSummary)
+      };
+
+      const compatibilityUpdate = buildCompatibilityVerificationFields({
+        status: blockedSummary.status,
+        riskScore: blockedSummary.riskScore,
+        issues: blockedSummary.issues
+      });
+
+      await Product.findOneAndUpdate(
+        { productId: id },
+        {
+          $set: {
+            verification: blockedUpdate,
+            ...compatibilityUpdate
+          },
+          $push: {
+            stageEvents: {
+              stage,
+              stageNotes: sanitizeText(req.body.stageNotes, 800),
+              location: sanitizeText(req.body.stageLocation, 180),
+              updatedBy: req.user.email,
+              blockchainTxHash: null,
+              documents: [...docsProcessing.docs],
+              verificationSummary: blockedSummary,
+              recordedAt: blockedDecisionAt
+            }
+          }
+        },
+        { new: true }
+      );
+
       return res.status(422).json({
         success: false,
         status: 'blocked',
         riskScore: blockedDoc.riskResult.riskScore,
         issues: blockedDoc.riskResult.issues,
-        message: 'Stage update blocked because a document failed verification.',
+        message: 'Stage verification failed. Update has been queued for admin review.',
+        queuedForAdminReview: true,
         verification: {
           status: blockedDoc.decision.status,
           reviewState: blockedDoc.decision.reviewState,

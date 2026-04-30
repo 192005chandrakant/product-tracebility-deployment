@@ -11,7 +11,8 @@ const isMongoConnected = () => {
 
 exports.register = async (req, res) => {
   try {
-    console.log('📝 Registration attempt:', { email: req.body.email, role: req.body.role });
+    const normalizedEmail = String(req.body && req.body.email ? req.body.email : '').trim().toLowerCase();
+    console.log('📝 Registration attempt:', { email: normalizedEmail, role: req.body.role });
     
     // Check MongoDB connection
     if (!isMongoConnected()) {
@@ -22,7 +23,7 @@ exports.register = async (req, res) => {
       });
     }
     
-    const { email, password, role } = req.body;
+    const { password, role } = req.body;
     const requestedRole = String(role || 'producer').toLowerCase();
     const allowAdminRegistration = String(process.env.ALLOW_ADMIN_REGISTRATION || '').toLowerCase() === 'true';
 
@@ -41,21 +42,21 @@ exports.register = async (req, res) => {
     }
     
     // Validate input
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
     
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ error: 'User with this email already exists' });
     }
     
     const hashed = await bcrypt.hash(password, 10);
-    const user = new User({ email, password: hashed, role: requestedRole || 'producer' });
+    const user = new User({ email: normalizedEmail, password: hashed, role: requestedRole || 'producer' });
     await user.save();
     
-    console.log('✅ User registered successfully:', email);
+    console.log('✅ User registered successfully:', normalizedEmail);
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
     console.error('❌ Registration error:', err.message);
@@ -95,6 +96,13 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(400).json({ error: 'Invalid credentials' });
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({
+        error: 'Account inactive',
+        message: 'Your account has been deactivated'
+      });
     }
     
     const match = await bcrypt.compare(password, user.password);
@@ -205,6 +213,23 @@ exports.googleLogin = async (req, res) => {
       });
     }
 
+    const requestedRole = String(req.body.role || 'consumer').toLowerCase();
+    const allowAdminRegistration = String(process.env.ALLOW_ADMIN_REGISTRATION || '').toLowerCase() === 'true';
+
+    if (requestedRole === 'admin' && !allowAdminRegistration) {
+      return res.status(403).json({
+        error: 'Admin registration is restricted',
+        message: 'Admin accounts must be provisioned by bootstrap or an existing administrator.'
+      });
+    }
+
+    if (!['producer', 'consumer', 'admin'].includes(requestedRole)) {
+      return res.status(400).json({
+        error: 'Invalid role',
+        message: 'Role must be producer, consumer, or admin.'
+      });
+    }
+
     // Step 3 - Check if user exists, create if not
     let user = await User.findOne({ email: normalizedEmail });
 
@@ -216,7 +241,7 @@ exports.googleLogin = async (req, res) => {
         email: normalizedEmail,
         firstName: googleUser.firstName || claimsUser.firstName || '',
         lastName: googleUser.lastName || claimsUser.lastName || '',
-        role: 'consumer', // Default role for OAuth users
+        role: requestedRole || 'consumer',
         oauth: {
           provider: 'google',
           uid: googleUser.googleUID || claimsUser.googleUID || claims.uid || '',

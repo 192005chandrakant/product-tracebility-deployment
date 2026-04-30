@@ -42,7 +42,6 @@ const addProductHandlers = [
     { name: 'stageDocumentFiles', maxCount: 12 }
   ]),
   handleMulterError,
-  requireSecondaryAuth,
   productController.addProduct
 ];
 
@@ -68,7 +67,6 @@ router.post('/product/:id/blockchain-receipt',
   auth,
   requireRole(['producer', 'admin']),
   requirePermission('update_product_status'),
-  requireSecondaryAuth,
   productController.attachBlockchainReceipt
 );
 router.get('/product/:id', productController.getProduct);

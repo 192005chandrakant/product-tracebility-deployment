@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { ethers } from 'ethers';
 import { useWallet } from '../context/WalletContext';
 
 export function useWalletTransaction() {
@@ -84,7 +83,7 @@ export function useWalletTransaction() {
         console.error('❌ Transaction failed:', errorMsg);
         setError(errorMsg);
 
-        if (err.code === 'ACTION_REJECTED') {
+        if (err.code === 'ACTION_REJECTED' || err.code === 4001) {
           throw new Error('Transaction rejected by user');
         }
 

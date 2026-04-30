@@ -45,10 +45,6 @@ const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
   
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    
     return () => {
       clearTimeout(handler);
     };
@@ -60,7 +56,9 @@ const useDebounce = (value, delay) => {
 function UpdateProduct() {
   // Main state
   const [productId, setProductId] = useState('');
-  const [stage, setStage] = useState('');
+        if (password.trim()) {
+          formData.append('password', password.trim());
+        }
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -141,10 +139,6 @@ function UpdateProduct() {
     if (!query.trim()) return;
     
     setSearchLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(buildAPIURL('/api/products'), {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.ok) {
@@ -153,10 +147,6 @@ function UpdateProduct() {
           product.productId?.toLowerCase().includes(query.toLowerCase()) ||
           product.name?.toLowerCase().includes(query.toLowerCase())
         ).slice(0, 5); // Limit to 5 results for performance
-        
-        setSearchResults(filtered);
-      }
-    } catch (error) {
       console.error('Error searching products:', error);
       toast.error('Error searching products');
     } finally {
@@ -168,6 +158,9 @@ function UpdateProduct() {
   const selectProduct = useCallback((product) => {
     setSelectedProduct(product);
     setProductId(product.productId);
+          if (password.trim()) {
+            formData.append('password', password.trim());
+          }
     setSearchQuery(product.productId);
     setSearchResults([]);
     setStageHistory(product.stages || []);
@@ -252,7 +245,7 @@ function UpdateProduct() {
       if (uploadFiles.image) {
         formData.append('imageFile', uploadFiles.image);
       }
-      
+              Password Confirmation (Optional)
       const response = await fetch(buildAPIURL(`/api/update-product/${productId}`), {
         method: 'POST',
         headers: { 
@@ -262,17 +255,16 @@ function UpdateProduct() {
         body: formData,
       });
       
-      if (!response.ok) {
+                placeholder="Optional: enter your account password"
         const errorData = await response.json();
-        throw new Error(errorData.message || errorData.error || 'Failed to update product');
       }
       
-      const result = await response.json();
+            <p className="text-xs text-gray-500 dark:text-gray-400">Optional for owners updating their own product stages.</p>
       
       setMessage('Product updated successfully!');
       setIsSuccess(true);
       toast.success('Product stage updated successfully!');
-      
+              disabled={loading || !productId || !stage}
       // Update statistics
       loadStatistics();
       

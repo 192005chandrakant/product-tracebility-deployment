@@ -65,9 +65,9 @@ function collectDocumentReasons(event = {}) {
 
 function MetricCard({ label, value }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/55 p-3 dark:bg-white/5">
-      <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{value}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/8 p-3">
+      <p className="text-xs uppercase tracking-[0.2em] text-slate-300">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-50">{value}</p>
     </div>
   );
 }
@@ -83,14 +83,14 @@ function ProductVerificationStatusSection({ product }) {
   const overallTone = statusTone(productVerification.status || productVerification.reviewState || 'skipped');
 
   return (
-    <section className="col-span-1 rounded-[28px] border border-white/10 bg-white/75 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:bg-white/5 sm:col-span-2 sm:p-5">
+    <section className="col-span-1 rounded-[28px] border border-white/10 bg-slate-950/85 p-4 text-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:col-span-2 sm:p-5">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-50">
             <FaShieldAlt className="text-purple-500" />
             Product Verification Status
           </h3>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          <p className="mt-1 text-sm text-slate-300">
             Stage-level documentation verification summary with Gemini rejection reasons where applicable.
           </p>
         </div>
@@ -109,9 +109,9 @@ function ProductVerificationStatusSection({ product }) {
       </div>
 
       {productVerification.reason ? (
-        <div className="mb-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/8 p-3">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300">Overall Reason</p>
-          <p className="whitespace-pre-wrap text-sm text-cyan-900 dark:text-cyan-100">{productVerification.reason}</p>
+        <div className="mb-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/10 p-3">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">Overall Reason</p>
+          <p className="whitespace-pre-wrap text-sm text-cyan-50">{productVerification.reason}</p>
         </div>
       ) : null}
 
@@ -122,11 +122,11 @@ function ProductVerificationStatusSection({ product }) {
           const tone = statusTone(summary.status || summary.reviewState || 'skipped');
 
           return (
-            <article key={`${event.stage || 'stage'}-${index}`} className="rounded-[24px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.82),rgba(245,243,255,0.7))] p-4 dark:bg-white/5">
+            <article key={`${event.stage || 'stage'}-${index}`} className="rounded-[24px] border border-white/10 bg-white/8 p-4 text-slate-100">
               <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{event.stage || 'Unknown Stage'}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Recorded {formatDate(event.recordedAt)}</p>
+                  <p className="text-sm font-semibold text-slate-50">{event.stage || 'Unknown Stage'}</p>
+                  <p className="text-xs text-slate-400">Recorded {formatDate(event.recordedAt)}</p>
                 </div>
                 <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${tone.badge}`}>
                   <tone.icon />
@@ -134,20 +134,20 @@ function ProductVerificationStatusSection({ product }) {
                 </div>
               </div>
 
-              <div className="mb-2 grid grid-cols-1 gap-2 text-sm text-slate-700 dark:text-slate-300 sm:grid-cols-3">
+              <div className="mb-2 grid grid-cols-1 gap-2 text-sm text-slate-200 sm:grid-cols-3">
                 <p><span className="font-semibold">Risk:</span> {summary.riskScore ?? 'N/A'}</p>
                 <p><span className="font-semibold">Review:</span> {summary.reviewState || 'not_required'}</p>
                 <p><span className="font-semibold">Documents:</span> {normalizeArray(event.documents).length}</p>
               </div>
 
               {summary.reason ? (
-                <p className="mb-2 text-sm text-slate-700 dark:text-slate-300"><span className="font-semibold">Stage Reason:</span> {summary.reason}</p>
+                <p className="mb-2 text-sm text-slate-200"><span className="font-semibold">Stage Reason:</span> {summary.reason}</p>
               ) : null}
 
               {docReasons.length > 0 ? (
                 <div className="rounded-2xl border border-amber-300/30 bg-amber-500/10 p-3">
-                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300">Document Verification Reasons</p>
-                  <ul className="space-y-1 text-sm text-amber-900 dark:text-amber-100">
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Document Verification Reasons</p>
+                  <ul className="space-y-1 text-sm text-amber-50">
                     {docReasons.map((item, reasonIndex) => (
                       <li key={`${item.title}-${reasonIndex}`}>
                         {item.title}: {item.reason}

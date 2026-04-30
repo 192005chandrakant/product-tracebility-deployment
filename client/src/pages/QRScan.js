@@ -601,20 +601,20 @@ function QRScan() {
     idle: {
       title: 'Align QR code within frame',
       subtitle: 'Scanning will start automatically once the camera is active.',
-      className: 'border-cyan-200/70 bg-cyan-50/70 text-cyan-900 dark:border-cyan-800/70 dark:bg-cyan-950/40 dark:text-cyan-100',
-      icon: <FaQrcode className="text-cyan-500" />,
+      className: 'border-[#A855F7]/25 bg-white/75 text-slate-900 dark:border-[#2DD4BF]/25 dark:bg-slate-950/40 dark:text-slate-100',
+      icon: <FaQrcode className="text-[#A855F7]" />,
     },
     scanning: {
       title: 'Scanning in progress',
       subtitle: 'Hold steady and keep the QR fully visible for fastest detection.',
-      className: 'border-blue-200/70 bg-blue-50/70 text-blue-900 dark:border-blue-800/70 dark:bg-blue-950/40 dark:text-blue-100',
-      icon: <FaCamera className="text-blue-500" />,
+      className: 'border-[#2DD4BF]/25 bg-cyan-50/75 text-cyan-900 dark:border-[#A855F7]/25 dark:bg-slate-950/40 dark:text-cyan-100',
+      icon: <FaCamera className="text-[#2DD4BF]" />,
     },
     processing: {
       title: 'Verifying product...',
       subtitle: 'AI and blockchain checks are running.',
-      className: 'border-indigo-200/70 bg-indigo-50/70 text-indigo-900 dark:border-indigo-800/70 dark:bg-indigo-950/40 dark:text-indigo-100',
-      icon: <FaSpinner className="text-indigo-500 animate-spin" />,
+      className: 'border-[#A855F7]/25 bg-purple-50/80 text-purple-900 dark:border-[#2DD4BF]/25 dark:bg-purple-950/40 dark:text-purple-100',
+      icon: <FaSpinner className="text-[#A855F7] animate-spin" />,
     },
     verified: {
       title: 'Product verified',
@@ -657,7 +657,7 @@ function QRScan() {
       </ErrorBoundary>
       
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.32),transparent_40%),radial-gradient(circle_at_80%_20%,rgba(34,197,94,0.25),transparent_38%),radial-gradient(circle_at_50%_80%,rgba(14,165,233,0.28),transparent_48%)] z-10"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(168,85,247,0.24),transparent_38%),radial-gradient(circle_at_80%_20%,rgba(45,212,191,0.22),transparent_36%),radial-gradient(circle_at_50%_80%,rgba(15,23,42,0.18),transparent_46%)] z-10"></div>
       
       <div className="relative z-20 min-h-screen p-4 sm:p-6 lg:p-8">
         <ErrorBoundary fallback={
@@ -684,8 +684,8 @@ function QRScan() {
               </button>
 
               <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/5 border border-white/10 text-xs sm:text-sm font-semibold text-slate-200">
-                <FaSun className="text-amber-500 dark:hidden" />
-                <FaMoon className="text-cyan-300 hidden dark:block" />
+                <FaSun className="text-[#A855F7] dark:hidden" />
+                <FaMoon className="text-[#2DD4BF] hidden dark:block" />
                 Adaptive Light and Dark
               </div>
             </div>

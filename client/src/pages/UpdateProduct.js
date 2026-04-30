@@ -2,7 +2,7 @@ import React, { memo, useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   FaEdit, 
   FaBox, 
@@ -169,6 +169,7 @@ const UpdateProductDecorativeBackground = memo(function UpdateProductDecorativeB
 function UpdateProduct() {
   // Real-time statistics hook
   const { statistics, loading: statsLoading, error: statsError, refreshStats } = useRealTimeStats(5000); // Refresh every 5 seconds
+  const { id: routeProductId } = useParams();
   
   // Main state
   const [productId, setProductId, clearProductIdDraft] = usePersistentForm('update-product-id', '');
@@ -295,6 +296,46 @@ function UpdateProduct() {
     setStageHistory(product.stages || []);
   }, []);
 
+  useEffect(() => {
+    if (!routeProductId) {
+      return;
+    }
+
+    const hydrateRouteProduct = async () => {
+      const normalizedId = String(routeProductId).trim();
+      if (!normalizedId) {
+        return;
+      }
+
+      setSearchLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(buildAPIURL(`/api/product/${encodeURIComponent(normalizedId)}`), {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        });
+
+        if (!response.ok) {
+          throw new Error('Product not found');
+        }
+
+        const product = await response.json();
+        selectProduct(product);
+        setMessage(`Loaded ${product.name || product.productId} from the route.`);
+      } catch (error) {
+        console.error('Error loading product from route:', error);
+        setSelectedProduct(null);
+        setProductId(normalizedId);
+        setSearchQuery(normalizedId);
+        setStageHistory([]);
+        toast.info('No route product was loaded. You can search or enter the ID manually.');
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    hydrateRouteProduct();
+  }, [routeProductId, selectProduct]);
+
   // Main update handler with file uploads
   const handleUpdate = async e => {
     e.preventDefault();
@@ -308,17 +349,20 @@ function UpdateProduct() {
         throw new Error('Authentication required. Please log in again.');
       }
 
+      // Require password before attempting update
+      if (!password || !password.trim()) {
+        toast.error('Password is required to confirm this update');
+        setLoading(false);
+        return;
+      }
+
       // Import the API config utility
       const apiConfig = await import('../utils/apiConfig');
       const apiUrl = apiConfig.buildAPIURL(`/api/update-product/${productId}`);
       
-      if (!password) {
-        throw new Error('Password confirmation is required.');
-      }
-
       const formData = new FormData();
       formData.append('stage', stage);
-      formData.append('password', password);
+      formData.append('password', password.trim());
 
       const documentValidation = validateStageDocuments(stageDocuments);
       if (documentValidation.issues.length > 0) {
@@ -479,7 +523,7 @@ function UpdateProduct() {
           {/* Header */}
           <div className="text-center mb-8 pt-8">
             <div className="relative inline-block mb-6">
-              <div className="w-24 h-24 bg-gradient-to-br from-[#A855F7] to-[#2DD4BF] rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_32px_rgba(168,85,247,0.35)]">
+              <div className="w-24 h-24 bg-gradient-to-br from-[#A855F7] via-[#7C3AED] to-[#2DD4BF] rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_32px_rgba(168,85,247,0.35)]">
                 <FaEdit className="text-white text-4xl" />
               </div>
               <div className="absolute -top-3 -right-3">
@@ -496,7 +540,7 @@ function UpdateProduct() {
                 <BrandLogo size="sm" animated />
               </div>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-[#A855F7] via-[#7C3AED] to-[#2DD4BF] bg-clip-text text-transparent">
               Update Product
             </h1>
             <p className="text-slate-600 dark:text-slate-300 text-lg max-w-2xl mx-auto">
@@ -540,33 +584,33 @@ function UpdateProduct() {
                   </div>
                   
                   <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-[#A855F7] to-purple-600 p-4 rounded-lg text-white">
+                    <div className="bg-gradient-to-r from-[#A855F7] to-[#2DD4BF] p-4 rounded-lg text-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-blue-100 text-sm">Total Products</p>
+                          <p className="text-white/80 text-sm">Total Products</p>
                           <p className="text-2xl font-bold">{statistics.totalProducts}</p>
                         </div>
-                        <FaBox className="text-3xl text-blue-200" />
+                        <FaBox className="text-3xl text-white/80" />
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-[#2DD4BF] to-teal-500 p-4 rounded-lg text-white">
+                    <div className="bg-gradient-to-r from-[#2DD4BF] to-[#7C3AED] p-4 rounded-lg text-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-green-100 text-sm">Total Scans</p>
+                          <p className="text-white/80 text-sm">Total Scans</p>
                           <p className="text-2xl font-bold">{statistics.totalScans}</p>
                         </div>
-                        <FaEye className="text-3xl text-green-200" />
+                        <FaEye className="text-3xl text-white/80" />
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-purple-500 to-[#A855F7] p-4 rounded-lg text-white">
+                    <div className="bg-gradient-to-r from-[#7C3AED] to-[#2DD4BF] p-4 rounded-lg text-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-purple-100 text-sm">Total Updates</p>
+                          <p className="text-white/80 text-sm">Total Updates</p>
                           <p className="text-2xl font-bold">{statistics.totalUpdates}</p>
                         </div>
-                        <FaEdit className="text-3xl text-purple-200" />
+                        <FaEdit className="text-3xl text-white/80" />
                       </div>
                     </div>
                   </div>
@@ -615,7 +659,7 @@ function UpdateProduct() {
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <FaSearch className="h-5 w-5 text-gray-400" />
+                          <FaSearch className="h-5 w-5 text-[#A855F7]" />
                         </div>
                         <input
                           type="text"
@@ -626,7 +670,7 @@ function UpdateProduct() {
                         />
                         {searchLoading && (
                           <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                            <FaSpinner className="animate-spin text-orange-500" />
+                            <FaSpinner className="animate-spin text-[#2DD4BF]" />
                           </div>
                         )}
                       </div>
@@ -990,38 +1034,29 @@ function UpdateProduct() {
                       </motion.div>
                     )}
 
-                    {/* Password Confirmation */}
+                    {/* Password Confirmation (Required) */}
                     <div className="relative group mb-6 border-2 border-amber-100 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10 p-6 rounded-lg">
                       <div className="flex items-center mb-3">
                         <FaLock className="text-amber-500 dark:text-amber-400 mr-2" />
-                        <label className="block text-sm font-semibold transition-all duration-300
-                          text-amber-700 dark:text-amber-300">
-                          Password Confirmation (Required)
+                        <label className="block text-sm font-semibold transition-all duration-300 text-amber-700 dark:text-amber-300">
+                          Password Confirmation
                         </label>
                       </div>
                       <div className="relative">
-                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-300
-                          text-gray-400 group-focus-within:text-amber-500 dark:group-focus-within:text-amber-400">
+                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-300 text-gray-400 group-focus-within:text-amber-500 dark:group-focus-within:text-amber-400">
                           <FaLock className="text-lg" />
                         </div>
                         <input
+                          required
                           type="password"
-                          placeholder="Enter your password to confirm"
+                          placeholder="Enter your password to confirm this update"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          required
-                          className="w-full pl-12 pr-4 py-4 rounded-xl transition-all duration-300 font-medium
-                            bg-white border-2 border-amber-200 text-gray-900 placeholder-gray-500
-                            focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-200/50
-                            hover:border-amber-300 hover:bg-white
-                            dark:bg-slate-700 dark:border-amber-700 dark:text-slate-100
-                            dark:focus:bg-slate-700 dark:focus:border-amber-500 dark:focus:ring-amber-500/30
-                            dark:hover:border-amber-600 dark:hover:bg-slate-700
-                            shadow-sm hover:shadow-md focus:shadow-lg"
+                          className="w-full pl-12 pr-4 py-4 rounded-xl transition-all duration-300 font-medium bg-white border-2 border-amber-200 text-gray-900 placeholder-gray-500 focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-200/50 hover:border-amber-300 hover:bg-white dark:bg-slate-700 dark:border-amber-700 dark:text-slate-100 dark:focus:bg-slate-700 dark:focus:border-amber-500 dark:focus:ring-amber-500/30 dark:hover:border-amber-600 dark:hover:bg-slate-700 shadow-sm hover:shadow-md focus:shadow-lg"
                         />
                       </div>
                       <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-                        Password confirmation is required for security purposes when updating product information
+                        For security, please provide your account password to confirm this stage update.
                       </p>
                     </div>
 
@@ -1029,7 +1064,7 @@ function UpdateProduct() {
                     <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 pt-6">
                       <GlowingButton
                         type="submit"
-                        disabled={loading || !productId || !stage}
+                        disabled={loading || !productId || !stage || !password.trim()}
                         className="flex-1 py-4 font-semibold text-lg"
                         glowColor="green"
                       >

@@ -1,5 +1,5 @@
 import { apiRequest } from './apiConfig';
-const { getPersistedAIEnabled } = require('./appSettings');
+import { getPersistedAIEnabled } from './appSettings';
 
 export function isAIEnabled() {
   return getPersistedAIEnabled();

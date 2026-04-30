@@ -336,4 +336,74 @@ describe('productController.addProduct verification flow', () => {
       })
     }));
   });
+
+  test('persists blocked verification attempt and queues product for admin review', async () => {
+    const certificateFile = createCertificateFile();
+    const req = {
+      user: { email: 'producer@example.com', role: 'producer' },
+      get: jest.fn().mockReturnValue('localhost:5000'),
+      secure: false,
+      body: {
+        productId: 'P-102',
+        name: 'Organic Turmeric Powder',
+        origin: 'India',
+        manufacturer: 'Walmart Foods Pvt Ltd',
+        certificationType: 'ISO 22000',
+        blockchainRefHash: '',
+        registrationStageNotes: 'Initial registration'
+      },
+      files: {
+        imageFile: [],
+        stageDocumentFiles: [certificateFile]
+      }
+    };
+    const res = createRes();
+
+    req.body.stageDocumentsMeta = JSON.stringify([
+      {
+        stage: 'Registered',
+        documentType: 'certificate',
+        title: 'ISO 22000 Certificate',
+        documentReference: 'CERT-22000-2',
+        issuingAuthority: 'Global Cert Board',
+        requiresVerification: true,
+        fileIndex: 0,
+        standardCode: 'ISO 22000'
+      }
+    ]);
+
+    computeVerificationRisk.mockReturnValue({
+      riskScore: 100,
+      issues: ['Critical mismatch found'],
+      criticalFailures: ['issuer_mismatch']
+    });
+
+    decideVerificationOutcome.mockReturnValue({
+      status: 'blocked',
+      reviewState: 'rejected',
+      reason: 'Risk score above blocking threshold.'
+    });
+
+    await productController.addProduct(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(422);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      status: 'blocked',
+      queuedForAdminReview: true,
+      product: expect.any(Object)
+    }));
+
+    expect(Product).toHaveBeenCalledTimes(1);
+    const savedProduct = Product.mock.instances[0];
+    expect(savedProduct.blockchainStatus).toBe('failed');
+    expect(savedProduct.verification).toEqual(expect.objectContaining({
+      status: 'blocked',
+      reviewState: 'rejected',
+      lifecycleStatus: 'failed'
+    }));
+    expect(savedProduct.verificationStatus).toBe('blocked');
+    expect(savedProduct.riskScore).toBe(100);
+    expect(blockchain.addProductOnChain).not.toHaveBeenCalled();
+  });
 });

@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaHome, FaQrcode, FaPlus, FaHistory, FaUser, FaSignOutAlt, FaBars, FaTimes, FaUserCircle, FaUserAlt, FaRobot } from 'react-icons/fa';
 import BrandLogo from './BrandLogo';
+import { WalletConnectButton } from './WalletConnectButton';
 
 // Utility to generate a pastel color from a string (email)
 function stringToColor(str) {
@@ -169,10 +170,11 @@ function Navbar({ user, onLogout }) {
             ))}
           </div>
 
-          {/* User Section */}
+          {/* User & Wallet Section */}
           <div className="hidden md:flex items-center space-x-4 relative">
             {user ? (
               <>
+                <WalletConnectButton />
                 {/* Google-style profile icon */}
                 <div className="relative" ref={profileMenuRef}>
                   <button
@@ -252,7 +254,12 @@ function Navbar({ user, onLogout }) {
               ))}
               
               {user ? (
-                <div className="pt-4 border-t border-white/10">
+                <div className="pt-4 border-t border-white/10 space-y-4">
+                  {/* Wallet Section (Mobile) */}
+                  <div className="px-4 py-2">
+                    <WalletConnectButton />
+                  </div>
+                  
                   {/* Profile Section */}
                   <div className="flex items-center space-x-3 px-4 py-3 rounded-lg" style={{ background: user.email ? stringToColor(user.email) : '#eee' }}>
                     <div className="w-10 h-10 rounded-full flex items-center justify-center">
@@ -305,4 +312,4 @@ function Navbar({ user, onLogout }) {
   );
 }
 
-export default Navbar; 
+export default Navbar;

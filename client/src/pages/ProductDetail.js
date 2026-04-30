@@ -295,8 +295,8 @@ function ProductDetail() {
 
   const handleStatusUpdate = async () => {
     if (!newStatus) return;
-    if (!confirmPassword) {
-      toast.error('Password confirmation is required');
+    if (!confirmPassword.trim()) {
+      toast.error('Password is required to update product status');
       return;
     }
 
@@ -304,7 +304,7 @@ function ProductDetail() {
     try {
       const formData = new FormData();
       formData.append('stage', newStatus);
-      formData.append('password', confirmPassword);
+      formData.append('password', confirmPassword.trim());
 
       const token = localStorage.getItem('token');
       let responseData = null;
@@ -441,7 +441,7 @@ function ProductDetail() {
                   : 'Connect your wallet before updating product status'}
               </p>
             </div>
-            <WalletConnectButton />
+            {user ? <WalletConnectButton /> : null}
           </div>
 
           <div className="mb-6">
@@ -598,17 +598,16 @@ function ProductDetail() {
                   <input
                     type="password"
                     className="ml-0 sm:ml-2 px-3 py-1 rounded-lg border border-amber-300 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-amber-50 dark:bg-amber-900/20"
-                    placeholder="Enter password to confirm"
+                    placeholder="Enter password to confirm status update"
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     disabled={statusUpdating}
-                    required
                   />
                 </div>
                 <button
                   className="ml-0 sm:ml-2 px-4 py-1 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold hover:from-blue-600 hover:to-cyan-600 transition-colors text-sm disabled:opacity-50"
                   onClick={handleStatusUpdate}
-                  disabled={!newStatus || !confirmPassword || statusUpdating}
+                  disabled={!newStatus || !confirmPassword.trim() || statusUpdating}
                 >
                   {statusUpdating ? 'Updating...' : <><FaEdit className="inline mr-1" />Update</>}
                 </button>

@@ -209,39 +209,22 @@ function AddProduct() {
     account
   } = useBlockchainProductTransaction();
 
-  // Test server connectivity on mount
   useEffect(() => {
-    const testServer = async () => {
+    const checkApiHealth = async () => {
       try {
-        console.log('Testing server connectivity...');
-        const res = await fetch(buildAPIURL('/api/test'));
-        console.log('Server test response:', res.status);
+        const res = await fetch(buildAPIURL('/api/health'));
+        console.log('API health check response:', res.status);
+
         if (res.ok) {
           const data = await res.json();
-          console.log('Server is running:', data);
-        } else {
-          console.error('Server test failed');
-        }
-        
-        // Test the simple route
-        console.log('Testing simple route...');
-        const simpleRes = await fetch(buildAPIURL('/api/add-product-simple'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ test: 'data' })
-        });
-        console.log('Simple route response:', simpleRes.status);
-        if (simpleRes.ok) {
-          const simpleData = await simpleRes.json();
-          console.log('Simple route working:', simpleData);
-        } else {
-          console.error('Simple route failed');
+          console.log('API health status:', data?.status || 'healthy');
         }
       } catch (err) {
-        console.error('Server connectivity error:', err);
+        console.warn('API health check skipped:', err);
       }
     };
-    testServer();
+
+    checkApiHealth();
   }, []);
 
   useEffect(() => {
@@ -406,6 +389,22 @@ function AddProduct() {
         }
       );
       
+      // Check blockchain transaction result
+      if (result && !result.success) {
+        // Blockchain failed but API call inside may have thrown — responseData may be null
+        if (!responseData) {
+          throw new Error(result.error || 'Transaction failed');
+        }
+        // If responseData exists the API succeeded but blockchain failed
+        // Still show the product but warn about blockchain
+        console.warn('Blockchain transaction failed but product may have been saved:', result.error);
+      }
+      
+      // Guard: if responseData is null (API call itself failed), bail out
+      if (!responseData) {
+        throw new Error('No response received from server');
+      }
+
       // Dispatch custom event to refresh statistics
       window.dispatchEvent(new Event('productAdded'));
       
@@ -439,20 +438,19 @@ function AddProduct() {
         }
       } else {
         console.warn('No QR code data received from server');
-        toast.warning('Product created but QR code generation failed');
       }
       
       setRegisteredProduct(responseData.product);
       setVerificationFeedback(responseData.verification || null);
       clearFormDraft();
       clearStageDocumentsDraft();
-      toast.success(result?.success ? 'Product added successfully!' : 'Product added successfully!');
+      toast.success('Product added successfully!');
       // Optionally, do not redirect immediately
       // setTimeout(() => navigate('/admin/dashboard'), 1200);
     } catch (err) {
       console.error('Error adding product:', err);
-      setError(err.message);
-      toast.error(err.message);
+      setError(err.message || 'An unexpected error occurred');
+      toast.error(err.message || 'Failed to add product');
     }
     setLoading(false);
   };
