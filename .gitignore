@@ -20,12 +20,32 @@ client/dist/
 server/build/
 server/dist/
 
-# dotenv environment variables
+# dotenv environment variables and secrets
 .env
 .env.*
+!.env.example
+!.env.production.example
 .env.local
 .env.production
 .env.development
+.env.staging
+.env.test
+server/.env
+server/.env.local
+client/.env
+client/.env.local
+
+# Sensitive files - NEVER commit these
+*.pem
+*.key
+*.p12
+*.pfx
+server/config/private-key.json
+server/config/*.pem
+server/config/*.key
+*.pub
+secrets/
+.secrets/
 
 # Google Drive credentials
 server/config/google-credentials.json

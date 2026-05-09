@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const logger = require('../utils/logger');
 
 const AUTH_USER_CACHE_TTL_MS = 60 * 1000;
 const authUserCache = new Map();
@@ -8,7 +9,7 @@ const AUTH_DEBUG_LOGS = String(process.env.AUTH_DEBUG_LOGS || '').toLowerCase() 
 
 function debugAuthLog(...args) {
   if (AUTH_DEBUG_LOGS) {
-    console.log(...args);
+    logger.debug(...args);
   }
 }
 
@@ -105,7 +106,7 @@ exports.auth = async (req, res, next) => {
     
     next();
   } catch (err) {
-    console.error('Authentication error:', err.message);
+    logger.debug('Authentication error:', err.message);
     return res.status(401).json({ 
       error: 'Invalid token', 
       message: 'Your session has expired. Please log in again.'
@@ -215,7 +216,7 @@ exports.requireSecondaryAuth = async (req, res, next) => {
     debugAuthLog(`🔒 Secondary authentication successful for ${user.email}`);
     next();
   } catch (err) {
-    console.error('Secondary authentication error:', err.message);
+    logger.debug('Secondary authentication error:', err.message);
     return res.status(500).json({ 
       error: 'Authentication error', 
       message: 'An error occurred during authentication'
