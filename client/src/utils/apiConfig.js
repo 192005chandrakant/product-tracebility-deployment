@@ -11,11 +11,9 @@ const isDebug = process.env.REACT_APP_DEBUG_API === 'true' || process.env.REACT_
 
 // Production URLs
 const PRODUCTION_API_URL = 'https://product-traceability-api.onrender.com';
-const PRODUCTION_FRONTEND_URL = 'https://blockchain-product-traceability.netlify.app';
 
 // Local development URLs
 const LOCAL_API_URL = 'http://localhost:5000';
-const LOCAL_FRONTEND_URL = 'http://localhost:3000';
 
 // Get base API URL with smart environment detection
 const getAPIBaseURL = () => {

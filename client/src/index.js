@@ -4,6 +4,24 @@ import './index.css';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
 
+const cleanupLegacyCaches = async () => {
+  if (process.env.NODE_ENV !== 'production') return;
+
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+
+    if ('caches' in window) {
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((cacheName) => caches.delete(cacheName)));
+    }
+  } catch (error) {
+    // Cache cleanup is best-effort only.
+  }
+};
+
 // Remove initial loader function
 const removeInitialLoader = () => {
   const loader = document.getElementById('initial-loader');
@@ -18,6 +36,8 @@ const removeInitialLoader = () => {
     }, 300);
   }
 };
+
+cleanupLegacyCaches();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
