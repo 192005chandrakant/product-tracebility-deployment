@@ -38,6 +38,7 @@
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
     "customize-cra": "^1.0.0",
     "lighthouse": "^12.7.1",
     "postcss": "^8.5.6",
@@ -53,10 +54,10 @@
     "webpack-dev-server": "^5.2.3"
   },
   "scripts": {
-    "start": "set \"GENERATE_SOURCEMAP=false\"&& set \"DISABLE_ESLINT_PLUGIN=true\"&& set \"NODE_OPTIONS=--max-old-space-size=4096\"&& react-app-rewired start",
-    "build": "set \"GENERATE_SOURCEMAP=false\"&& set \"CI=false\"&& set \"NODE_OPTIONS=--max-old-space-size=4096\"&& react-app-rewired build",
-    "build:enhanced": "set \"GENERATE_SOURCEMAP=false\"&& set \"CI=false\"&& set \"NODE_OPTIONS=--max-old-space-size=4096\"&& react-app-rewired build",
-    "build:prod": "set \"NODE_ENV=production\"&& npm run build:enhanced",
+    "start": "cross-env GENERATE_SOURCEMAP=false DISABLE_ESLINT_PLUGIN=true NODE_OPTIONS=--max-old-space-size=4096 react-app-rewired start",
+    "build": "cross-env GENERATE_SOURCEMAP=false CI=false NODE_OPTIONS=--max-old-space-size=4096 react-app-rewired build",
+    "build:enhanced": "cross-env GENERATE_SOURCEMAP=false CI=false NODE_OPTIONS=--max-old-space-size=4096 react-app-rewired build",
+    "build:prod": "cross-env NODE_ENV=production npm run build:enhanced",
     "build:clean": "npm run clean && npm run build",
     "build:deploy": "node -e \"require('fs').rmSync('build',{recursive:true,force:true})\" && npm run build",
     "build:analyze": "npm run build && npx webpack-bundle-analyzer build/static/js/*.js",
