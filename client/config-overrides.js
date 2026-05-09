@@ -42,8 +42,10 @@ function webpackOverride(config, env) {
 
   // Performance optimizations for production
   if (env === 'production') {
-    // CRITICAL: Set absolute public path to prevent relative path issues
-    config.output.publicPath = 'https://blockchain-product-traceability.netlify.app/';
+    // Use explicit public path when provided via env (useful for Vercel, CDN)
+    // Fallback to root-relative paths for Vercel deployments
+    const publicPath = process.env.REACT_APP_PUBLIC_URL || process.env.PUBLIC_URL || '/';
+    config.output.publicPath = publicPath;
 
     // Optimize bundle splitting with more reliable chunking
     config.optimization = {

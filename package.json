@@ -1,14 +1,18 @@
 {
   "scripts": {
+    "build": "npm run build:frontend && npm --prefix server run build",
     "build:frontend": "npm --prefix client run build:prod",
     "build:frontend:clean": "npm --prefix client run build:clean",
     "build:frontend:deploy": "npm --prefix client run build:deploy",
+    "build:prod": "npm run build:frontend && npm --prefix server run prod",
     "preview:frontend": "npm --prefix client run preview",
     "deploy-contract": "npx hardhat run scripts/deploy.js --network sepolia",
     "verify-contract": "npx hardhat verify --network sepolia",
     "test-blockchain": "node test-blockchain-connection.js",
     "validate-deployment": "node validate-deployment.js",
-    "setup-deployment": "node setup-for-deployment.bat"
+    "setup-deployment": "node setup-for-deployment.bat",
+    "prestart": "npm --prefix server run build && npm --prefix client run build",
+    "start": "npm --prefix server run start"
   },
   "dependencies": {
     "axios": "^1.6.0",

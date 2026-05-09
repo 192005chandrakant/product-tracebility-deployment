@@ -50,7 +50,16 @@ const buildAllowedOrigins = () => {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  const fromClientApp = [process.env.CLIENT_APP_URL, process.env.REACT_APP_API_URL].filter(Boolean);
+  // Support common hosting environment variables (Vercel, Render, Now) so
+  // deployments using those platforms automatically register allowed origins.
+  const fromClientApp = [
+    process.env.CLIENT_APP_URL,
+    process.env.REACT_APP_API_URL,
+    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+    process.env.RENDER_EXTERNAL_URL,
+    process.env.NOW_URL,
+    process.env.URL
+  ].filter(Boolean);
 
   return new Set(
     [...defaults, ...fromEnv, ...fromClientApp]
@@ -437,7 +446,20 @@ app.get('/product/:id', (req, res) => {
   return res.redirect(302, target);
 });
 
-// 404 Not Found Handler
+// SPA Fallback: Serve index.html for React Router fallback (BEFORE 404 handler)
+// This must come after API routes but before the 404 handler
+if (HAS_CLIENT_INDEX) {
+  app.get('*', (req, res) => {
+    // Don't serve index.html for API routes - let them 404 properly
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'API route not found', path: req.originalUrl });
+    }
+    // For all other routes, serve index.html (React Router handles the routing)
+    res.sendFile(CLIENT_INDEX_PATH);
+  });
+}
+
+// 404 Not Found Handler (for API routes that don't match any route)
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found', path: req.originalUrl });
 });
