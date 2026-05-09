@@ -42,10 +42,10 @@ function webpackOverride(config, env) {
 
   // Performance optimizations for production
   if (env === 'production') {
-    // Use explicit public path when provided via env (useful for Vercel, CDN)
-    // Fallback to root-relative paths for Vercel deployments
-    const publicPath = process.env.REACT_APP_PUBLIC_URL || process.env.PUBLIC_URL || '/';
-    config.output.publicPath = publicPath;
+    // Force root-relative assets for static hosting (Vercel/Netlify) unless PUBLIC_URL is explicitly set.
+    const publicPath = process.env.PUBLIC_URL || '/';
+    const normalizedPublicPath = publicPath.endsWith('/') ? publicPath : `${publicPath}/`;
+    config.output.publicPath = normalizedPublicPath;
 
     // Optimize bundle splitting with more reliable chunking
     config.optimization = {
@@ -107,10 +107,10 @@ function webpackOverride(config, env) {
       maxAssetSize: 512000, // 512KB
     };
 
-    // Ensure proper asset loading with absolute paths
+    // Keep filenames deterministic and use the normalized root-relative public path.
     config.output = {
       ...config.output,
-      publicPath: 'https://blockchain-product-traceability.netlify.app/',
+      publicPath: normalizedPublicPath,
       filename: 'static/js/[name].[contenthash:8].js',
       chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
     };

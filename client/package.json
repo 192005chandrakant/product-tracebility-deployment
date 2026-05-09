@@ -55,8 +55,8 @@
   },
   "scripts": {
     "start": "cross-env GENERATE_SOURCEMAP=false DISABLE_ESLINT_PLUGIN=true NODE_OPTIONS=--max-old-space-size=4096 react-app-rewired start",
-    "build": "cross-env GENERATE_SOURCEMAP=false CI=false NODE_OPTIONS=--max-old-space-size=4096 react-app-rewired build",
-    "build:enhanced": "cross-env GENERATE_SOURCEMAP=false CI=false NODE_OPTIONS=--max-old-space-size=4096 react-app-rewired build",
+    "build": "cross-env PUBLIC_URL=/ GENERATE_SOURCEMAP=false CI=false NODE_OPTIONS=--max-old-space-size=4096 react-app-rewired build",
+    "build:enhanced": "cross-env PUBLIC_URL=/ GENERATE_SOURCEMAP=false CI=false NODE_OPTIONS=--max-old-space-size=4096 react-app-rewired build",
     "build:prod": "cross-env NODE_ENV=production npm run build:enhanced",
     "build:clean": "npm run clean && npm run build",
     "build:deploy": "node -e \"require('fs').rmSync('build',{recursive:true,force:true})\" && npm run build",
